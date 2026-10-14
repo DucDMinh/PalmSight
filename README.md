@@ -4,7 +4,7 @@ Web app bói chỉ tay bằng AI: chọn trường phái (phương Tây, phươn
 
 Dự án nhỏ của 2 người, làm cho vui.
 
-> **Trạng thái:** giai đoạn thiết kế. Repo hiện chỉ có tài liệu; code sẽ được thêm theo [roadmap](docs/roadmap.md). Các lệnh trong phần [Chạy local](#chạy-local) mô tả cấu trúc dự kiến.
+> **Trạng thái:** bắt đầu Phase 0. `frontend/` mới là boilerplate React + Vite, chưa chỉnh theo thiết kế; `backend/` và `shared/` chưa có. Code được thêm theo [roadmap](docs/roadmap.md). Các lệnh trong phần [Chạy local](#chạy-local) mô tả cấu trúc dự kiến.
 
 ## Tính năng
 
@@ -20,7 +20,7 @@ Dự án nhỏ của 2 người, làm cho vui.
 
 | Lớp | Công nghệ |
 | --- | --- |
-| Frontend | Next.js, TypeScript, Tailwind CSS, PWA |
+| Frontend | React + Vite (SPA), TypeScript, Tailwind CSS, shadcn/ui, PWA |
 | Backend | NestJS (Node 22), Mongoose |
 | Dữ liệu | MongoDB 7, S3-compatible storage (Cloudflare R2 / MinIO) |
 | Đăng nhập | Google Identity Services, Facebook Login, JWT |
@@ -32,7 +32,7 @@ Dự án nhỏ của 2 người, làm cho vui.
 
 ```mermaid
 flowchart LR
-    web["Web / PWA<br/>Next.js :3000"] -->|"/api/v1 (rewrite)"| api["API<br/>NestJS :4000"]
+    web["Web / PWA<br/>React + Vite :5173"] -->|"/api/v1 (proxy / rewrite)"| api["API<br/>NestJS :4000"]
     api --> mongo[(MongoDB)]
     api --> s3[(Object storage)]
     api --> oauth["Google / Facebook"]
@@ -50,9 +50,9 @@ git clone <repo-url> palmsight && cd palmsight
 cp .env.example .env            # điền các key, xem chú thích trong file
 pnpm install
 docker compose up -d            # MongoDB (replica set) + MinIO
-pnpm --filter api db:sync-indexes
-pnpm dev                        # web :3000, api :4000
-ngrok http 3000 --url=<static-domain>.ngrok-free.app   # khi cần test đăng nhập / điện thoại
+pnpm --filter backend db:sync-indexes
+pnpm dev                        # frontend :5173, backend :4000
+ngrok http 5173 --url=<static-domain>.ngrok-free.app   # khi cần test đăng nhập / điện thoại
 ```
 
 Hướng dẫn đầy đủ, gồm cách tạo Google OAuth client và Facebook App: [docs/getting-started.md](docs/getting-started.md).
@@ -61,11 +61,9 @@ Hướng dẫn đầy đủ, gồm cách tạo Google OAuth client và Facebook 
 
 ```text
 palmsight/
-├─ apps/
-│  ├─ web/          # Next.js PWA
-│  └─ api/          # NestJS API + Mongoose
-├─ packages/
-│  └─ shared/       # DTO, enum, trường phái bói, zod schema dùng chung
+├─ frontend/        # SPA React + Vite, PWA
+├─ backend/         # NestJS API + Mongoose
+├─ shared/          # @palmsight/shared: DTO, enum, trường phái bói, zod schema dùng chung
 ├─ docs/            # tài liệu thiết kế
 ├─ .github/         # template issue / PR
 ├─ docker-compose.yml

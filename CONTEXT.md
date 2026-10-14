@@ -17,7 +17,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 
 ## Trạng thái hiện tại
 
-- Giai đoạn: **thiết kế xong, chưa có code** (cập nhật 2026-10-14).
+- Giai đoạn: **thiết kế xong, bắt đầu Phase 0** (cập nhật 2026-10-14).
+- `frontend/` mới là boilerplate React + Vite, **chưa** theo thiết kế: đăng nhập giả, token lưu `localStorage`, phân quyền role, trang mẫu. Danh sách giữ/bỏ ở [ADR-0007](docs/adr/0007-vite-spa-frontend.md). `backend/` và `shared/` chưa có.
 - Tài liệu thiết kế: `docs/` là nguồn duy nhất.
 - Việc tiếp theo: Phase 0 trong [docs/roadmap.md](docs/roadmap.md).
 
@@ -26,7 +27,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | # | Yêu cầu |
 | --- | --- |
 | 1 | Web app (PWA), không làm app native |
-| 2 | Stack: Next.js + NestJS + MongoDB |
+| 2 | Stack: React + Vite (SPA) + NestJS + MongoDB |
 | 3 | Đăng nhập Google / Facebook; cùng email thì gộp một tài khoản |
 | 4 | Tài khoản mới được 3 credits; credits không hết hạn; chưa bán credits |
 | 5 | Mỗi lần xem tốn 1 credit; AI lỗi hoặc ảnh không phải bàn tay thì hoàn credit (người dùng không mất credit) |
@@ -34,10 +35,10 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | 7 | Nhập mã bất cứ lúc nào, mỗi tài khoản một lần; mỗi chủ mã tối đa 10 lượt thưởng/ngày |
 | 8 | Không cần chống gian lận chặt (không kiểm tra thiết bị/IP), không cần trang admin |
 | 9 | Người dùng chọn 1 trong 3 trường phái, rồi tích các mục muốn bói (hoặc bói toàn bộ); kết quả chỉ gồm các mục đã chọn; chụp 1 tay |
-| 13 | Tên app: **PalmSight** |
 | 10 | AI dùng API key miễn phí của **Groq** |
 | 11 | Chỉ tiếng Việt; giữ ảnh 90 ngày |
 | 12 | Giữ ngrok cho dev; deploy ưu tiên gói miễn phí |
+| 13 | Tên app: **PalmSight** |
 
 ## Thuật ngữ
 
@@ -79,8 +80,9 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | [0002](docs/adr/0002-token-based-oauth.md) | Client lấy token từ SDK Google/Facebook, server tự xác minh; tự cấp JWT |
 | [0003](docs/adr/0003-groq-as-ai-provider.md) | Groq là nhà cung cấp AI chính, Gemini dự phòng, qua interface `AiProvider` |
 | [0004](docs/adr/0004-synchronous-readings.md) | `POST /readings` xử lý đồng bộ trong MVP |
-| [0005](docs/adr/0005-monorepo-nextjs-nestjs.md) | Monorepo pnpm: Next.js + NestJS + MongoDB (Mongoose), không Redis |
+| [0005](docs/adr/0005-monorepo-nextjs-nestjs.md) | pnpm workspaces, NestJS + MongoDB (Mongoose), không Redis. Phần Next.js đã bị ADR-0007 thay thế |
 | [0006](docs/adr/0006-reading-schools.md) | Trường phái bói, chọn mục bói; kết quả dạng `sections` chung |
+| [0007](docs/adr/0007-vite-spa-frontend.md) | Frontend là SPA React + Vite; repo `frontend/` · `backend/` · `shared/`; web và API chung một domain qua proxy/rewrite |
 
 ## Quy ước code
 
@@ -91,7 +93,11 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 - **MongoDB:**
   - Tên collection `snake_case` số nhiều (`credit_transactions`), tên field `camelCase`, thời gian kiểu `Date` UTC.
   - Index khai báo trong schema Mongoose.
-- Enum dùng chung (`CreditTransactionType`, `ReadingStatus`, `ReadingSchool`…) và `READING_SCHOOLS` định nghĩa một lần trong `packages/shared`.
+- Enum dùng chung (`CreditTransactionType`, `ReadingStatus`, `ReadingSchool`…) và `READING_SCHOOLS` định nghĩa một lần trong `shared/` (package `@palmsight/shared`).
+- **Frontend:**
+  - Access token chỉ giữ trong bộ nhớ, không lưu `localStorage`.
+  - Không đặt secret trong biến `VITE_*`, vì chúng được nhúng vào bundle.
+  - Form validate bằng zod schema.
 - Các hằng số nghiệp vụ (3, 2, 1, 10) đọc từ env, không hard-code.
 - Ngày (khi tính trần 10 lượt/ngày) tính theo giờ Việt Nam (`Asia/Ho_Chi_Minh`).
 - Văn bản hiển thị cho người dùng: tiếng Việt. Code, tên biến, commit message: tiếng Anh.

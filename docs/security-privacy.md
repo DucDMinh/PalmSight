@@ -32,7 +32,7 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 
 - **Google:** xác minh ID token phía server bằng thư viện chính thức, kiểm tra `aud` = `GOOGLE_CLIENT_ID`, `iss`, `exp`, `email_verified`.
 - **Facebook:** gọi `debug_token` với app access token để chắc token được cấp cho **đúng app này**, rồi gọi `/me?fields=id,name,email,picture`.
-- **Access token:** JWT 15 phút, giữ trong bộ nhớ trình duyệt (không lưu localStorage).
+- **Access token:** JWT 15 phút, giữ trong bộ nhớ trình duyệt (không lưu localStorage). Khi mở app hoặc tải lại trang, SPA gọi `/auth/refresh` để lấy access token mới từ cookie `rt`.
 - **Refresh token:**
   - Lưu trong cookie `HttpOnly; Secure; SameSite=Lax`; database chỉ lưu bản hash.
   - Xoay vòng mỗi lần dùng.
@@ -70,11 +70,12 @@ Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từn
 
 ## Hạ tầng
 
-- HTTPS bắt buộc. Các header bảo mật cần đặt:
+- HTTPS bắt buộc. Các header bảo mật cần đặt. Header của web khai báo trong `frontend/vercel.json`; header của API do NestJS đặt (ví dụ `helmet`):
   - `Strict-Transport-Security`
   - `Content-Security-Policy`, cho phép domain SDK của Google/Facebook
   - `X-Content-Type-Options: nosniff`
   - `Referrer-Policy: strict-origin-when-cross-origin`
 - Xác định loại ảnh bằng magic bytes, không tin header `Content-Type`; giải mã qua `sharp` với giới hạn số pixel.
-- Không đặt secret trong biến `NEXT_PUBLIC_*`.
+- Không đặt secret trong biến `VITE_*`: Vite nhúng chúng vào bundle trình duyệt lúc build.
+- Service worker của PWA không cache response của `/api/v1/*`.
 - MongoDB Atlas: Network Access chỉ mở cho IP của server nếu nền tảng cho IP cố định. Nếu không (gói free thường không có), dùng mật khẩu mạnh và user database chỉ có quyền trên database của app.

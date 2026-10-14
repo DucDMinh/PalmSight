@@ -4,14 +4,17 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 
 ## Phase 0 — Khung dự án
 
-- [ ] Monorepo pnpm: `apps/web`, `apps/api`, `packages/shared`
+- [ ] pnpm workspaces ở gốc repo: `frontend`, `backend`, `@palmsight/shared` ([ADR-0007](adr/0007-vite-spa-frontend.md))
+  - Đưa `frontend/` vào workspace: bỏ `pnpm-lock.yaml` riêng, đổi tên package thành `frontend`.
+  - Chuyển husky và `LICENSE` của boilerplate lên gốc, hoặc xoá.
+- [ ] Dọn boilerplate `frontend/` theo danh sách giữ/bỏ trong ADR-0007; sửa import sai chữ hoa/thường (`CommonIcons` → `commonIcons`)
 - [ ] ESLint, Prettier, TypeScript strict, Vitest
 - [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node) + MinIO
 - [ ] Schema Mongoose cho 5 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
-- [ ] Next.js rewrite `/api/v1/*` → API; `GET /api/v1/health`
+- [ ] Vite `server.proxy` `/api/v1/*` → API, `envDir: '..'`; `GET /api/v1/health`
 - [ ] GitHub Actions: lint, typecheck, test, build
 
-**Xong khi:** `pnpm dev` chạy được web + api, CI xanh.
+**Xong khi:** `pnpm dev` chạy được frontend + backend, CI xanh.
 
 ## Phase 1 — Đăng nhập + credits
 

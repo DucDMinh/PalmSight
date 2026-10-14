@@ -61,7 +61,7 @@
 | GET | `/readings/{id}` | Bearer | Chi tiết một lần xem |
 | DELETE | `/readings/{id}` | Bearer | Xoá ảnh và kết quả |
 
-Danh sách trường phái và các mục bói không có endpoint riêng: web đọc từ `packages/shared` (`READING_SCHOOLS`, `LIFE_ASPECTS`).
+Danh sách trường phái và các mục bói không có endpoint riêng: web đọc từ `@palmsight/shared` (`READING_SCHOOLS`, `LIFE_ASPECTS`).
 
 ### POST /auth/google · POST /auth/facebook
 

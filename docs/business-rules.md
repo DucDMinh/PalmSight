@@ -27,7 +27,7 @@ Mọi thay đổi credits đều ghi một document vào sổ cái `credit_trans
 - MVP **không bán** credits.
 - Mỗi lần xem tốn đúng 1 credit, dù chọn trường phái nào và dù bói 1 mục hay toàn bộ.
 - Đăng nhập Google và Facebook cùng email đã xác minh → **gộp thành một tài khoản**, chỉ nhận `SIGNUP_BONUS` một lần.
-- Chỉnh credits tay: `pnpm --filter api credits:adjust --user <id> --amount <n> --note "<lý do>"`, script này cũng đi qua `CreditLedgerService`.
+- Chỉnh credits tay: `pnpm --filter backend credits:adjust --user <id> --amount <n> --note "<lý do>"`, script này cũng đi qua `CreditLedgerService`.
 
 **Mã giới thiệu**: 8 ký tự in hoa, bảng chữ bỏ ký tự dễ nhầm (`0 O 1 I L`), sinh ngẫu nhiên khi tạo user, unique. Link chia sẻ `https://<domain>/r/<CODE>` lưu mã vào cookie `ref_code` (7 ngày); sau khi đăng nhập, ô nhập mã được điền sẵn và người dùng bấm xác nhận. Người dùng có thể nhập mã **bất cứ lúc nào**, nhưng chỉ **một lần**.
 

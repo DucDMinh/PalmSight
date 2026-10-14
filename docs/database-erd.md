@@ -181,4 +181,4 @@ Index:
 
 ## Quản lý index
 
-MongoDB không có migration schema như SQL. Index và validator được khai báo trong schema Mongoose và tạo bằng script `pnpm --filter api db:sync-indexes`, chạy mỗi lần deploy. Không bật `autoIndex` ở production.
+MongoDB không có migration schema như SQL. Index và validator được khai báo trong schema Mongoose và tạo bằng script `pnpm --filter backend db:sync-indexes`, chạy mỗi lần deploy. Không bật `autoIndex` ở production.

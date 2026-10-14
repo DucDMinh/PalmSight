@@ -34,7 +34,7 @@ docs(api): document REFERRAL_CYCLE error
 | `test` | Thêm/sửa test |
 | `chore` | Build, dependency, cấu hình |
 
-`scope` gợi ý: `web`, `api`, `auth`, `credits`, `referrals`, `readings`, `ai`, `db`, `shared`.
+`scope` gợi ý: `frontend`, `backend`, `auth`, `credits`, `referrals`, `readings`, `ai`, `db`, `shared`.
 
 ## Pull request
 
@@ -47,15 +47,15 @@ docs(api): document REFERRAL_CYCLE error
 ## Code style
 
 - TypeScript strict, ESLint + Prettier (chạy `pnpm lint --fix`).
-- Validate mọi input từ ngoài bằng zod; schema dùng chung đặt ở `packages/shared`.
+- Validate mọi input từ ngoài bằng zod; schema dùng chung đặt ở `shared/`.
 - Không hard-code hằng số nghiệp vụ; đọc từ config.
 - Text hiển thị cho người dùng bằng tiếng Việt; code, log, commit bằng tiếng Anh.
 
 ## Thay đổi schema MongoDB
 
-- Khai báo field, index, validator trong schema Mongoose, rồi chạy `pnpm --filter api db:sync-indexes`.
+- Khai báo field, index, validator trong schema Mongoose, rồi chạy `pnpm --filter backend db:sync-indexes`.
 - Field mới phải có giá trị mặc định hoặc cho phép thiếu, để document cũ vẫn đọc được.
-- Đổi tên hoặc đổi kiểu field đã có dữ liệu: viết script chuyển dữ liệu trong `apps/api/scripts/` và ghi vào PR.
+- Đổi tên hoặc đổi kiểu field đã có dữ liệu: viết script chuyển dữ liệu trong `backend/scripts/` và ghi vào PR.
 - Không đổi `key` của trường phái hoặc `section` đã dùng: kết quả cũ trong database đang lưu theo `key` đó.
 
 ## Test

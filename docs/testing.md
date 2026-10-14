@@ -64,7 +64,7 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 
 ## Đánh giá AI
 
-Bộ ảnh mẫu đặt trong `apps/api/test/fixtures/palms/`. Chỉ dùng ảnh tay của thành viên dự án hoặc ảnh có quyền sử dụng; repo công khai nên không đưa ảnh người khác vào. Bộ mẫu gồm:
+Bộ ảnh mẫu đặt trong `backend/test/fixtures/palms/`. Chỉ dùng ảnh tay của thành viên dự án hoặc ảnh có quyền sử dụng; repo công khai nên không đưa ảnh người khác vào. Bộ mẫu gồm:
 
 - Tay trái, tay phải.
 - Ảnh tối, ảnh mờ.

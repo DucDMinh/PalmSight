@@ -39,7 +39,7 @@ flowchart LR
 
 ### `/scan`
 
-Bước 1 — **Chọn trường phái**: 3 thẻ, mỗi thẻ có tên, một câu mô tả và các mục sẽ được bói. Nội dung lấy từ `READING_SCHOOLS` trong `packages/shared`; app nhớ lựa chọn lần trước.
+Bước 1 — **Chọn trường phái**: 3 thẻ, mỗi thẻ có tên, một câu mô tả và các mục sẽ được bói. Nội dung lấy từ `READING_SCHOOLS` trong `@palmsight/shared`; app nhớ lựa chọn lần trước.
 
 | Trường phái | Mô tả ngắn trên thẻ |
 | --- | --- |

@@ -1,6 +1,6 @@
 # ADR-0005: Monorepo Next.js + NestJS + MongoDB
 
-- Trạng thái: Accepted
+- Trạng thái: Superseded by [ADR-0007](0007-vite-spa-frontend.md) (một phần: web Next.js và cấu trúc thư mục; NestJS, MongoDB, pnpm workspaces, không Redis vẫn giữ)
 - Ngày: 2026-10-14
 
 ## Bối cảnh

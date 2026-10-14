@@ -43,8 +43,8 @@ Kết quả bói mang tính giải trí; ứng dụng phải hiển thị câu m
 
 ```mermaid
 flowchart TB
-    client["Web / PWA (Next.js)<br/>camera · Google GIS · Facebook SDK"]
-    ngrok["ngrok tunnel HTTPS<br/>chỉ khi dev; prod dùng domain riêng"]
+    client["Web / PWA (SPA React + Vite)<br/>camera · Google GIS · Facebook SDK"]
+    ngrok["Cùng một domain HTTPS<br/>dev: ngrok → Vite proxy · prod: Vercel rewrite"]
     subgraph api["API — NestJS (Node 22)"]
         direction LR
         auth[auth] ~~~ users[users] ~~~ referrals[referrals]
@@ -73,7 +73,7 @@ Client chỉ gọi API của chính dự án. API key AI, chuỗi kết nối da
 
 | Lớp | Công nghệ | Lý do |
 | --- | --- | --- |
-| Frontend | Next.js + TypeScript + Tailwind, PWA | Chạy tốt trên điện thoại, cài ra màn hình chính, không cần app store |
+| Frontend | SPA React + Vite + TypeScript + Tailwind + shadcn/ui; React Router, TanStack Query; PWA (`vite-plugin-pwa`) | Mọi dữ liệu lấy từ API nên không cần SSR; build ra file tĩnh; cài ra màn hình chính, không cần app store. Xem [ADR-0007](adr/0007-vite-spa-frontend.md) |
 | Chụp ảnh | `getUserMedia` + khung căn tay; fallback `<input type="file" accept="image/*" capture="environment">` | Fallback cho trình duyệt chặn camera |
 | Backend | NestJS (Node 22) + Mongoose (`@nestjs/mongoose`) | API tách biệt, cấu trúc module rõ ràng |
 | Database | MongoDB 7 (replica set) | Lựa chọn của team; transaction nhiều document cho sổ cái credits |
@@ -86,25 +86,30 @@ Client chỉ gọi API của chính dự án. API key AI, chuỗi kết nối da
 
 ```text
 palmsight/
-├─ apps/
-│  ├─ web/                    # Next.js PWA
-│  │  └─ src/
-│  │     ├─ app/              # (auth)/login, scan, readings/[id], referral, wallet
-│  │     ├─ components/       # SchoolPicker, CameraCapture, CreditBadge, ReadingCard...
-│  │     └─ lib/api-client.ts # gọi /api/v1, tự refresh token
-│  └─ api/                    # NestJS
-│     ├─ scripts/             # db:sync-indexes, credits:adjust, credits:reconcile
-│     └─ src/
-│        ├─ auth/             # google.verifier, facebook.verifier, jwt
-│        ├─ users/            # schema users (+ identities nhúng)
-│        ├─ credits/          # CreditLedgerService (mọi cộng/trừ đi qua đây)
-│        ├─ referrals/
-│        ├─ readings/
-│        ├─ ai/               # AiProvider, groq.provider, gemini.provider, prompts/
-│        └─ storage/
-├─ packages/
-│  └─ shared/                 # DTO, enum, READING_SCHOOLS, zod schema PalmResult dùng chung
+├─ frontend/                  # SPA React + Vite, PWA
+│  ├─ public/                 # icon PWA; privacy.html, terms.html, data-deletion.html (HTML tĩnh)
+│  ├─ vercel.json             # rewrite /api/v1 → Render, SPA fallback, header bảo mật
+│  ├─ vite.config.ts          # proxy /api/v1 khi dev, vite-plugin-pwa, envDir: '..'
+│  └─ src/
+│     ├─ pages/               # Landing, Login, Scan, ReadingDetail, Readings, Wallet, Referral, Account...
+│     ├─ components/          # ui/ (shadcn), SchoolPicker, CameraCapture, CreditBadge, ReadingCard...
+│     ├─ layouts/             # layout mobile, thanh tab dưới
+│     ├─ providers/           # AuthProvider: access token trong bộ nhớ, tự refresh
+│     ├─ services/            # apiClient: gọi /api/v1, gắn Bearer token
+│     └─ consts/              # route, query key
+├─ backend/                   # NestJS
+│  ├─ scripts/                # db:sync-indexes, credits:adjust, credits:reconcile
+│  └─ src/
+│     ├─ auth/                # google.verifier, facebook.verifier, jwt
+│     ├─ users/               # schema users (+ identities nhúng)
+│     ├─ credits/             # CreditLedgerService (mọi cộng/trừ đi qua đây)
+│     ├─ referrals/
+│     ├─ readings/
+│     ├─ ai/                  # AiProvider, groq.provider, gemini.provider, prompts/
+│     └─ storage/
+├─ shared/                    # @palmsight/shared: DTO, enum, READING_SCHOOLS, zod schema PalmResult dùng chung
 ├─ docs/
+├─ pnpm-workspace.yaml        # frontend, backend, shared
 └─ docker-compose.yml
 ```
 

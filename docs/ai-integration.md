@@ -60,7 +60,7 @@ Sau khi chọn trường phái, người dùng tích các **mục** muốn bói,
 | Giá | Luôn 1 credit, dù chọn 1 mục hay toàn bộ |
 | Lưu trữ | `readings.topics` lưu danh sách mục **sau khi** đã điền đủ, theo thứ tự chuẩn của trường phái |
 
-Danh sách trường phái, tên hiển thị, mô tả ngắn, các mục riêng (key, tên hiển thị, thứ tự) và 6 khía cạnh được định nghĩa một lần trong `packages/shared`, ở hai hằng số `READING_SCHOOLS` và `LIFE_ASPECTS`. Web dùng chúng để vẽ màn chọn; API dùng để kiểm tra request và kết quả AI.
+Danh sách trường phái, tên hiển thị, mô tả ngắn, các mục riêng (key, tên hiển thị, thứ tự) và 6 khía cạnh được định nghĩa một lần trong `shared/` (`@palmsight/shared`), ở hai hằng số `READING_SCHOOLS` và `LIFE_ASPECTS`. Web dùng chúng để vẽ màn chọn; API dùng để kiểm tra request và kết quả AI.
 
 ## Prompt
 
