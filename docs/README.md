@@ -1,0 +1,111 @@
+# PalmSight — Tài liệu dự án
+
+Cập nhật: 2026-10-14
+
+Bối cảnh và quy tắc bất biến: [../CONTEXT.md](../CONTEXT.md). Giới thiệu repo: [../README.md](../README.md).
+
+| File | Nội dung |
+| --- | --- |
+| [business-rules.md](business-rules.md) | Quy tắc credits và mã giới thiệu |
+| [workflow.md](workflow.md) | Luồng đăng nhập, nhập mã giới thiệu, xem bói |
+| [database-erd.md](database-erd.md) | Sơ đồ quan hệ và đặc tả collection MongoDB |
+| [api-contract.md](api-contract.md) | Quy ước API, mã lỗi, request/response từng endpoint |
+| [ai-integration.md](ai-integration.md) | Groq, các trường phái bói, chọn mục bói, prompt, schema kết quả |
+| [screens.md](screens.md) | Màn hình, điều hướng, trạng thái UI |
+| [security-privacy.md](security-privacy.md) | Bảo mật, quyền riêng tư ảnh |
+| [testing.md](testing.md) | Chiến lược và ca kiểm thử bắt buộc |
+| [getting-started.md](getting-started.md) | Cài đặt và chạy local, cấu hình OAuth, ngrok, Groq |
+| [deployment.md](deployment.md) | Triển khai bằng các gói miễn phí |
+| [roadmap.md](roadmap.md) | Kế hoạch theo giai đoạn |
+| [adr/](adr/README.md) | Các quyết định kiến trúc |
+
+## Tổng quan
+
+PalmSight là web app cho người dùng chọn 1 trong 3 trường phái bói (phương Tây, phương Đông, Ấn Độ), tích các mục muốn bói (hoặc bói toàn bộ), chụp ảnh lòng bàn tay và nhận một bài bói chỉ tay do AI viết. Mỗi lần xem trừ 1 credit. Người dùng đăng nhập bằng Google hoặc Facebook, nhận 3 credits khi tạo tài khoản, và được thêm 2 credits mỗi khi có người nhập mã giới thiệu của mình.
+
+Đây là dự án nhỏ của 2 người, làm cho vui; thiết kế ưu tiên đơn giản và các gói miễn phí.
+
+**Trong phạm vi MVP**
+
+- Đăng nhập Google và Facebook (không có đăng ký bằng email/mật khẩu).
+- Ví credits: tặng khi đăng ký, thưởng giới thiệu, trừ khi xem, hoàn khi AI lỗi hoặc ảnh không phải bàn tay.
+- Mã giới thiệu riêng cho mỗi tài khoản; nhập mã bất cứ lúc nào, một lần.
+- Chọn trường phái bói, tích các mục muốn bói hoặc bói toàn bộ, chụp 1 tay bằng camera điện thoại hoặc tải ảnh lên.
+- Lịch sử các lần xem và lịch sử biến động credits.
+
+**Ngoài phạm vi MVP**
+
+- Bán credits, app native iOS/Android, ngôn ngữ khác ngoài tiếng Việt, trang admin, cơ chế chống gian lận nâng cao.
+
+Kết quả bói mang tính giải trí; ứng dụng phải hiển thị câu miễn trừ này ở mọi trang kết quả.
+
+## Kiến trúc hệ thống
+
+```mermaid
+flowchart TB
+    client["Web / PWA (Next.js)<br/>camera · Google GIS · Facebook SDK"]
+    ngrok["ngrok tunnel HTTPS<br/>chỉ khi dev; prod dùng domain riêng"]
+    subgraph api["API — NestJS (Node 22)"]
+        direction LR
+        auth[auth] ~~~ users[users] ~~~ referrals[referrals]
+        readings[readings] ~~~ credits["credits<br/>(CreditLedgerService)"] ~~~ ai[ai] ~~~ storage[storage]
+    end
+    oauth["Google / Facebook<br/>xác minh token"]
+    groq["Groq<br/>AI vision chính"]
+    gemini["Gemini<br/>AI dự phòng"]
+    mongo[("MongoDB<br/>Atlas M0 / replica set local")]
+    r2[("Object storage<br/>ảnh, signed URL")]
+
+    client --> ngrok -->|"REST /api/v1 · Bearer JWT"| api
+    api --> oauth
+    api --> groq
+    api --> gemini
+    api --> mongo
+    api --> r2
+
+    classDef accent stroke:#2f6fde,stroke-width:2px
+    class credits accent
+```
+
+Client chỉ gọi API của chính dự án. API key AI, chuỗi kết nối database và thông tin storage chỉ nằm trên server. Mọi cộng/trừ credits đi qua module `credits` (`CreditLedgerService`), trong cùng MongoDB transaction với nghiệp vụ gây ra nó.
+
+## Tech stack và cấu trúc thư mục
+
+| Lớp | Công nghệ | Lý do |
+| --- | --- | --- |
+| Frontend | Next.js + TypeScript + Tailwind, PWA | Chạy tốt trên điện thoại, cài ra màn hình chính, không cần app store |
+| Chụp ảnh | `getUserMedia` + khung căn tay; fallback `<input type="file" accept="image/*" capture="environment">` | Fallback cho trình duyệt chặn camera |
+| Backend | NestJS (Node 22) + Mongoose (`@nestjs/mongoose`) | API tách biệt, cấu trúc module rõ ràng |
+| Database | MongoDB 7 (replica set) | Lựa chọn của team; transaction nhiều document cho sổ cái credits |
+| Rate limit | `@nestjs/throttler`, lưu trong bộ nhớ | Chỉ chạy 1 instance API, không cần Redis |
+| Lưu ảnh | S3-compatible (Cloudflare R2; MinIO khi dev) | Bucket private, truy cập qua signed URL; tự xoá ảnh cũ bằng lifecycle rule |
+| Xử lý ảnh | `sharp` | Resize, xoay EXIF, xoá metadata |
+| Đăng nhập | Google Identity Services, Facebook Login SDK, JWT tự cấp | Server tự xác minh token của provider |
+| AI | Groq (free key), fallback Gemini | Xem [ai-integration.md](ai-integration.md) |
+| Dev | Docker Compose (mongo, minio) + ngrok | HTTPS công khai cho OAuth và test trên điện thoại |
+
+```text
+palmsight/
+├─ apps/
+│  ├─ web/                    # Next.js PWA
+│  │  └─ src/
+│  │     ├─ app/              # (auth)/login, scan, readings/[id], referral, wallet
+│  │     ├─ components/       # SchoolPicker, CameraCapture, CreditBadge, ReadingCard...
+│  │     └─ lib/api-client.ts # gọi /api/v1, tự refresh token
+│  └─ api/                    # NestJS
+│     ├─ scripts/             # db:sync-indexes, credits:adjust, credits:reconcile
+│     └─ src/
+│        ├─ auth/             # google.verifier, facebook.verifier, jwt
+│        ├─ users/            # schema users (+ identities nhúng)
+│        ├─ credits/          # CreditLedgerService (mọi cộng/trừ đi qua đây)
+│        ├─ referrals/
+│        ├─ readings/
+│        ├─ ai/               # AiProvider, groq.provider, gemini.provider, prompts/
+│        └─ storage/
+├─ packages/
+│  └─ shared/                 # DTO, enum, READING_SCHOOLS, zod schema PalmResult dùng chung
+├─ docs/
+└─ docker-compose.yml
+```
+
+Nguyên tắc: chỉ `CreditLedgerService` được ghi `credit_transactions` và `users.creditBalance`; module khác gọi qua nó trong cùng transaction.
