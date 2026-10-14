@@ -22,7 +22,13 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] Xem bói thành công: số dư −1, có `READING_SPEND`, `balanceAfter` đúng.
 - [ ] Số dư 0 → `402`, không tạo reading.
 - [ ] **20 request `POST /readings` song song khi số dư 1 → đúng 1 thành công.**
-- [ ] Gửi lại cùng `Idempotency-Key` → trả reading cũ, không trừ thêm.
+- [ ] Gửi lại cùng `Idempotency-Key`:
+  - reading cũ `DONE`/`REJECTED` → `200` + `Idempotent-Replayed: true`;
+  - reading cũ `FAILED` → `503` với cùng `details`;
+  - reading cũ `PROCESSING` → `409 READING_IN_PROGRESS`.
+
+  Không trường hợp nào trừ thêm credit; body khác lần đầu vẫn bị bỏ qua.
+- [ ] Sau `503 AI_UNAVAILABLE`, gửi key mới → tạo reading mới, trừ 1 credit mới.
 - [ ] AI timeout / 5xx / sai schema 2 lần → `FAILED`, hoàn 1 credit, đúng 1 document `READING_REFUND`.
 - [ ] `isPalm = false` → `REJECTED`, hoàn 1 credit.
 - [ ] Dọn reading kẹt `PROCESSING` hoàn credit đúng 1 lần, kể cả khi hai lần dọn chạy chồng nhau.
@@ -45,12 +51,24 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] `topics` có mục của trường phái khác (ví dụ `nguHanh` với `WESTERN`) hoặc key lạ → `400 VALIDATION_ERROR`, không trừ credit.
 - [ ] Kết quả AI thiếu mục được chọn, hoặc thừa mục không được chọn → coi là sai schema (gọi lại, rồi `FAILED` + hoàn).
 - [ ] `result.school` khác `school` trong request → sai schema.
+- [ ] Thiếu `hand`, hoặc `hand` không phải `LEFT`/`RIGHT` → `400`. AI trả `hand` khác → `result.hand` vẫn là giá trị người dùng chọn.
+- [ ] Thiếu `aiConsent` hoặc khác `true` → `400`, không trừ credit.
+- [ ] Multipart có part lạ hoặc 2 file → `400`, không trừ credit.
+
+### Xoá reading
+
+- [ ] `DELETE /readings/{id}` → `204`; ảnh bị xoá khỏi storage; reading biến mất khỏi `GET /readings`; `GET`/`DELETE` lần sau trả `404`.
+- [ ] Xoá reading đang `PROCESSING` → `409 READING_IN_PROGRESS`.
+- [ ] Xoá reading không hoàn credit; giao dịch `READING_SPEND` vẫn còn trong lịch sử credits.
 
 ### Auth
 
 - [ ] Google ID token sai `aud` / hết hạn → `401 OAUTH_INVALID_TOKEN`.
 - [ ] Facebook token của app khác → `401`.
 - [ ] Refresh token dùng lại sau khi đã xoay → thu hồi mọi phiên.
+- [ ] `/auth/refresh` với `Origin` lạ → `403 ORIGIN_NOT_ALLOWED`.
+- [ ] Mã giới thiệu viết thường hoặc có khoảng trắng hai đầu vẫn được chấp nhận; mã sai định dạng → `404 REFERRAL_CODE_NOT_FOUND`.
+- [ ] Xoá tài khoản rồi đăng nhập lại cùng Google → user mới, `isNewUser = true`, có 3 credits.
 - [ ] User A không đọc/xoá được reading của user B: trả `404` chứ không phải `403`, để không lộ là reading đó có tồn tại.
 
 ### Ảnh

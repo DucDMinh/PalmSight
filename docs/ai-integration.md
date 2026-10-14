@@ -11,7 +11,7 @@ AI bói toán dùng **Groq** với API key miễn phí, theo yêu cầu dự án
 
 ngrok xuất hiện trong tài liệu chỉ là công cụ dev, không liên quan tới AI: nó mở server local ra HTTPS để test Facebook Login và camera điện thoại (`getUserMedia` chỉ chạy trên HTTPS).
 
-Backend chỉ phụ thuộc interface `AiProvider.readPalm(image, { school, hand }) → PalmResult`; đổi nhà cung cấp bằng biến môi trường, không sửa code nghiệp vụ. API key chỉ nằm trên server, không bao giờ gửi xuống client.
+Backend chỉ phụ thuộc interface `AiProvider.readPalm(image, { school, topics, hand }) → PalmResult`; đổi nhà cung cấp bằng biến môi trường, không sửa code nghiệp vụ. API key chỉ nằm trên server, không bao giờ gửi xuống client.
 
 **Biến môi trường**
 
@@ -110,7 +110,7 @@ planetMounts nhận xét các gò theo hành tinh (Mặt Trời, Mặt Trăng, S
 Sao Mộc, Sao Kim, Sao Thổ, Rahu, Ketu). specialSigns chỉ nêu dấu hiệu thật sự nhìn thấy.
 ```
 
-**User message**: ảnh (data URL) + text `Trường phái: {school}. Tay: {hand | "không rõ"}. Mục cần bói: {topics, cách nhau bởi dấu phẩy}. Schema: {JSON schema bên dưới}`.
+**User message**: ảnh (data URL) + text `Trường phái: {school}. Tay: {hand, "trái" | "phải"}. Mục cần bói: {topics, cách nhau bởi dấu phẩy}. Schema: {JSON schema bên dưới}`.
 
 Phần prompt riêng của trường phái mô tả mọi mục có thể có. Danh sách "Mục cần bói" quyết định mục nào thực sự được trả về, nên chọn ít mục thì kết quả ngắn hơn và tốn ít token hơn.
 
@@ -143,7 +143,7 @@ Lưu nguyên vào `readings.result`. Ví dụ với trường phái phương Đ�
 | --- | --- | --- |
 | `isPalm` | boolean | bắt buộc; `false` → reading `REJECTED`, hoàn credit |
 | `school` | `WESTERN` \| `EASTERN` \| `VEDIC` | phải trùng trường phái trong request |
-| `hand` | `LEFT` \| `RIGHT` \| `UNKNOWN` | |
+| `hand` | `LEFT` \| `RIGHT` | server tự gắn bằng `hand` người dùng chọn trong request, không lấy từ AI |
 | `imageQuality` | `GOOD` \| `FAIR` \| `POOR` | `POOR` vẫn trả kết quả, UI gợi ý chụp lại |
 | `topics` | string[] | trùng `readings.topics` (server tự gắn, không lấy từ AI) |
 | `sections` | array | đúng các mục riêng **được chọn**, đúng thứ tự chuẩn; mảng rỗng nếu không chọn mục riêng nào |

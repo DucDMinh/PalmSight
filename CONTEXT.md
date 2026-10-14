@@ -55,7 +55,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Mục bói (`topic`) | Một thứ người dùng tích để bói: mục riêng của trường phái hoặc một khía cạnh cuộc sống. |
 | Section | Mục riêng của trường phái (ví dụ `nguHanh`, `heartLine`), trả về trong `result.sections`. |
 | Aspect | Khía cạnh cuộc sống dùng chung (`personality`, `love`, `career`, `finance`, `health`, `family`), định nghĩa trong `LIFE_ASPECTS`. |
-| Idempotency-Key | UUID client gửi kèm `POST /readings` để gửi lại không bị trừ credit hai lần. |
+| Idempotency-Key | UUID v4 client gửi trong header của `POST /readings`. Chỉ dùng lại khi không nhận được response, để gửi lại không bị trừ credit hai lần. |
 | Identity | Một cách đăng nhập (Google hoặc Facebook), nhúng trong document user. |
 | `PalmResult` | JSON kết quả AI trả về, lưu trong `readings.result`. |
 

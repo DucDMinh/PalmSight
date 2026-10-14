@@ -27,6 +27,7 @@ Mọi thay đổi credits đều ghi một document vào sổ cái `credit_trans
 - MVP **không bán** credits.
 - Mỗi lần xem tốn đúng 1 credit, dù chọn trường phái nào và dù bói 1 mục hay toàn bộ.
 - Đăng nhập Google và Facebook cùng email đã xác minh → **gộp thành một tài khoản**, chỉ nhận `SIGNUP_BONUS` một lần.
+- Xoá tài khoản (`DELETE /me`) xoá luôn identity. Đăng nhập lại bằng cùng Google/Facebook sẽ tạo **tài khoản mới**: nhận lại `SIGNUP_BONUS` và được nhập mã giới thiệu thêm một lần. Hành vi này được **chấp nhận**, đúng tinh thần không chống gian lận chặt. Số lần lạm dụng bị giới hạn bởi trần 10 lượt thưởng/ngày của chủ mã.
 - Chỉnh credits tay: `pnpm --filter backend credits:adjust --user <id> --amount <n> --note "<lý do>"`, script này cũng đi qua `CreditLedgerService`.
 
 **Mã giới thiệu**: 8 ký tự in hoa, bảng chữ bỏ ký tự dễ nhầm (`0 O 1 I L`), sinh ngẫu nhiên khi tạo user, unique. Link chia sẻ `https://<domain>/r/<CODE>` lưu mã vào cookie `ref_code` (7 ngày); sau khi đăng nhập, ô nhập mã được điền sẵn và người dùng bấm xác nhận. Người dùng có thể nhập mã **bất cứ lúc nào**, nhưng chỉ **một lần**.
@@ -56,5 +57,9 @@ Trần 10 lượt/ngày là trần mềm: hai lượt nhập đúng cùng lúc c
   - Nếu `modifiedCount = 0` → trả `INSUFFICIENT_CREDITS` (402).
   - Collection `users` có thêm validator `creditBalance: { minimum: 0 }`.
 - Unique index chặn cộng/hoàn trùng: `SIGNUP_BONUS` theo user, `(readingId, type)`, `referralId`. Chi tiết ở [database-erd.md](database-erd.md).
-- `POST /readings` bắt buộc header `Idempotency-Key`; gửi lại cùng key trả lại reading cũ, không trừ thêm credit.
+- `POST /readings` bắt buộc header `Idempotency-Key`. Gửi lại cùng key không bao giờ trừ thêm credit:
+  - reading cũ đang `PROCESSING` → `409 READING_IN_PROGRESS`;
+  - reading cũ đã xong → trả lại kết quả cũ.
+
+  Chi tiết ở [api-contract.md](api-contract.md#post-readings).
 - Tổng `amount` trong `credit_transactions` của một user phải luôn bằng `users.creditBalance`; script `credits:reconcile` kiểm tra điều này.

@@ -82,12 +82,14 @@ Bước 4 — **Chụp ảnh**:
 | Chưa cấp quyền camera | Giải thích vì sao cần camera + nút cấp quyền + nút "Chọn ảnh có sẵn" |
 | Camera bị từ chối / không hỗ trợ | Chỉ còn nút chọn ảnh (`<input capture="environment">`) |
 | Sẵn sàng | Khung viền hình bàn tay, gợi ý "Đủ sáng, xoè tay, lòng bàn tay hướng vào camera" |
-| Đã chụp | Xem lại ảnh, nút **Chụp lại** / **Xem bói (−1 credit)**, checkbox đồng ý gửi ảnh cho AI |
+| Đã chụp | Xem lại ảnh, nút **Chụp lại** / **Xem bói (−1 credit)**, checkbox đồng ý gửi ảnh cho AI. Chưa tích checkbox thì nút gửi bị khoá; tích rồi thì gửi `aiConsent=true` |
 | Đang phân tích | Hoạt ảnh chờ, câu "Đang đọc đường chỉ tay…", khoá nút gửi; có thể mất tới ~40 giây |
 | Hết credits (0) | Nút gửi bị khoá; banner "Mời bạn bè nhập mã của bạn để nhận 2 credits" dẫn tới `/referral` |
 | `402` từ server | Như trên, đồng bộ lại số dư |
 | `REJECTED` | "Không nhìn rõ lòng bàn tay" + `rejectReason` + "Đã hoàn 1 credit" + nút chụp lại |
-| `AI_UNAVAILABLE` | "Hệ thống bận, đã hoàn 1 credit. Thử lại sau ít phút." |
+| `AI_UNAVAILABLE` | "Hệ thống bận, đã hoàn 1 credit. Thử lại sau ít phút." Nút thử lại tạo lần xem mới, với `Idempotency-Key` mới |
+| Mất mạng / hết 60 giây chưa có response | "Mất kết nối" + nút thử lại; thử lại dùng **cùng** `Idempotency-Key` |
+| `409 READING_IN_PROGRESS` | Giữ màn "Đang phân tích", gọi `GET /readings/{readingId}` mỗi 3 giây cho tới khi xong, rồi hiện kết quả như bình thường |
 
 ### `/readings/:id`
 
@@ -100,7 +102,7 @@ Thứ tự khối:
 5. Lời khuyên.
 6. **Câu miễn trừ.**
 7. Nút "Bói thêm mục khác / trường phái khác (−1 credit)": mở lại bước chọn, dùng lại ảnh vừa chụp nếu còn trên máy.
-8. Nút chia sẻ (chỉ phần chữ, không kèm ảnh tay) và nút xoá.
+8. Nút chia sẻ (chỉ phần chữ, không kèm ảnh tay) và nút xoá. Bấm xoá → hộp xác nhận → `DELETE /readings/{id}` → quay về `/readings`. Reading đã xoá biến mất khỏi lịch sử và không mở lại được.
 
 UI vẽ `sections` theo cách chung: tiêu đề + quan sát + ý nghĩa. Vì vậy thêm trường phái mới không cần sửa màn hình này.
 
@@ -124,6 +126,6 @@ Màn này mở được bất cứ lúc nào từ `/account`, miễn là `GET /m
 
 - Số credits cập nhật ngay từ `creditBalance` trong response, không đợi tải lại.
 - Mọi thao tác trừ credit hiện rõ "−1 credit" trên nút.
-- Mọi lỗi mạng: thông báo tiếng Việt, có nút thử lại; khi thử lại `POST /readings` dùng **cùng** `Idempotency-Key`.
+- Mọi lỗi mạng: thông báo tiếng Việt, có nút thử lại. Với `POST /readings`: chỉ dùng **cùng** `Idempotency-Key` khi không nhận được response; đã nhận response thì lần sau dùng key mới.
 - Lần đầu mở app sau khi server miễn phí ngủ có thể chậm 30–60 giây: hiện màn chờ "Đang đánh thức máy chủ…" thay vì báo lỗi.
 - Văn phong: thân thiện, ngắn gọn, xưng "bạn".

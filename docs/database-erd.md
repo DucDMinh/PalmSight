@@ -57,6 +57,7 @@ erDiagram
         string status
         string imageKey
         object result
+        Date deletedAt
     }
     credit_transactions {
         ObjectId _id PK
@@ -139,10 +140,10 @@ Index:
 | --- | --- | --- | --- |
 | `_id` | ObjectId | | |
 | `userId` | ObjectId | bắt buộc, ref `users` | |
-| `idempotencyKey` | string | bắt buộc, ≤ 64 ký tự | |
+| `idempotencyKey` | string | bắt buộc, UUID v4 (36 ký tự) | Header `Idempotency-Key` của `POST /readings` |
 | `school` | `WESTERN` \| `EASTERN` \| `VEDIC` | bắt buộc | Trường phái người dùng chọn, xem [ai-integration.md](ai-integration.md) |
 | `topics` | string[] | bắt buộc, ≥ 1 phần tử | Các mục được bói (đã điền đủ khi người dùng chọn "Bói toàn bộ"), theo thứ tự chuẩn của trường phái |
-| `hand` | `LEFT` \| `RIGHT` \| `UNKNOWN` | | Người dùng chọn hoặc AI nhận diện |
+| `hand` | `LEFT` \| `RIGHT` | bắt buộc | Người dùng chọn; AI không được đổi |
 | `status` | `PROCESSING` \| `DONE` \| `FAILED` \| `REJECTED` | bắt buộc | `REJECTED` = ảnh không phải lòng bàn tay |
 | `imageKey` | string \| null | | Key trong object storage; `null` sau khi ảnh bị xoá |
 | `result` | object \| null | | `PalmResult`, theo schema ở [ai-integration.md](ai-integration.md) |
@@ -151,10 +152,11 @@ Index:
 | `errorCode` | string \| null | | |
 | `latencyMs` | int \| null | | |
 | `createdAt`, `completedAt` | Date | | |
+| `deletedAt` | Date \| null | | Người dùng xoá reading: ẩn khỏi API. Document được giữ vì sổ cái tham chiếu tới nó; `result` và `imageKey` về `null` |
 
 Index:
-- `{ userId: 1, idempotencyKey: 1 }` unique.
-- `{ userId: 1, createdAt: -1 }`: trang lịch sử.
+- `{ userId: 1, idempotencyKey: 1 }` unique. Reading đã xoá vẫn giữ key, nên gửi lại key đó trả `404`.
+- `{ userId: 1, createdAt: -1 }`: trang lịch sử; truy vấn luôn lọc `deletedAt: null`.
 - `{ status: 1, createdAt: 1 }`: tìm reading kẹt ở `PROCESSING`.
 
 ### credit_transactions

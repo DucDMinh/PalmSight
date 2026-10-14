@@ -16,16 +16,17 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 
 ## Bảo vệ ảnh
 
-- Màn chụp ảnh có checkbox đồng ý: ảnh được gửi tới nhà cung cấp AI bên thứ ba (Groq, dự phòng Google Gemini) để phân tích.
+- Màn chụp ảnh có checkbox đồng ý: ảnh được gửi tới nhà cung cấp AI bên thứ ba (Groq, dự phòng Google Gemini) để phân tích. Server cũng kiểm tra: `POST /readings` thiếu `aiConsent=true` thì bị từ chối.
 - Bucket private; key ảnh là `readings/{userId}/{readingId}.jpg`; chỉ truy cập qua signed URL 5 phút sau khi kiểm tra quyền sở hữu.
 - Xoá toàn bộ EXIF (có GPS) trước khi lưu và trước khi gửi AI.
 - Lifecycle rule của bucket tự xoá object trong `readings/` sau 90 ngày, không cần job.
-- `DELETE /readings/{id}` xoá ảnh ngay lập tức.
+- `DELETE /readings/{id}` xoá ảnh và kết quả ngay lập tức, ẩn reading khỏi API. Chỉ giữ lại document rỗng (trường phái, mục, trạng thái, thời gian) để sổ cái credits còn tham chiếu được.
 - Không log ảnh, base64 ảnh hay toàn bộ response AI.
 
 ## Xoá tài khoản
 
 - Người dùng tự xoá ở `/account` (`DELETE /me`): xoá ảnh, kết quả, identity, session; ẩn danh hoá user (xoá tên, email, avatar). `_id` và sổ cái credits được giữ lại để đối soát.
+- Không giữ lại gì để nhận diện người đã xoá. Đăng nhập lại bằng cùng Google/Facebook sẽ tạo tài khoản mới, kể cả nhận lại bonus đăng ký (chấp nhận, xem [business-rules.md](business-rules.md#quy-tắc-credits)).
 - Facebook bắt buộc cung cấp **Data Deletion Instructions URL**; trang `/data-deletion` hướng dẫn thao tác trên.
 
 ## Xác thực

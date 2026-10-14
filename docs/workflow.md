@@ -73,10 +73,11 @@ flowchart TB
     choose["Client chọn trường phái<br/>Tây / Đông / Ấn Độ"]
     topics["Tích các mục muốn bói<br/>hoặc Bói toàn bộ<br/>chọn tay trái / phải"]
     capture["Chụp ảnh<br/>khung căn lòng bàn tay<br/>hoặc chọn ảnh có sẵn"]
-    post["POST /readings<br/>image, school, topics, hand<br/>header Idempotency-Key"]
+    post["POST /readings<br/>multipart: image, school, topics, hand, aiConsent<br/>header Idempotency-Key"]
     key{"Key đã dùng?"}
-    replay["Trả lại reading cũ<br/>không trừ thêm credit"]
-    validate["Validate<br/>ảnh ≤ 8 MB · JPEG/PNG/WebP/HEIC<br/>school hợp lệ, topics thuộc school<br/>topics rỗng → điền toàn bộ"]
+    inProgress["409 READING_IN_PROGRESS<br/>client hỏi lại GET /readings/{id}"]
+    replay["Trả lại kết quả cũ<br/>200 hoặc 503, không trừ thêm credit"]
+    validate["Validate<br/>ảnh ≤ 8 MB · JPEG/PNG/WebP/HEIC<br/>school hợp lệ, topics thuộc school<br/>topics rỗng → điền toàn bộ<br/>hand LEFT/RIGHT · aiConsent = true"]
     badReq["400 / 413 / 415<br/>không trừ credit"]
     spend["Trừ 1 credit + tạo reading<br/>PROCESSING + READING_SPEND<br/>trong 1 transaction"]
     noCredit["402<br/>INSUFFICIENT_CREDITS"]
@@ -87,7 +88,8 @@ flowchart TB
     done["DONE<br/>lưu result, trả 200"]
 
     choose --> topics --> capture --> post --> key
-    key -->|có| replay
+    key -->|có, đang PROCESSING| inProgress
+    key -->|có, đã xong| replay
     key -->|chưa| validate
     validate -->|sai| badReq
     validate --> spend
@@ -101,11 +103,18 @@ flowchart TB
     classDef warn stroke:#e0a100,stroke-width:2px
     classDef bad stroke:#d64545,stroke-width:2px
     class done accent
-    class rejected,failed warn
+    class rejected,failed,inProgress warn
     class badReq,noCredit bad
 ```
 
 Trừ credit **trước** khi gọi AI, để hai request gửi cùng lúc không thể dùng chung một credit cuối cùng. Hoàn credit ghi `READING_REFUND` kèm `readingId`; unique index đảm bảo mỗi reading chỉ được hoàn một lần.
+
+**Idempotency-Key:**
+
+- Client chỉ gửi lại **cùng** key khi không nhận được response (mất mạng, timeout).
+- Đã nhận response bất kỳ thì lần bấm sau dùng key mới. Vì vậy sau `503 AI_UNAVAILABLE`, người dùng bấm thử lại sẽ là một lần xem mới, trừ credit mới (credit cũ đã được hoàn).
+
+Chi tiết ở [api-contract.md](api-contract.md#post-readings).
 
 Nếu server chết giữa chừng, reading bị kẹt ở `PROCESSING`. Reading kẹt quá 2 phút được chuyển sang `FAILED` và hoàn credit. Việc này chạy ở hai chỗ, vì server miễn phí có thể đang ngủ:
 
