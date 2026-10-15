@@ -25,7 +25,7 @@ export const VerifyEmailContent = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setAuthSession } = useAuth();
-  const verifyMutation = useVerifyEmail();
+  const { mutateAsync: verifyEmailAsync } = useVerifyEmail();
 
   const [status, setStatus] = useState<VerifyState>("idle");
   const [authData, setAuthData] = useState<AuthResponseDto | null>(null);
@@ -55,8 +55,7 @@ export const VerifyEmailContent = () => {
     setStatus("loading");
     let isCancelled = false;
 
-    verifyMutation
-      .mutateAsync({ token: rawToken })
+    verifyEmailAsync({ token: rawToken })
       .then((data) => {
         if (isCancelled) return;
         setAuthData(data);
@@ -79,7 +78,7 @@ export const VerifyEmailContent = () => {
     return () => {
       isCancelled = true;
     };
-  }, [searchParams, setAuthSession]);
+  }, [searchParams, setAuthSession, verifyEmailAsync]);
 
   useEffect(() => {
     if (status !== "success" || !authData) return;
