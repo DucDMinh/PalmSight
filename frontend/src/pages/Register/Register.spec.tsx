@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import RegisterPage from './Register';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import RegisterPage from './index';
 import authService from '@/services/authService';
 
 const mockedNavigate = vi.fn();
@@ -14,17 +15,27 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
     vi.restoreAllMocks();
     mockedNavigate.mockReset();
     document.cookie = 'ref_code=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
   const renderComponent = () => {
     return render(
-      <MemoryRouter initialEntries={['/register']}>
-        <RegisterPage />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/register']}>
+          <RegisterPage />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -327,4 +338,3 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
     });
   });
 });
-

@@ -9,6 +9,7 @@ import {
 } from "react";
 import httpService from "@/services/httpService";
 import authService from "@/services/authService";
+import useAuthStore from "@/stores/useAuthStore";
 import type { UserSummaryDto } from "@palmsight/shared";
 
 export type AuthUser = UserSummaryDto & {
@@ -74,6 +75,7 @@ export const AuthenticationProvider = ({
       setAccessToken(session.accessToken);
       httpService.setInMemoryToken(session.accessToken);
       setUser(session.user as AuthUser);
+      useAuthStore.getState().setAuthSession(session);
     },
     []
   );
@@ -81,6 +83,7 @@ export const AuthenticationProvider = ({
   //! Function: update user profile in state
   const updateUser = useCallback((updatedFields: Partial<AuthUser>) => {
     setUser((prev) => (prev ? { ...prev, ...updatedFields } : null));
+    useAuthStore.getState().updateUser(updatedFields);
   }, []);
 
   //! Function: refresh session via HttpOnly rt cookie
@@ -140,15 +143,19 @@ export const AuthenticationProvider = ({
   //! Function: login
   const login = useCallback(
     async ({
-      username: _username,
-      password: _password,
+      username,
+      password,
     }: {
       username: string;
       password: string;
     }) => {
       try {
         setLoading(true);
-        // Authentication logic calling real API per ADR-0008
+        const data = await authService.postLogin({ login: username, password });
+        setAuthSession({
+          accessToken: data.accessToken,
+          user: data.user,
+        });
       } catch (error) {
         console.error(error);
         throw error;
@@ -156,7 +163,7 @@ export const AuthenticationProvider = ({
         setLoading(false);
       }
     },
-    []
+    [setAuthSession]
   );
 
   //! Function: logout
@@ -169,6 +176,7 @@ export const AuthenticationProvider = ({
     }
     setAccessToken(null);
     setUser(null);
+    useAuthStore.getState().clearAuthSession();
   }, []);
 
   //! Context value

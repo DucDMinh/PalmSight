@@ -1,27 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import CheckEmailPage from './CheckEmail';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import CheckEmailPage from './index';
 import authService from '@/services/authService';
 
 describe('CheckEmailPage (Stitch Screen e2ca007ff9be4c8eb496a3933785c6db)', () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
     vi.restoreAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
   const renderComponent = (initialState?: { email?: string }, initialQuery = '') => {
     return render(
-      <MemoryRouter
-        initialEntries={[
-          {
-            pathname: '/register/check-email',
-            search: initialQuery,
-            state: initialState,
-          },
-        ]}
-      >
-        <CheckEmailPage />
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter
+          initialEntries={[
+            {
+              pathname: '/register/check-email',
+              search: initialQuery,
+              state: initialState,
+            },
+          ]}
+        >
+          <CheckEmailPage />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 

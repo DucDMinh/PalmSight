@@ -6,15 +6,74 @@ import { get, isString } from "lodash";
 import { Checkbox } from "../ui/checkbox";
 import { CheckboxProps } from "@radix-ui/react-checkbox";
 
-interface CheckBoxFieldProps extends CheckboxProps {
+export interface CheckBoxFieldProps extends Omit<CheckboxProps, "form"> {
   label?: string | React.ReactNode;
   required?: boolean;
   classNameLabel?: string;
   classNameContainer?: string;
   afterOnChange?: (checked: boolean) => void;
+  terminalStyle?: boolean;
+  errorId?: string;
 }
 
-const CheckBoxField = (props: CheckBoxFieldProps & AdditionalFormikProps) => {
+const TerminalCheckbox = ({
+  name,
+  value,
+  disabled,
+  msgError,
+  currentErrorId,
+  label,
+  classNameLabel,
+  onChange,
+}: {
+  name: string;
+  value: boolean;
+  disabled?: boolean;
+  msgError?: string;
+  currentErrorId: string;
+  label?: string | React.ReactNode;
+  classNameLabel?: string;
+  onChange: (checked: boolean) => void;
+}) => {
+  return (
+    <>
+      <label
+        htmlFor={name}
+        className={twMerge(
+          "flex items-start gap-2.5 cursor-pointer select-none text-base text-body",
+          classNameLabel
+        )}
+      >
+        <input
+          id={name}
+          name={name}
+          type="checkbox"
+          checked={Boolean(value)}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={disabled}
+          className="sr-only"
+          aria-invalid={Boolean(msgError)}
+          aria-describedby={msgError ? currentErrorId : undefined}
+        />
+        <span className="font-bold text-ink select-none" aria-hidden="true">
+          {value ? "[x]" : "[ ]"}
+        </span>
+        <span>{label}</span>
+      </label>
+      {msgError && (
+        <p
+          id={currentErrorId}
+          className="text-sm text-terminal-danger mt-1.5 flex items-center gap-1"
+        >
+          <span className="font-bold">[!]</span>
+          <span>{msgError}</span>
+        </p>
+      )}
+    </>
+  );
+};
+
+export const CheckBoxField = (props: CheckBoxFieldProps & AdditionalFormikProps) => {
   const {
     label,
     classNameLabel,
@@ -22,12 +81,18 @@ const CheckBoxField = (props: CheckBoxFieldProps & AdditionalFormikProps) => {
     form,
     field,
     required,
+    terminalStyle = false,
+    errorId,
+    disabled,
     ...restProps
   } = props;
   const { name, value } = field;
-  const { errors, touched, setFieldValue, setFieldTouched } = form;
+  const { errors, touched, submitCount, setFieldValue, setFieldTouched } = form;
 
-  const msgError = get(touched, name) && (get(errors, name) as string);
+  const isTouched = Boolean(get(touched, name)) || submitCount > 0;
+  const rawError = get(errors, name);
+  const msgError = isTouched && isString(rawError) ? rawError : undefined;
+  const currentErrorId = errorId || `${name}-error`;
 
   const onHandleChange = (checked: boolean) => {
     setFieldValue(name, checked);
@@ -35,12 +100,30 @@ const CheckBoxField = (props: CheckBoxFieldProps & AdditionalFormikProps) => {
     setFieldTouched(name, true);
   };
 
+  if (terminalStyle) {
+    return (
+      <div className={twMerge("mb-6", classNameContainer)}>
+        <TerminalCheckbox
+          name={name}
+          value={Boolean(value)}
+          disabled={disabled}
+          msgError={msgError}
+          currentErrorId={currentErrorId}
+          label={label}
+          classNameLabel={classNameLabel}
+          onChange={onHandleChange}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={twMerge("flex items-center gap-3", classNameContainer)}>
       <Checkbox
         id={name}
         checked={value}
         onCheckedChange={onHandleChange}
+        disabled={disabled}
         {...restProps}
       />
       {label && (
