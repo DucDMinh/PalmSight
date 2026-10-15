@@ -1,4 +1,4 @@
-import CommonIcons from "@/components/CommonIcons";
+import CommonIcons from "@/components/commonIcons";
 import FormikField from "@/components/customFieldsFormik/FormikField";
 import InputField from "@/components/customFieldsFormik/InputField";
 import { Button } from "@/components/ui/button";
@@ -38,8 +38,8 @@ const Login = () => {
           try {
             setSubmitting(true);
             const { username, password } = values;
-            await sleepTime(1000);
-            login({ username, password });
+            await sleepTime(500);
+            await login({ username, password });
           } catch (error) {
             toast({
               variant: "destructive",
@@ -52,19 +52,17 @@ const Login = () => {
       >
         {({ isSubmitting }) => {
           return (
-            <Form className="min-w-[500px]">
-              <div className="mb-8 flex justify-center text-3xl font-bold">
-                Logo here
+            <Form className="w-full max-w-md">
+              <div className="mb-8 flex justify-center text-3xl font-bold text-primary">
+                PalmSight
               </div>
               <Card className="shadow-md">
                 <CardHeader className="pb-5">
                   <h1 className="text-2xl font-semibold tracking-tight">
-                    Login (don / don)
+                    {t("login")}
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Enter your username and password below
-                    <br />
-                    to log into your account
+                    Nhập tên đăng nhập và mật khẩu để tiếp tục
                   </p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-5">

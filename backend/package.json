@@ -10,7 +10,8 @@
     "start:prod": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:sync-indexes": "tsx scripts/sync-indexes.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.7",
@@ -20,6 +21,7 @@
     "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "^11.2.7",
     "@nestjs/throttler": "^6.7.1",
+    "@palmsight/shared": "workspace:*",
     "mongoose": "^8.24.5",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
@@ -39,11 +41,5 @@
   },
   "engines": {
     "node": ">=22"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "esbuild"
-    ]
   }
 }

@@ -1,6 +1,5 @@
 import { toString } from "lodash";
 import moment from "moment";
-import { PERMISSION_ENUM } from "@/consts/common";
 
 export const momentInstance = moment;
 
@@ -54,19 +53,6 @@ export const convertToFormSelect = (
     return listReturn;
   }
   return [{ label: "None", value: "" }, ...list];
-};
-
-export const getNameRole = (role: string) => {
-  let result = "";
-
-  Object.entries(PERMISSION_ENUM).forEach((el) => {
-    const [key, value] = el;
-    if (role === value) {
-      result = key;
-    }
-  });
-
-  return result;
 };
 
 export const isPromise = (value: any) => {

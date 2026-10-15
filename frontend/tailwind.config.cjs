@@ -10,28 +10,88 @@ module.exports = {
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: "1rem",
       screens: {
-        "2xl": "1400px",
-
-        // 'sm': '640px',
-        // => @media (min-width: 640px) { ... }
-
-        // 'md': '768px',
-        // => @media (min-width: 768px) { ... }
-
-        // 'lg': '1024px',
-        // => @media (min-width: 1024px) { ... }
-
-        // 'xl': '1280px',
-        // => @media (min-width: 1280px) { ... }
-
-        // '2xl': '1536px',
-        // => @media (min-width: 1536px) { ... }
+        sm: "640px",
+        md: "768px",
+        lg: "960px",
+        xl: "1100px",
+        "2xl": "1280px",
       },
     },
     extend: {
+      fontFamily: {
+        mono: [
+          '"JetBrains Mono"',
+          '"IBM Plex Mono"',
+          '"Berkeley Mono"',
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          '"Liberation Mono"',
+          '"Courier New"',
+          "monospace",
+        ],
+        sans: [
+          '"JetBrains Mono"',
+          '"IBM Plex Mono"',
+          '"Berkeley Mono"',
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          '"Liberation Mono"',
+          '"Courier New"',
+          "monospace",
+        ],
+      },
       colors: {
+        // Stitch Design Tokens - Terminal Minimalist Palette
+        canvas: "#fdfcfc",
+        ink: {
+          DEFAULT: "#201d1d",
+          deep: "#0f0000",
+        },
+        charcoal: "#302c2c",
+        body: "#424245",
+        mute: "#646262",
+        stone: "#6e6e73",
+        ash: "#9a9898",
+        "surface-soft": "#f8f7f7",
+        "surface-card": "#f1eeee",
+        "surface-dark": {
+          DEFAULT: "#201d1d",
+          elevated: "#302c2c",
+        },
+        hairline: {
+          DEFAULT: "rgba(15, 0, 0, 0.12)",
+          strong: "#646262",
+        },
+        "on-dark": {
+          DEFAULT: "#fdfcfc",
+          mute: "#9a9898",
+        },
+        "terminal-accent": {
+          DEFAULT: "#007aff",
+          hover: "#0056b3",
+          active: "#004085",
+        },
+        "terminal-warning": {
+          DEFAULT: "#ff9f0a",
+          hover: "#cc7f08",
+          active: "#995f06",
+        },
+        "terminal-danger": {
+          DEFAULT: "#ff3b30",
+          hover: "#d70015",
+          active: "#a50011",
+        },
+        "terminal-success": "#30d158",
+
+        // shadcn semantic mappings
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -67,9 +127,32 @@ module.exports = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        none: "0px",
+        sm: "4px",
+        DEFAULT: "4px",
+        md: "4px",
+        lg: "4px",
+        xl: "6px",
+        full: "9999px",
+      },
+      spacing: {
+        xxs: "1px",
+        xs: "4px",
+        sm: "8px",
+        md: "12px",
+        lg: "16px",
+        xl: "24px",
+        xxl: "32px",
+        section: "96px",
+      },
+      boxShadow: {
+        none: "none",
+        sm: "none",
+        DEFAULT: "none",
+        md: "none",
+        lg: "none",
+        xl: "none",
+        "2xl": "none",
       },
       keyframes: {
         "accordion-down": {

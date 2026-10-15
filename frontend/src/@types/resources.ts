@@ -1,4 +1,4 @@
-import shared from "@/i18n/en/shared.json";
+import shared from "@/i18n/vi/shared.json";
 
 const resources = {
   shared,

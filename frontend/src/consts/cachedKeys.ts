@@ -1,6 +1,3 @@
-const cachedKeys = {
-    setTodos: 'setTodos',
-    refetchTodos: 'refetchTodos',
-  };
-  
-  export default cachedKeys;
+const cachedKeys = {};
+
+export default cachedKeys;
