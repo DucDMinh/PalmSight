@@ -4,7 +4,7 @@ import { AdditionalFormikProps } from "@/interfaces/common";
 import { Label } from "../ui/label";
 import { twMerge } from "tailwind-merge";
 import { get, isString } from "lodash";
-import CommonIcons from "../CommonIcons";
+import CommonIcons from "@/components/commonIcons";
 
 interface InputFieldProps extends InputProps {
   label?: string | React.ReactNode;

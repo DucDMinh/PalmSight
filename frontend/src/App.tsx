@@ -21,7 +21,6 @@ import AuthenticationProvider from "./providers/AuthenticationProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import i18n from "./i18n/config";
 import Loading from "./components/ui/loading";
-import SidebarProvider from "./providers/SidebarProvider";
 import { showError } from "./helpers/toast";
 import BaseUrl from "./consts/baseUrl";
 import Login from "./pages/Login";
@@ -29,7 +28,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import DefaultLayout from "./layouts/DefaultLayout";
 import Homepage from "./pages/Homepage";
 import ChangePassword from "./pages/ChangePassword";
-import Todos from "./pages/Todos";
 
 const ErrorFallback = ({ error, resetErrorBoundary }: any) => {
   return (
@@ -58,10 +56,6 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  //! State
-
-  //! Function
-
   //! Render
   const renderContent = () => {
     return (
@@ -90,7 +84,6 @@ const App = () => {
             }
           >
             <Route index element={<Homepage />} />
-            <Route path={BaseUrl.Todos} element={<Todos />} />
             <Route path={BaseUrl.ChangePassword} element={<ChangePassword />} />
           </Route>
 
@@ -105,10 +98,8 @@ const App = () => {
       <ThemeProvider defaultTheme="light" storageKey="theme">
         <QueryClientProvider client={queryClient}>
           <AuthenticationProvider>
-            <SidebarProvider>
-              {renderContent()}
-              <ToastContainer />
-            </SidebarProvider>
+            {renderContent()}
+            <ToastContainer />
           </AuthenticationProvider>
         </QueryClientProvider>
       </ThemeProvider>

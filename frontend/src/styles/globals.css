@@ -16,85 +16,102 @@
 
 @layer base {
   :root {
-    --sidebar-width: 16rem;
+    /* PalmSight Terminal Minimalist Light Tokens (Default) */
+    --background: 0 0% 99.2%;      /* #fdfcfc canvas */
+    --foreground: 0 5% 12%;        /* #201d1d ink */
 
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --card: 0 7% 94.1%;            /* #f1eeee surface-card */
+    --card-foreground: 0 5% 12%;   /* #201d1d ink */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 99.2%;         /* #fdfcfc canvas */
+    --popover-foreground: 0 5% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 0 5% 12%;           /* #201d1d ink */
+    --primary-foreground: 0 0% 99.2%; /* #fdfcfc on-primary */
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --secondary: 0 5% 97.5%;       /* #f8f7f7 surface-soft */
+    --secondary-foreground: 0 5% 12%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 0 7% 94.1%;           /* #f1eeee surface-card */
+    --muted-foreground: 0 1% 38.6%; /* #646262 mute */
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 0 5% 97.5%;          /* #f8f7f7 surface-soft */
+    --accent-foreground: 0 5% 12%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 3.5 100% 59.4%; /* #ff3b30 danger */
+    --destructive-foreground: 0 0% 99.2%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --border: 0 0% 88%;            /* hairline simulation */
+    --input: 0 0% 88%;
+    --ring: 0 5% 12%;              /* #201d1d */
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --radius: 4px;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* PalmSight Inversion Tier / Dark Tokens */
+    --background: 0 5% 12%;        /* #201d1d surface-dark */
+    --foreground: 0 0% 99.2%;      /* #fdfcfc on-dark */
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 5% 18%;              /* #302c2c surface-dark-elevated */
+    --card-foreground: 0 0% 99.2%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 5% 12%;
+    --popover-foreground: 0 0% 99.2%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 0 0% 99.2%;         /* #fdfcfc */
+    --primary-foreground: 0 5% 12%; /* #201d1d */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 5% 18%;
+    --secondary-foreground: 0 0% 99.2%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 5% 18%;
+    --muted-foreground: 0 1% 60%;  /* #9a9898 ash */
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 5% 18%;
+    --accent-foreground: 0 0% 99.2%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 3.5 100% 59.4%;
+    --destructive-foreground: 0 0% 99.2%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 1% 38.6%;          /* #646262 hairline-strong */
+    --input: 0 1% 38.6%;
+    --ring: 0 0% 99.2%;
+
+    --radius: 4px;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+    letter-spacing: 0;
   }
+
+  html,
   body {
     @apply bg-background text-foreground;
+    font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: 0;
+  }
+
+  pre,
+  code,
+  kbd,
+  samp {
+    font-family: inherit;
+    letter-spacing: 0;
   }
 
   .invalid-text {
-    @apply text-xs text-red-500;
+    @apply text-xs text-terminal-danger;
   }
 
   .required::after {
     content: " *";
-    @apply text-red-500;
+    @apply text-terminal-danger;
   }
 
   .icon {
@@ -102,14 +119,92 @@
   }
 }
 
-.side-bar__menu__item {
-  transition: 0.3s;
+/* Hairline border utilities (1px solid rgba(15, 0, 0, 0.12) / #646262 in dark) */
+.hairline-border {
+  border: 1px solid rgba(15, 0, 0, 0.12);
 }
 
-.side-bar__menu__item:hover,
-.side-bar__menu__item.is-active {
-  @apply bg-accent;
-  @apply rounded-md;
+.hairline-top {
+  border-top: 1px solid rgba(15, 0, 0, 0.12);
+}
+
+.hairline-bottom {
+  border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+}
+
+.hairline-right {
+  border-right: 1px solid rgba(15, 0, 0, 0.12);
+}
+
+.hairline-left {
+  border-left: 1px solid rgba(15, 0, 0, 0.12);
+}
+
+.dark .hairline-border {
+  border-color: #646262;
+}
+
+.dark .hairline-top {
+  border-top-color: #646262;
+}
+
+.dark .hairline-bottom {
+  border-bottom-color: #646262;
+}
+
+.dark .hairline-right {
+  border-right-color: #646262;
+}
+
+.dark .hairline-left {
+  border-left-color: #646262;
+}
+
+/* Terminal Minimalist Button Classes */
+.btn-primary {
+  background-color: #201d1d;
+  color: #fdfcfc;
+  font-size: 16px;
+  font-weight: 500;
+  height: 36px;
+  padding: 4px 20px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #302c2c;
+}
+
+.btn-primary:active {
+  background-color: #0f0000;
+}
+
+.btn-secondary {
+  background-color: #fdfcfc;
+  color: #201d1d;
+  font-size: 16px;
+  font-weight: 500;
+  height: 36px;
+  padding: 4px 20px;
+  border-radius: 4px;
+  border: 1px solid #646262;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #f8f7f7;
 }
 
 .content-container {
@@ -118,10 +213,9 @@
 }
 
 .is-hover:hover {
-  @apply bg-gray-100;
-  @apply rounded-md;
+  @apply bg-surface-soft;
+  @apply rounded;
   @apply cursor-pointer;
-  @apply dark:text-black;
 }
 
 .is-link {

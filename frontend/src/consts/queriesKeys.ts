@@ -1,5 +1,3 @@
-const queriesKeys = {
-  getTodos: "getTodos",
-};
+const queriesKeys = {};
 
 export default queriesKeys;

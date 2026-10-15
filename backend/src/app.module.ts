@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { HealthModule } from './health';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { MongooseModule } from '@nestjs/mongoose';
         uri: config.getOrThrow<string>('MONGODB_URI'),
       }),
     }),
+    HealthModule,
   ],
 })
 export class AppModule {}

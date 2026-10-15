@@ -1,6 +1,5 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
-import Sidebar from "@/components/Sidebar";
 
 interface DefaultLayoutProps {
   children: React.ReactNode;
@@ -8,12 +7,10 @@ interface DefaultLayoutProps {
 
 const DefaultLayout = (props: DefaultLayoutProps) => {
   return (
-    <div className="component:DefaultLayout flex min-h-[100vh]">
-      <Sidebar />
-
-      <div className="layout-wrapper w-full p-3 md:w-[calc(100%-var(--sidebar-width))] md:pl-10">
+    <div className="component:DefaultLayout flex min-h-[100vh] flex-col">
+      <div className="layout-wrapper flex flex-1 flex-col w-full p-3 max-w-5xl mx-auto">
         <Navbar />
-        <main className="flex w-full">{props.children}</main>
+        <main className="flex flex-1 w-full">{props.children}</main>
         <Footer />
       </div>
     </div>

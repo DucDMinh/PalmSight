@@ -4,15 +4,15 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 
 ## Phase 0 — Khung dự án
 
-- [ ] pnpm workspaces ở gốc repo: `frontend`, `backend`, `@palmsight/shared` ([ADR-0007](adr/0007-vite-spa-frontend.md))
+- [x] pnpm workspaces ở gốc repo: `frontend`, `backend`, `@palmsight/shared` ([ADR-0007](adr/0007-vite-spa-frontend.md))
   - Đưa `frontend/` vào workspace: bỏ `pnpm-lock.yaml` riêng, đổi tên package thành `frontend`.
   - Chuyển husky và `LICENSE` của boilerplate lên gốc, hoặc xoá.
-- [ ] Dọn boilerplate `frontend/` theo danh sách giữ/bỏ trong ADR-0007; sửa import sai chữ hoa/thường (`CommonIcons` → `commonIcons`)
-- [ ] ESLint, Prettier, TypeScript strict, Vitest
-- [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node, ánh xạ `27019:27017`) + Mailpit
-- [ ] Schema Mongoose cho 8 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
-- [ ] Vite `server.proxy` `/api/v1/*` → API (đích `API_PROXY_TARGET`, `allowedHosts` từ `DEV_ALLOWED_HOSTS` trong `frontend/.env`); `GET /api/v1/health`
-- [ ] GitHub Actions: lint, typecheck, test, build
+- [x] Dọn boilerplate `frontend/` theo danh sách giữ/bỏ trong ADR-0007; sửa import sai chữ hoa/thường (`CommonIcons` → `commonIcons`)
+- [x] ESLint, Prettier, TypeScript strict, Vitest
+- [x] `docker-compose.yml`: MongoDB 7 (replica set 1 node, ánh xạ `27019:27017`) + Mailpit
+- [x] Schema Mongoose cho 8 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
+- [x] Vite `server.proxy` `/api/v1/*` → API (đích `API_PROXY_TARGET`, `allowedHosts` từ `DEV_ALLOWED_HOSTS` trong `frontend/.env`); `GET /api/v1/health`
+- [x] GitHub Actions: lint, typecheck, test, build
 
 **Xong khi:** `pnpm dev` chạy được frontend + backend, CI xanh.
 

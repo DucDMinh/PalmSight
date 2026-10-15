@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import CommonIcons from "../CommonIcons";
+import CommonIcons from "@/components/commonIcons";
 
 const Loading = ({ className }: { className?: string }) => {
   return (
