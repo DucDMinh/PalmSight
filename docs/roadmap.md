@@ -39,7 +39,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 | --- | --- |
 | Upload + `sharp` (HEIC, EXIF, resize) + lưu MinIO/R2 | Backend |
 | `AiProvider`: Groq, Gemini fallback, `FakeAiProvider` | Backend |
-| `READING_SCHOOLS`, `LIFE_ASPECTS` + prompt + Yup schema `PalmResult` cho 3 trường phái | Cả hai |
+| `READING_SCHOOLS`, `LIFE_ASPECTS`, Yup schema `PalmResult` trong `shared/`; prompt 3 trường phái trong `backend/src/ai/prompts/` | Cả hai |
 | `POST /readings` với `topics`, idempotency, trừ/hoàn credit, dọn reading kẹt | Backend |
 | Màn `/scan` (chọn trường phái, tích mục / bói toàn bộ, chọn tay, camera), `/readings/:id`, `/readings` | Frontend |
 

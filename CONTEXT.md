@@ -104,6 +104,9 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
   - Tên collection `snake_case` số nhiều (`credit_transactions`), tên field `camelCase`, thời gian kiểu `Date` UTC.
   - Index khai báo trong schema Mongoose.
 - Enum dùng chung (`CreditTransactionType`, `ReadingStatus`, `ReadingSchool`…) và `READING_SCHOOLS` định nghĩa một lần trong `shared/` (package `@palmsight/shared`).
+- **`shared/` bị đóng gói vào bundle trình duyệt**, nên chỉ chứa thứ cả hai phía cần và ai đọc được cũng không sao: enum, key và tên hiển thị của trường phái/mục bói, Yup schema, kiểu request/response.
+  - **Không** đặt vào đây: secret, prompt AI (nằm ở `backend/src/ai/prompts/`), hằng số chỉ server được biết.
+  - **Không** import code chỉ chạy trên server (Mongoose, NestJS, nodemailer) hay code chỉ dùng ở frontend (React).
 - **Frontend:**
   - Access token chỉ giữ trong bộ nhớ, không lưu `localStorage`.
   - Không đặt secret trong biến `VITE_*`, vì chúng được nhúng vào bundle.

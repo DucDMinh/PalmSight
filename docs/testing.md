@@ -6,7 +6,7 @@
 
 | Tầng | Công cụ | Phạm vi | Chạy khi |
 | --- | --- | --- | --- |
-| Unit | Vitest | Hàm thuần: sinh mã giới thiệu, kiểm tra quy tắc referral, map lỗi, Yup schema `PalmResult` cho từng trường phái | Mỗi commit |
+| Unit | Vitest | Hàm thuần: sinh mã giới thiệu, kiểm tra quy tắc referral, map lỗi, Yup schema `PalmResult` cho từng trường phái, mọi trường phái trong `READING_SCHOOLS` đều có prompt chứa đủ key mục riêng | Mỗi commit |
 | Integration | Vitest + `mongodb-memory-server` (`MongoMemoryReplSet`) + Supertest | Service và endpoint NestJS với MongoDB thật chạy trong bộ nhớ; AI, OAuth và `MailService` được mock. Mock mail giữ email đã gửi trong bộ nhớ, để test lấy token từ link | Mỗi PR |
 | E2E | Playwright (viewport điện thoại) | Luồng chính trên trình duyệt: đăng ký → lấy link xác minh từ Mailpit API → đăng nhập bằng mật khẩu → xem bói. Google/Facebook dùng provider giả ở môi trường test | Trước khi merge vào `main` |
 | AI eval | Script thủ công + bộ ảnh mẫu | Chất lượng và an toàn nội dung bói | Khi đổi prompt, model hoặc thêm trường phái |

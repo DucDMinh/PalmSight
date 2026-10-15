@@ -60,9 +60,23 @@ Sau khi chọn trường phái, người dùng tích các **mục** muốn bói,
 | Giá | Luôn 1 credit, dù chọn 1 mục hay toàn bộ |
 | Lưu trữ | `readings.topics` lưu danh sách mục **sau khi** đã điền đủ, theo thứ tự chuẩn của trường phái |
 
-Danh sách trường phái, tên hiển thị, mô tả ngắn, các mục riêng (key, tên hiển thị, thứ tự) và 6 khía cạnh được định nghĩa một lần trong `shared/` (`@palmsight/shared`), ở hai hằng số `READING_SCHOOLS` và `LIFE_ASPECTS`. Web dùng chúng để vẽ màn chọn; API dùng để kiểm tra request và kết quả AI.
+Danh sách trường phái, tên hiển thị, mô tả ngắn, các mục riêng (key, tên hiển thị, thứ tự) và 6 khía cạnh được định nghĩa một lần trong `shared/` (`@palmsight/shared`), ở hai hằng số `READING_SCHOOLS` và `LIFE_ASPECTS`. Web dùng chúng để vẽ màn chọn; API dùng để kiểm tra request và kết quả AI. Hai hằng số này **không chứa prompt**; xem mục [Prompt](#prompt).
 
 ## Prompt
+
+**Prompt chỉ nằm ở backend**, không bao giờ nằm trong `shared/` hay frontend:
+
+```text
+backend/src/ai/prompts/
+├─ common.ts      # system prompt phần chung (bên dưới)
+├─ western.ts     # phần riêng WESTERN
+├─ eastern.ts     # phần riêng EASTERN
+├─ vedic.ts       # phần riêng VEDIC
+└─ index.ts       # map key trường phái → phần riêng; ghép prompt hoàn chỉnh
+```
+
+- `shared/` bị đóng gói vào bundle trình duyệt, nên prompt đặt ở đó thì ai mở DevTools cũng đọc được. Prompt không phải secret, nhưng lộ ra thì dễ soạn ảnh chèn chữ để điều khiển AI hơn, và bundle nặng thêm vô ích.
+- Một unit test kiểm tra: mọi trường phái trong `READING_SCHOOLS` đều có prompt, và mọi key mục riêng của trường phái đều xuất hiện trong prompt đó. Thêm trường phái mà quên viết prompt thì test đỏ.
 
 Model được yêu cầu trả về đúng một object JSON (bật JSON mode `response_format: { type: "json_object" }`); server validate bằng Yup schema `PalmResult`, sai schema thì gọi lại 1 lần, vẫn sai thì `FAILED` và hoàn credit.
 

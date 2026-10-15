@@ -2,6 +2,7 @@
 
 - Trạng thái: Accepted
 - Ngày: 2026-10-14
+- Sửa đổi 2026-10-15: đoạn prompt riêng của từng trường phái chuyển khỏi `READING_SCHOOLS` (package dùng chung, bị đóng gói vào bundle trình duyệt) sang `backend/src/ai/prompts/`. `packages/shared` nay là `shared/` ([ADR-0007](0007-vite-spa-frontend.md)).
 
 ## Bối cảnh
 
@@ -24,9 +25,10 @@ Ngoài ra có các khía cạnh cuộc sống dùng chung cho mọi trường ph
   - **Mục riêng của trường phái**: trả về trong mảng `sections`, mỗi phần tử `{ key, title, observation, meaning }`.
   - **Khía cạnh cuộc sống** (6 mục chung): trả về trong object `aspects`.
 - `summary`, `advice`, `disclaimer` luôn có, không cần chọn.
-- `packages/shared` định nghĩa một lần cho cả web và API:
-  - `READING_SCHOOLS`: tên, mô tả, danh sách mục riêng theo thứ tự chuẩn, và đoạn prompt riêng của từng trường phái;
+- `shared/` định nghĩa một lần cho cả web và API:
+  - `READING_SCHOOLS`: key, tên hiển thị, mô tả ngắn, danh sách mục riêng (key, tên hiển thị) theo thứ tự chuẩn;
   - `LIFE_ASPECTS`: 6 khía cạnh cuộc sống.
+- Prompt AI (phần chung và phần riêng của từng trường phái) nằm **chỉ ở backend**, trong `backend/src/ai/prompts/`, tra theo key của trường phái. Không đặt prompt trong `shared/`: mọi thứ ở đó bị đóng gói vào bundle trình duyệt, ai cũng đọc được. Lộ prompt giúp người khác dễ soạn ảnh chèn chữ để điều khiển AI, và làm bundle nặng vô ích.
 - Server chuẩn hoá `topics` (bỏ trùng, sắp theo thứ tự chuẩn) rồi lưu vào `readings.topics`.
 - Kết quả AI phải có **đúng** các mục đã chọn, không thiếu, không thừa.
 - UI vẽ mọi `sections` theo một cách chung (tiêu đề + quan sát + ý nghĩa).
@@ -43,8 +45,8 @@ Ngoài ra có các khía cạnh cuộc sống dùng chung cho mọi trường ph
 ## Hệ quả
 
 - Thêm trường phái mới chỉ cần:
-  - thêm một phần tử vào `READING_SCHOOLS`;
-  - viết prompt cho trường phái đó;
+  - thêm một phần tử vào `READING_SCHOOLS` trong `shared/`;
+  - viết prompt cho trường phái đó trong `backend/src/ai/prompts/`;
   - thêm ảnh vào bộ đánh giá AI.
 
   Không phải sửa schema database hay UI.
