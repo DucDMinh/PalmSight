@@ -66,6 +66,7 @@ Facebook bắt buộc cung cấp **Data Deletion Instructions URL**: dùng trang
   - Dùng một lần; sống 24 giờ (xác minh) hoặc 1 giờ (đặt lại mật khẩu).
   - Trang web xoá token khỏi thanh địa chỉ ngay sau khi đọc. Token chỉ được gửi lên trong body `POST`, không bao giờ nằm trong URL gọi API.
 - **Đặt lại mật khẩu** thu hồi mọi phiên. **Đổi mật khẩu** thu hồi mọi phiên trừ phiên hiện tại.
+- **Auth guard kiểm tra user ở mỗi request:** user phải tồn tại và có `deletedAt = null`, nếu không thì `401`. Nhờ vậy, user vừa bị xoá bằng `users:delete` không dùng tiếp được access token còn hạn (tối đa 15 phút). `/auth/refresh` cũng kiểm tra như vậy và thu hồi session của user đã xoá.
 - **Gộp tài khoản theo email** chỉ dùng email đã xác minh: link xác minh của ta, hoặc `email_verified` của Google, hoặc email Facebook trả về. Không ai gắn được mật khẩu vào tài khoản của người khác, vì phải bấm link trong hộp thư của email đó.
 - **`IDENTITY_HASH_SECRET`:** secret ≥ 32 byte chỉ nằm trên server, dùng làm khoá HMAC cho `deleted_identities`. Không bao giờ đổi sau khi đã có dữ liệu.
 - **SMTP:** App Password của Gmail là secret, chỉ nằm trong env của server. Dùng tài khoản Gmail riêng cho dự án.
@@ -96,6 +97,10 @@ Facebook bắt buộc cung cấp **Data Deletion Instructions URL**: dùng trang
 
 Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từng user; chạy tay hoặc định kỳ.
 
+**Toàn vẹn dữ liệu:**
+- `CreditLedgerService` kiểm tra `matchedCount === 1` sau mỗi lần cộng/trừ. Lệnh trúng 0 user thì rollback, không ghi sổ cái.
+- Không sửa hay xoá trực tiếp trên database. Script `db:check` phát hiện dữ liệu mồ côi (giao dịch, reading, session, referral, ảnh trỏ vào user không tồn tại) và tài khoản xoá chưa sạch. Xem [deployment.md](deployment.md#vận-hành).
+
 ## AI
 
 - Prompt yêu cầu bỏ qua mọi chữ trong ảnh, để chữ chèn vào ảnh không điều khiển được AI (prompt injection).
@@ -121,3 +126,8 @@ Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từn
 - Không đặt secret trong biến `VITE_*`: Vite nhúng chúng vào bundle trình duyệt lúc build.
 - Service worker của PWA không cache response của `/api/v1/*`.
 - MongoDB Atlas: Network Access chỉ mở cho IP của server nếu nền tảng cho IP cố định. Nếu không (gói free thường không có), dùng mật khẩu mạnh và user database chỉ có quyền trên database của app.
+- Tách hai user database:
+  - `palmsight-app` (`readWrite`) chỉ cho API và script;
+  - `palmsight-readonly` (`read`) để xem dữ liệu hằng ngày.
+
+  Phân quyền là cách duy nhất thật sự chặn được việc lỡ tay sửa hay xoá dữ liệu; quy tắc trên giấy thì không chặn được. Chi tiết ở [deployment.md](deployment.md#phân-quyền-mongodb).

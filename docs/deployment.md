@@ -102,6 +102,45 @@ Nếu chỉ chơi với bạn bè, có thể giữ chế độ Development/Testi
 | Xoá ảnh quá 90 ngày | Lifecycle rule của R2, không cần code |
 | Dọn reading kẹt `PROCESSING` | Chạy định kỳ trong API khi API đang thức, và khi người dùng mở reading |
 | Đối soát credits | Chạy tay `credits:reconcile` khi nghi có sai lệch |
+| Kiểm tra dữ liệu mồ côi | Chạy `db:check` mỗi tuần, hoặc theo lịch bằng GitHub Actions; xem mục dưới |
+| Xoá tài khoản theo yêu cầu | `users:delete`, xem [ADR-0009](adr/0009-manual-account-deletion.md) |
+| Chỉnh credits tay | `credits:adjust --note "<lý do>"` |
 | Theo dõi hạn mức Groq / Gemini | Xem dashboard của nhà cung cấp; log tỉ lệ `AI_UNAVAILABLE` |
 
 Health check: `GET /api/v1/health` kiểm tra kết nối MongoDB (không gọi AI).
+
+### Không sửa dữ liệu trực tiếp trên database
+
+Không xoá hay sửa tay (bằng Compass, Atlas Data Explorer, mongosh) các collection `users`, `credit_transactions`, `referrals`, `readings`, `deleted_identities`. MongoDB không có khoá ngoại, nên xoá thẳng một user sẽ:
+
+- để lại reading, ảnh, session, referral và giao dịch trỏ vào user không tồn tại;
+- làm sổ cái lệch với số dư;
+- **bỏ qua bước ghi `deleted_identities`**, nên người đó đăng ký lại vẫn nhận +3 và nhập mã được;
+- để ảnh và kết quả bói nằm lại, tức là chưa xoá xong theo yêu cầu của người dùng.
+
+Mọi thay đổi đi qua API hoặc script có sẵn. Nếu cần một thao tác mà chưa có script, viết script mới (đi qua `CreditLedgerService` nếu đụng tới credits) và ghi vào PR, không sửa tay.
+
+### Phân quyền MongoDB
+
+| User database | Quyền | Ai dùng |
+| --- | --- | --- |
+| `palmsight-app` | `readWrite` trên database `palmsight` | API trên Render; các script khi dev chạy tay |
+| `palmsight-readonly` | `read` trên database `palmsight` | Xem dữ liệu hằng ngày bằng Compass hoặc mongosh |
+
+- Chuỗi kết nối của `palmsight-app` chỉ nằm trong env của Render và trong `.env` của người chạy script, không dùng để mở Compass.
+- Trên Atlas, tài khoản thành viên nên có project role chỉ đọc dữ liệu (ví dụ *Project Data Access Read Only*) khi xem bằng Data Explorer. Chỉ nâng quyền khi thật sự cần, rồi hạ lại.
+- Khi dev local thì không cần tách quyền, vì dữ liệu là dữ liệu thử.
+
+### Script `db:check`
+
+Chỉ đọc, không tự sửa gì. In báo cáo và trả exit code khác 0 nếu có vấn đề, để chạy được trong GitHub Actions theo lịch.
+
+| Kiểm tra | Phát hiện |
+| --- | --- |
+| Tổng sổ cái bằng số dư | Như `credits:reconcile` |
+| Giao dịch, reading, session, referral, password reset có `userId` không tồn tại trong `users` | Ai đó đã xoá user trực tiếp |
+| User có `deletedAt` nhưng còn email, username, mật khẩu, identity, session, hoặc reading còn ảnh/kết quả | `users:delete` chạy dở, hoặc ai đó sửa tay |
+| Object trong `readings/` của bucket không còn reading tương ứng (hoặc reading có `imageKey = null`) | Ảnh mồ côi cần xoá |
+| Reading `PROCESSING` quá 10 phút | Job dọn reading kẹt không chạy |
+
+Khi có vấn đề: tìm nguyên nhân trước, rồi sửa bằng script có `--note`. Không xoá tay cho "sạch" báo cáo.

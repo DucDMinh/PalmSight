@@ -48,3 +48,5 @@ Tuy vậy, vẫn không thể bỏ hẳn việc xoá dữ liệu:
 - `deleted_identities` được giữ vô thời hạn. Trang `/privacy` phải ghi rõ: "Sau khi xoá, chúng tôi giữ một mã băm không thể đảo ngược của email/ID đăng nhập để ngăn nhận lại khuyến mãi đăng ký".
 - Người dùng muốn "làm lại từ đầu" bằng tài khoản mới sẽ bắt đầu với 0 credits.
 - Thêm biến môi trường `IDENTITY_HASH_SECRET` và `SUPPORT_EMAIL`. Đổi `IDENTITY_HASH_SECRET` làm mất hiệu lực toàn bộ bảng chặn, nên **không bao giờ đổi** sau khi đã có dữ liệu.
+- Xoá **chỉ** bằng `users:delete`, không bao giờ xoá thẳng document trong database. Xoá thẳng sẽ bỏ qua bước ghi `deleted_identities` (mở lại lỗ farm), để lại ảnh, kết quả và dữ liệu mồ côi. `db:check` phát hiện các trường hợp này.
+- Script không thu hồi được access token đã cấp (sống tối đa 15 phút). Auth guard đóng khe hở này bằng cách kiểm tra `deletedAt` ở mỗi request.

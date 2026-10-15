@@ -63,7 +63,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 
 ## Quy tắc bất biến (không được phá)
 
-1. **Mọi thay đổi credits đi qua `CreditLedgerService`.** Service này ghi một document `credit_transactions` và cập nhật `users.creditBalance` trong **cùng một MongoDB transaction**. Không module nào khác được `$inc` hay `$set` field `creditBalance`.
+1. **Mọi thay đổi credits đi qua `CreditLedgerService`.** Service này ghi một document `credit_transactions` và cập nhật `users.creditBalance` trong **cùng một MongoDB transaction**. Không module nào khác được `$inc` hay `$set` field `creditBalance`. Sau mỗi lần cập nhật số dư, service kiểm tra `matchedCount === 1`; không khớp (user không tồn tại hoặc đã bị xoá) thì ném lỗi để transaction rollback, không ghi sổ cái.
 2. **Số dư không bao giờ âm.** Trừ bằng `updateOne` có điều kiện `creditBalance >= 1`. Không đọc số dư rồi mới trừ trong code.
 3. Tổng `amount` của một user luôn bằng `creditBalance`.
 4. **Trừ credit trước khi gọi AI**, hoàn lại (`READING_REFUND`) nếu AI lỗi, timeout hoặc ảnh không phải lòng bàn tay. Mỗi reading tối đa 1 lần trừ và 1 lần hoàn.
@@ -74,6 +74,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 9. Ảnh người dùng nằm trong bucket **private**, chỉ truy cập qua signed URL ngắn hạn; xoá EXIF trước khi lưu.
 10. Mọi trang kết quả hiển thị câu miễn trừ: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 11. **Không lưu mật khẩu thô hay token thô.** Mật khẩu hash bằng argon2id. Token trong link email và refresh token chỉ lưu bản hash SHA-256.
+12. **Không sửa hay xoá dữ liệu trực tiếp trên database** (Compass, Atlas UI, mongosh) với `users`, `credit_transactions`, `referrals`, `readings`, `deleted_identities`. Thay đổi phải đi qua API hoặc script: xoá user bằng `users:delete`, chỉnh credits bằng `credits:adjust`. MongoDB không có khoá ngoại, nên xoá tay sẽ để lại dữ liệu mồ côi, sổ cái lệch và bỏ qua bước chặn nhận thưởng lại. Xem dữ liệu hằng ngày bằng user database **chỉ đọc**.
+13. **Mọi request đã đăng nhập phải thuộc về một user còn hoạt động.** Auth guard đọc user theo `sub` trong access token; không tìm thấy hoặc `deletedAt` khác `null` thì trả `401 UNAUTHENTICATED`. Không giả định user luôn tồn tại.
 
 ## Quyết định đã chốt
 

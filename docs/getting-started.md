@@ -123,8 +123,11 @@ Vite đọc `.env` ở thư mục gốc repo (`envDir: '..'`). Trình duyệt ch
 | `pnpm test:e2e` | Playwright end-to-end |
 | `pnpm --filter backend credits:adjust --user <id> --amount 5 --note "test"` | Cộng/trừ credits tay |
 | `pnpm --filter backend credits:reconcile` | Kiểm tra sổ cái khớp số dư |
+| `pnpm --filter backend db:check` | Kiểm tra dữ liệu mồ côi và tài khoản xoá chưa sạch (chỉ đọc) |
 | `pnpm --filter backend users:delete --user <id> --note "<link yêu cầu>"` | Xoá tài khoản theo yêu cầu của người dùng ([ADR-0009](adr/0009-manual-account-deletion.md)) |
 | `docker compose down -v` | Xoá sạch dữ liệu local |
+
+Kể cả khi dev, đừng sửa tay `users` hay `credit_transactions` trong Compass để "test nhanh": dùng `db:seed`, `credits:adjust` hoặc API. Sửa tay sẽ tạo ra dữ liệu không thể có ngoài thực tế, và test trên dữ liệu đó không có ý nghĩa.
 
 ## Lỗi hay gặp
 

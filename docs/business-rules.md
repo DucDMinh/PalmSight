@@ -71,9 +71,14 @@ Trần 10 lượt/ngày là trần mềm: hai lượt nhập đúng cùng lúc c
 
 - Mọi thao tác credits chạy trong **MongoDB transaction** (cần replica set; MongoDB Atlas và cấu hình docker local đều đáp ứng).
 - Số dư không bao giờ âm:
-  - Trừ bằng một lệnh có điều kiện: `updateOne({ _id, creditBalance: { $gte: 1 } }, { $inc: { creditBalance: -1 } })`.
-  - Nếu `modifiedCount = 0` → trả `INSUFFICIENT_CREDITS` (402).
+  - Trừ bằng một lệnh có điều kiện: `updateOne({ _id, deletedAt: null, creditBalance: { $gte: 1 } }, { $inc: { creditBalance: -1 } })`.
+  - Nếu `modifiedCount = 0` → trả `INSUFFICIENT_CREDITS` (402). Auth guard đã chặn user không tồn tại hoặc đã xoá từ trước, nên ở bước này `modifiedCount = 0` chỉ còn nghĩa là hết credits.
   - Collection `users` có thêm validator `creditBalance: { minimum: 0 }`.
+- **Cộng credits phải trúng đúng một user:** lệnh cộng dùng `updateOne({ _id, deletedAt: null }, { $inc: ... })`, sau đó kiểm tra `matchedCount === 1`.
+  - Nếu là 0: ném lỗi → transaction rollback → không ghi giao dịch vào sổ cái.
+  - Lý do: MongoDB không có khoá ngoại, lệnh `updateOne` trúng 0 document không báo lỗi. Thiếu kiểm tra này thì sổ cái sẽ có giao dịch cho user không tồn tại, trong khi không số dư nào thay đổi.
+  - Áp dụng cho mọi loại cộng: `SIGNUP_BONUS`, `REFERRAL_BONUS`, `REFEREE_BONUS`, `READING_REFUND`, `ADMIN_ADJUST`.
+  - Riêng `READING_REFUND` cho user đã bị xoá thì bỏ qua, chỉ đánh dấu reading là `FAILED`.
 - Unique index chặn cộng/hoàn trùng: `SIGNUP_BONUS` theo user, `(readingId, type)`, `(referralId, type)`. Chi tiết ở [database-erd.md](database-erd.md).
 - `POST /readings` bắt buộc header `Idempotency-Key`. Gửi lại cùng key không bao giờ trừ thêm credit:
   - reading cũ đang `PROCESSING` → `409 READING_IN_PROGRESS`;
@@ -81,3 +86,4 @@ Trần 10 lượt/ngày là trần mềm: hai lượt nhập đúng cùng lúc c
 
   Chi tiết ở [api-contract.md](api-contract.md#post-readings).
 - Tổng `amount` trong `credit_transactions` của một user phải luôn bằng `users.creditBalance`; script `credits:reconcile` kiểm tra điều này.
+- **Không sửa hay xoá trực tiếp trên database** các collection `users`, `credit_transactions`, `referrals`, `readings`. Mọi thay đổi đi qua API hoặc script (`credits:adjust`, `users:delete`). Script `db:check` phát hiện dữ liệu mồ côi nếu quy tắc này từng bị vi phạm. Xem [deployment.md](deployment.md#vận-hành).

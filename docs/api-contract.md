@@ -57,6 +57,12 @@ Tóm tắt các request `POST`/`PUT`:
 - **Refresh token**: cookie `rt` với thuộc tính `HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=2592000` (30 ngày). Xoay vòng mỗi lần refresh. Vì `Path=/api/v1/auth`, cookie chỉ được gửi tới các endpoint `/auth/*`.
 - Khi mở app hoặc tải lại trang: gọi `POST /auth/refresh`. Nếu `200` thì đã đăng nhập; nếu `401` thì chuyển tới `/login`.
 - Gặp `401 TOKEN_EXPIRED`: gọi `/auth/refresh` rồi gửi lại request ban đầu **một lần**. Gặp `401 UNAUTHENTICATED`: chuyển tới `/login`.
+- **Auth guard kiểm tra user ở mỗi request**, không chỉ kiểm tra chữ ký JWT:
+  1. Xác minh chữ ký và hạn của access token.
+  2. Đọc user theo `sub` (theo `_id`, có index sẵn).
+  3. Không tìm thấy, hoặc `deletedAt` khác `null` → `401 UNAUTHENTICATED`.
+
+  Lý do: access token còn sống tới 15 phút sau khi user bị xoá bằng `users:delete` (script chỉ thu hồi được session, không thu hồi được JWT đã cấp). Ngoài ra, MongoDB không có khoá ngoại, nên user mất mà không kiểm tra thì phần lớn truy vấn vẫn chạy và ghi ra dữ liệu mồ côi. Controller nhận user đã kiểm tra từ guard, không tự đọc lại và không giả định user luôn tồn tại.
 - **Nhiều tab**: các tab dùng chung cookie `rt`. Nếu hai tab refresh cùng lúc, tab gửi sau sẽ bị coi là dùng lại token cũ, và mọi phiên bị thu hồi. Vì vậy client bọc lời gọi refresh trong `navigator.locks.request("palmsight-refresh", ...)`, để mỗi lúc chỉ một tab refresh.
 
 ### Phân trang
@@ -392,6 +398,7 @@ Không có body. Trình duyệt tự gửi cookie `rt` (cùng domain) và header
 | Trường hợp | Response |
 | --- | --- |
 | Thiếu cookie, token sai, hết hạn hoặc đã thu hồi | `401 UNAUTHENTICATED`, xoá cookie `rt` |
+| Session hợp lệ nhưng user không còn tồn tại hoặc có `deletedAt` | Thu hồi session đó, `401 UNAUTHENTICATED`, xoá cookie `rt` |
 | Token đã bị xoay vòng mà vẫn được dùng lại (dấu hiệu bị lộ) | Thu hồi **mọi** phiên của user, `401 UNAUTHENTICATED`, xoá cookie `rt` |
 | `Origin` sai | `403 ORIGIN_NOT_ALLOWED` |
 
@@ -523,7 +530,7 @@ Query: `cursor`, `limit` (xem [Phân trang](#phân-trang)).
 ```
 
 - Tên người được giới thiệu bị che một phần.
-- Người được giới thiệu đã xoá tài khoản hiện là `"Người dùng đã xoá"`.
+- Người được giới thiệu đã xoá tài khoản (có `deletedAt`), hoặc không còn document user, hiện là `"Người dùng đã xoá"`. Không bao giờ trả `500` vì thiếu user.
 - `totalRewarded` và `totalCreditsEarned` tính trên toàn bộ danh sách, không chỉ trang hiện tại.
 
 ### GET /me/credit-transactions

@@ -101,7 +101,7 @@ palmsight/
 │     ├─ services/            # apiClient: gọi /api/v1, gắn Bearer token
 │     └─ consts/              # route, query key
 ├─ backend/                   # NestJS
-│  ├─ scripts/                # db:sync-indexes, credits:adjust, credits:reconcile
+│  ├─ scripts/                # db:sync-indexes, db:seed, db:check, credits:adjust, credits:reconcile, users:delete
 │  └─ src/
 │     ├─ auth/                # register, verify-email, login, password reset, google.verifier, facebook.verifier, jwt
 │     ├─ users/               # schema users (+ identities nhúng), pending_registrations, password_resets

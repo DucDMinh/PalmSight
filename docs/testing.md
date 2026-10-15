@@ -33,6 +33,16 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] `isPalm = false` → `REJECTED`, hoàn 1 credit.
 - [ ] Dọn reading kẹt `PROCESSING` hoàn credit đúng 1 lần, kể cả khi hai lần dọn chạy chồng nhau.
 - [ ] Sau mọi ca trên: tổng `amount` = `creditBalance`.
+- [ ] `CreditLedgerService` cộng credits cho `userId` không tồn tại, hoặc user có `deletedAt` → ném lỗi, transaction rollback, **không** có document `credit_transactions` nào được ghi.
+- [ ] Hoàn credit cho reading của user đã bị xoá → reading thành `FAILED`, không ghi `READING_REFUND`, không lỗi.
+
+### User không còn tồn tại
+
+- [ ] Access token còn hạn của user vừa bị `users:delete` → mọi endpoint cần đăng nhập trả `401 UNAUTHENTICATED`.
+- [ ] Xoá thẳng document user trong database, rồi gọi `GET /me`, `POST /readings`, `POST /me/referral` bằng access token còn hạn → `401`, **không** phải `500`, và không ghi thêm dữ liệu nào.
+- [ ] `/auth/refresh` với session của user đã xoá (bằng script hoặc xoá thẳng) → `401`, session bị thu hồi.
+- [ ] Chủ mã có người được giới thiệu đã bị xoá thẳng → `GET /me/referrals` hiện "Người dùng đã xoá", trả `200`.
+- [ ] `db:check` trên dữ liệu có user bị xoá thẳng → báo đúng các giao dịch, reading, session, referral mồ côi, và trả exit code khác 0. Trên dữ liệu sạch → exit code 0.
 
 ### Referral
 

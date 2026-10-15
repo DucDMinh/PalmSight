@@ -25,7 +25,8 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 | `POST /auth/forgot-password`, `reset-password`, `PUT /me/password` | Backend |
 | `POST /auth/google`, `POST /auth/facebook`, gộp tài khoản theo email đã xác minh | Backend |
 | Tạo user, sinh `referralCode`, `SIGNUP_BONUS` +3 | Backend |
-| `CreditLedgerService` + test song song | Backend |
+| Auth guard kiểm tra user tồn tại và `deletedAt = null` ở mỗi request | Backend |
+| `CreditLedgerService` (kiểm tra `matchedCount === 1`, rollback nếu không khớp) + test song song | Backend |
 | `GET /me`, `GET /me/credit-transactions` | Backend |
 | Yup schema đăng ký/đăng nhập trong `shared/` | Cả hai |
 | Màn `/login`, `/register`, `/register/check-email`, `/verify-email`, `/forgot-password`, `/reset-password`, `/account`, `/account/password`, `/wallet` | Frontend |
@@ -52,7 +53,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 | `POST /me/referral` (5 kiểm tra + trần 10 lượt/ngày; người nhập +1, chủ mã +2 trong một transaction), `GET /me/referrals` | Backend |
 | Áp dụng `referralCode` lúc xác minh email đăng ký | Backend |
 | Màn `/referral/enter`, `/referral`, nhập mã từ `/account` | Frontend |
-| Script `credits:adjust`, `credits:reconcile` | Backend |
+| Script `credits:adjust`, `credits:reconcile`, `db:check` | Backend |
 
 **Xong khi:** thành viên A nhập mã của B, A nhận +1 và B nhận +2 ngay; các ca trong [testing.md](testing.md) đều qua.
 
@@ -62,6 +63,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 - [ ] Script `users:delete` + collection `deleted_identities`; kiểm tra định danh đã xoá khi tạo user ([ADR-0009](adr/0009-manual-account-deletion.md))
 - [ ] Rate limit, header bảo mật, màn chờ "Đang đánh thức máy chủ"
 - [ ] Deploy theo [deployment.md](deployment.md): Vercel + Render + Atlas M0 + R2 (lifecycle 90 ngày)
+- [ ] Atlas: tạo hai user database `palmsight-app` (readWrite) và `palmsight-readonly` (read); `db:check` chạy hằng tuần bằng GitHub Actions
 - [ ] PWA manifest, icon, cài ra màn hình chính
 - [ ] Đánh giá AI với bộ ảnh mẫu cho cả 3 trường phái
 
