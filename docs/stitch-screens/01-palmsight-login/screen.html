@@ -1,0 +1,171 @@
+<!DOCTYPE html><html lang="vi"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>PalmSight - Đăng nhập</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * {
+      box-sizing: border-box;
+      letter-spacing: 0px !important;
+    }
+    body {
+      font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+      background-color: #fdfcfc;
+      color: #201d1d;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wordmark-grid {
+      display: inline-grid;
+      grid-template-columns: repeat(35, 3px);
+      grid-template-rows: repeat(5, 3px);
+      gap: 1px;
+    }
+    .pixel {
+      width: 3px;
+      height: 3px;
+    }
+    .pixel.on {
+      background-color: #201d1d;
+    }
+    .hairline-border {
+      border-color: rgba(15, 0, 0, 0.12);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-[#201d1d] selection:text-[#fdfcfc]">
+<!-- Header (56px height, hairline bottom, max-w-[960px]) -->
+<header class="w-full border-b hairline-border">
+<div class="max-w-[960px] mx-auto h-[56px] flex items-center justify-between px-4">
+<a aria-label="PalmSight Home" class="flex items-center" href="#">
+<div class="wordmark-grid" id="header-wordmark"></div>
+</a>
+<a class="text-[16px] font-medium text-[#201d1d] underline hover:text-[#0f0000]" href="#">
+        Đăng ký
+      </a>
+</div>
+</header>
+<!-- Main Content: Two-column layout starting 96px below top bar -->
+<main class="w-full flex-grow mt-[96px] mb-[96px]">
+<div class="max-w-[960px] mx-auto px-4">
+<div class="flex flex-col md:flex-row md:items-start">
+<!-- Left Column: 360px width with 48px right padding & hairline divider -->
+<section class="w-full md:w-[360px] md:flex-shrink-0 md:pr-[48px] md:border-r hairline-border">
+<h1 class="text-[38px] leading-[1.3] font-bold text-[#201d1d]">
+            Đăng nhập
+          </h1>
+<p class="text-[16px] leading-[1.5] text-[#424245] mt-4 font-normal">
+            Chào mừng bạn quay lại.
+          </p>
+</section>
+<!-- Right Column: 480px width with 48px left padding -->
+<section class="w-full md:w-[480px] md:pl-[48px] mt-10 md:mt-0">
+<form class="w-full" onsubmit="return false;">
+<!-- Field 1: Tên đăng nhập hoặc email -->
+<div>
+<label class="block text-[16px] font-bold text-[#201d1d] mb-2 leading-[1.5]" for="username">
+                Tên đăng nhập hoặc email
+              </label>
+<input class="w-full h-[40px] px-3 py-2 bg-[#f8f7f7] border hairline-border rounded-[4px] text-[16px] text-[#201d1d] placeholder-[#9a9898] focus:outline-none focus:border-[#201d1d]" id="username" name="username" placeholder="minhanh hoặc minhanh@example.com" type="text">
+</div>
+<!-- Field 2: Mật khẩu (mt-6 / 24px) -->
+<div class="mt-6">
+<div class="flex justify-between items-center mb-2">
+<label class="text-[16px] font-bold text-[#201d1d] leading-[1.5]" for="password">
+                  Mật khẩu
+                </label>
+<a class="text-[14px] text-[#201d1d] underline hover:text-[#0f0000]" href="#">
+                  Quên mật khẩu?
+                </a>
+</div>
+<div class="relative w-full">
+<input class="w-full h-[40px] pl-3 pr-16 py-2 bg-[#f8f7f7] border hairline-border rounded-[4px] text-[16px] text-[#201d1d] focus:outline-none focus:border-[#201d1d]" id="password" name="password" type="password" value="••••••••">
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] text-[#201d1d] underline cursor-pointer bg-transparent border-0 p-0 hover:text-[#0f0000]" id="toggle-password" type="button">
+                  Hiện
+                </button>
+</div>
+</div>
+<!-- Primary Button: Đăng nhập (mt-6 / 24px) -->
+<button class="w-full h-[36px] mt-6 bg-[#201d1d] hover:bg-[#0f0000] active:bg-[#0f0000] text-[#fdfcfc] text-[16px] font-medium rounded-[4px] flex items-center justify-center transition-colors" type="submit">
+              Đăng nhập
+            </button>
+<!-- Divider with word "hoặc" (my-6 / 24px) -->
+<div class="relative my-6 flex items-center justify-center">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t hairline-border"></div>
+</div>
+<span class="relative bg-[#fdfcfc] px-3 text-[14px] text-[#646262]">
+                hoặc
+              </span>
+</div>
+<!-- Secondary Button: Google -->
+<button class="w-full h-[36px] bg-[#fdfcfc] hover:bg-[#f8f7f7] active:bg-[#f1eeee] text-[#201d1d] border border-[#646262] text-[16px] font-medium rounded-[4px] flex items-center justify-center transition-colors" type="button">
+              [G]  Tiếp tục với Google
+            </button>
+<!-- Secondary Button: Facebook (mt-3 / 12px) -->
+<button class="w-full h-[36px] mt-3 bg-[#fdfcfc] hover:bg-[#f8f7f7] active:bg-[#f1eeee] text-[#201d1d] border border-[#646262] text-[16px] font-medium rounded-[4px] flex items-center justify-center transition-colors" type="button">
+              [f]  Tiếp tục với Facebook
+            </button>
+<!-- Caption (mt-6 / 24px) -->
+<div class="mt-6 text-[14px] leading-[1.5] text-[#646262]">
+              Chưa có tài khoản? <a class="text-[#201d1d] underline hover:text-[#0f0000]" href="#">Đăng ký</a>
+</div>
+</form>
+</section>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t hairline-border py-8">
+<div class="max-w-[960px] mx-auto px-4">
+<p class="text-[14px] leading-[1.5] text-[#646262] m-0">
+        Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.
+      </p>
+</div>
+</footer>
+<script>
+    // Wordmark Pattern (5 rows x 35 cols):
+    // ███ ███ █   █ █ ███ ███ ███ █ █ ███
+    // █ █ █ █ █   ███ █    █  █   █ █  █
+    // ███ ███ █   ███ ███  █  █ █ ███  █
+    // █   █ █ █   █ █   █  █  █ █ █ █  █
+    // █   █ █ ███ █ █ ███ ███ ███ █ █  █
+    const pattern = [
+      "███ ███ █   █ █ ███ ███ ███ █ █ ███",
+      "█ █ █ █ █   ███ █    █  █   █ █  █ ",
+      "███ ███ █   ███ ███  █  █ █ ███  █ ",
+      "█   █ █ █   █ █   █  █  █ █ █ █  █ ",
+      "█   █ █ ███ █ █ ███ ███ ███ █ █  █ "
+    ];
+
+    const container = document.getElementById('header-wordmark');
+    pattern.forEach(row => {
+      const paddedRow = row.padEnd(35, ' ');
+      for (let i = 0; i < 35; i++) {
+        const char = paddedRow[i];
+        const pixel = document.createElement('div');
+        pixel.className = 'pixel' + (char === '█' ? ' on' : '');
+        container.appendChild(pixel);
+      }
+    });
+
+    // Toggle password visibility
+    const passwordInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('toggle-password');
+    if (toggleBtn && passwordInput) {
+      toggleBtn.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+          passwordInput.type = 'text';
+          toggleBtn.textContent = 'Ẩn';
+        } else {
+          passwordInput.type = 'password';
+          toggleBtn.textContent = 'Hiện';
+        }
+      });
+    }
+  </script>
+</body></html>
