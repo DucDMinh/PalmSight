@@ -38,7 +38,7 @@
     --accent: 0 5% 97.5%;          /* #f8f7f7 surface-soft */
     --accent-foreground: 0 5% 12%;
 
-    --destructive: 3.5 100% 59.4%; /* #ff3b30 danger */
+    --destructive: 0 75.5% 41.6%;  /* #ba1a1a danger (WCAG AA compliant) */
     --destructive-foreground: 0 0% 99.2%;
 
     --border: 0 0% 88%;            /* hairline simulation */

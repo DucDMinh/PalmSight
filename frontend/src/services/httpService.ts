@@ -6,30 +6,44 @@ export const USER_KEY = "user";
 
 class Services {
   axios: AxiosInstance;
+  private inMemoryToken: string | null = null;
 
   constructor() {
-    this.axios = axios;
-    this.axios.defaults.withCredentials = false;
+    this.axios = axios.create({
+      withCredentials: true,
+    });
 
     //! Interceptor request
     this.axios.interceptors.request.use(
-      function (config) {
+      (config) => {
+        const token = this.inMemoryToken || this.getTokenStorage();
+        if (token && config.headers) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
       },
-      function (error) {
+      (error) => {
         return Promise.reject(error);
       }
     );
 
     //! Interceptor response
     this.axios.interceptors.response.use(
-      function (config) {
+      (config) => {
         return config;
       },
-      function (error) {
+      (error) => {
         return Promise.reject(error);
       }
     );
+  }
+
+  setInMemoryToken(token: string | null) {
+    this.inMemoryToken = token;
+  }
+
+  getInMemoryToken(): string | null {
+    return this.inMemoryToken;
   }
 
   attachTokenToHeader(token: string) {

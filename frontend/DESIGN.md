@@ -29,10 +29,10 @@ colors:
   warning: "#ff9f0a"
   warning-hover: "#cc7f08"
   warning-active: "#995f06"
-  danger: "#ff3b30"
-  danger-hover: "#d70015"
-  danger-active: "#a50011"
-  success: "#30d158"
+  danger: "#ba1a1a"
+  danger-hover: "#93000a"
+  danger-active: "#690005"
+  success: "#1b6e32"
 
 typography:
   display-xl:
@@ -269,13 +269,13 @@ The full Apple Human Interface Guidelines semantic ramp ships with the system. O
 - **Accent** (`{colors.accent}` — `#007aff`): primary informational signal, in-product link color, TUI command highlight.
 - **Accent Hover** (`{colors.accent-hover}` — `#0056b3`): pressed informational link.
 - **Accent Active** (`{colors.accent-active}` — `#004085`): deeply-pressed informational state.
-- **Danger** (`{colors.danger}` — `#ff3b30`): destructive confirmation, error state.
-- **Danger Hover** (`{colors.danger-hover}` — `#d70015`): pressed destructive.
-- **Danger Active** (`{colors.danger-active}` — `#a50011`): deeply-pressed destructive.
+- **Danger** (`{colors.danger}` — `#ba1a1a`): destructive confirmation, error state (WCAG AA compliant).
+- **Danger Hover** (`{colors.danger-hover}` — `#93000a`): pressed destructive.
+- **Danger Active** (`{colors.danger-active}` — `#690005`): deeply-pressed destructive.
 - **Warning** (`{colors.warning}` — `#ff9f0a`): caution callouts.
 - **Warning Hover** (`{colors.warning-hover}` — `#cc7f08`): pressed caution.
 - **Warning Active** (`{colors.warning-active}` — `#995f06`): deeply-pressed caution.
-- **Success** (`{colors.success}` — `#30d158`): positive confirmation, in-TUI success indicator.
+- **Success** (`{colors.success}` — `#1b6e32`): positive confirmation, in-TUI success indicator (WCAG AA compliant).
 
 ## Typography
 
