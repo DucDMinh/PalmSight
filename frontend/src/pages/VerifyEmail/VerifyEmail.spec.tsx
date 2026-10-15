@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import VerifyEmailPage from './VerifyEmail';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import VerifyEmailPage from './index';
 import authService from '@/services/authService';
 import { AuthenticationProvider, useAuth } from '@/providers/AuthenticationProvider';
 
@@ -25,19 +26,29 @@ const AuthInspector = () => {
 };
 
 describe('VerifyEmailPage (Stitch Screen 1d106024adaa426eadcacab751819351)', () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
     vi.restoreAllMocks();
     mockedNavigate.mockReset();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
   const renderComponent = (initialQuery = '') => {
     return render(
-      <MemoryRouter initialEntries={[`/verify-email${initialQuery}`]}>
-        <AuthenticationProvider skipInitialRefresh>
-          <VerifyEmailPage />
-          <AuthInspector />
-        </AuthenticationProvider>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[`/verify-email${initialQuery}`]}>
+          <AuthenticationProvider skipInitialRefresh>
+            <VerifyEmailPage />
+            <AuthInspector />
+          </AuthenticationProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 

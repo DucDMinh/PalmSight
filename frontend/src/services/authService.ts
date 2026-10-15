@@ -3,6 +3,9 @@ import {
   AUTH_REGISTER_URL,
   AUTH_RESEND_VERIFICATION_URL,
   AUTH_VERIFY_EMAIL_URL,
+  AUTH_LOGIN_URL,
+  AUTH_FORGOT_PASSWORD_URL,
+  AUTH_RESET_PASSWORD_URL,
   AUTH_REFRESH_URL,
   AUTH_LOGOUT_URL,
 } from '@/consts/apiUrl';
@@ -11,6 +14,9 @@ import type {
   RegisterResponseDto,
   VerifyEmailRequestDto,
   ResendVerificationRequestDto,
+  LoginRequestDto,
+  ForgotPasswordRequestDto,
+  ResetPasswordRequestDto,
   AuthResponseDto,
   RefreshTokenResponseDto,
 } from '@palmsight/shared';
@@ -42,6 +48,19 @@ class AuthService {
   async postVerifyEmail(data: VerifyEmailRequestDto): Promise<AuthResponseDto> {
     const response = await httpService.post(AUTH_VERIFY_EMAIL_URL, data);
     return response.data;
+  }
+
+  async postLogin(data: LoginRequestDto): Promise<AuthResponseDto> {
+    const response = await httpService.post(AUTH_LOGIN_URL, data);
+    return response.data;
+  }
+
+  async postForgotPassword(data: ForgotPasswordRequestDto): Promise<void> {
+    await httpService.post(AUTH_FORGOT_PASSWORD_URL, data);
+  }
+
+  async postResetPassword(data: ResetPasswordRequestDto): Promise<void> {
+    await httpService.post(AUTH_RESET_PASSWORD_URL, data);
   }
 
   async postRefresh(): Promise<AuthResponseDto | RefreshTokenResponseDto> {
