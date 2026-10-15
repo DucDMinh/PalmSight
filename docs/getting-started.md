@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | Node.js | 22 LTS | |
 | pnpm | 9 | `corepack enable && corepack prepare pnpm@9 --activate` |
-| Docker Desktop | mới nhất | Chạy MongoDB và MinIO |
+| Docker Desktop | mới nhất | Chạy MongoDB và Mailpit |
 | ngrok | mới nhất | Tài khoản free + 1 static domain miễn phí |
 | MongoDB Compass | tuỳ chọn | Xem dữ liệu bằng giao diện |
 
@@ -26,7 +26,7 @@ Mỗi phía có file env riêng, khớp với lúc deploy: backend tương ứng
 
 | File | Ai đọc | Chứa |
 | --- | --- | --- |
-| `backend/.env` | NestJS (`@nestjs/config` đọc `.env` ở thư mục đang chạy) | MongoDB, JWT, OAuth secret, SMTP, S3, AI, hằng số credits |
+| `backend/.env` | NestJS (`@nestjs/config` đọc `.env` ở thư mục đang chạy) | MongoDB, JWT, OAuth secret, SMTP, AI, hằng số credits |
 | `frontend/.env` | Vite | `VITE_*` (bị nhúng vào bundle, **không** đặt secret), `API_PROXY_TARGET`, `DEV_ALLOWED_HOSTS` |
 
 Google client ID và Facebook app ID có mặt ở cả hai file (`GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID`…), với cùng giá trị. Đây là giá trị công khai nên lặp lại không sao.
@@ -39,9 +39,7 @@ docker compose up -d
 
 | Dịch vụ | Địa chỉ | Ghi chú |
 | --- | --- | --- |
-| MongoDB 7 | `localhost:27017` | Chạy dạng replica set 1 node (`rs0`), cần cho transaction; container tự chạy `rs.initiate()` |
-| MinIO API | `localhost:9000` | `minioadmin` / `minioadmin` |
-| MinIO Console | `http://localhost:9001` | Tạo bucket `palmsight-images` (private) |
+| MongoDB 7 | `localhost:27019` | Chạy dạng replica set 1 node (`rs0`), cần cho transaction; container tự chạy `rs.initiate()`. Cổng 27019 trên máy ánh xạ vào 27017 trong container, tránh đụng MongoDB khác đã cài sẵn ở 27017 |
 | Mailpit SMTP | `localhost:1025` | Bắt mọi email backend gửi ra; không gửi tới hộp thư thật |
 | Mailpit UI | `http://localhost:8025` | Mở để bấm link xác minh email và link đặt lại mật khẩu khi dev |
 
@@ -50,8 +48,19 @@ Link trong email được tạo từ `PUBLIC_BASE_URL` trong `backend/.env`. Khi
 Chuỗi kết nối trong `backend/.env`:
 
 ```bash
-MONGODB_URI=mongodb://localhost:27017/palmsight?replicaSet=rs0&directConnection=true
+MONGODB_URI=mongodb://localhost:27019/palmsight?directConnection=true
 ```
+
+- MongoDB **phải** chạy dạng replica set (`mongod --replSet rs0` rồi `rs.initiate()`). MongoDB đơn lẻ (standalone) kết nối được, nhưng mọi thao tác credits sẽ lỗi vì không có transaction.
+- Chỉ dùng `directConnection=true`, **không** thêm `replicaSet=rs0`. Có cả hai thì một số công cụ (MongoDB Compass…) báo "directConnection is not supported with replicaSet".
+- Không dùng docker-compose mà tự chạy container thì giữ đúng cổng và cờ replica set:
+
+  ```bash
+  docker run -d --name PalmSight -p 27019:27017 mongo:7 --replSet rs0 --bind_ip_all
+  docker exec PalmSight mongosh --eval "rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27017'}]})"
+  ```
+
+  `host` trong `rs.initiate()` là `localhost:27017` (cổng bên trong container), không phải 27019. Nhờ `directConnection=true`, driver kết nối thẳng qua cổng 27019 mà không cần phân giải tên host đó.
 
 ## 4. Tạo index và dữ liệu mẫu
 
@@ -143,7 +152,8 @@ Kể cả khi dev, đừng sửa tay `users` hay `credit_transactions` trong Com
 
 | Triệu chứng | Cách xử lý |
 | --- | --- |
-| `Transaction numbers are only allowed on a replica set member or mongos` | Thiếu `replicaSet=rs0` trong `MONGODB_URI`, hoặc replica set chưa được khởi tạo; chạy lại `docker compose up -d` |
+| `Transaction numbers are only allowed on a replica set member or mongos` | MongoDB đang chạy standalone: container thiếu `--replSet rs0`, hoặc chưa chạy `rs.initiate()`. Kiểm tra bằng `docker exec <container> mongosh --eval "rs.status()"` |
+| `directConnection is not supported with replicaSet` | Bỏ `replicaSet=rs0` khỏi `MONGODB_URI`, chỉ giữ `directConnection=true` |
 | Mở qua ngrok báo "Blocked request. This host is not allowed" | Đặt `DEV_ALLOWED_HOSTS=<domain ngrok>` trong `frontend/.env`, rồi khởi động lại Vite |
 | Backend treo ở bước khởi động, log dừng sau `ConfigModule dependencies initialized` | Không kết nối được MongoDB: kiểm tra container đang chạy, và `MONGODB_URI` trong `backend/.env` đúng cổng |
 | Mở thẳng `/scan` hoặc tải lại trang bị 404 khi chạy `vite preview` hay deploy | Thiếu SPA fallback về `/index.html`; trên Vercel xem `frontend/vercel.json` |

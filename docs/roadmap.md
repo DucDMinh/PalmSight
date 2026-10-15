@@ -9,7 +9,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
   - Chuyển husky và `LICENSE` của boilerplate lên gốc, hoặc xoá.
 - [ ] Dọn boilerplate `frontend/` theo danh sách giữ/bỏ trong ADR-0007; sửa import sai chữ hoa/thường (`CommonIcons` → `commonIcons`)
 - [ ] ESLint, Prettier, TypeScript strict, Vitest
-- [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node) + MinIO + Mailpit
+- [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node, ánh xạ `27019:27017`) + Mailpit
 - [ ] Schema Mongoose cho 8 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
 - [ ] Vite `server.proxy` `/api/v1/*` → API (đích `API_PROXY_TARGET`, `allowedHosts` từ `DEV_ALLOWED_HOSTS` trong `frontend/.env`); `GET /api/v1/health`
 - [ ] GitHub Actions: lint, typecheck, test, build
@@ -37,7 +37,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 
 | Việc | Gợi ý chia việc |
 | --- | --- |
-| Upload + `sharp` (HEIC, EXIF, resize) + lưu MinIO/R2 | Backend |
+| Upload (multer `memoryStorage`) + `sharp` (HEIC, EXIF, resize) trong bộ nhớ, không lưu ảnh ([ADR-0010](adr/0010-no-image-storage.md)) | Backend |
 | `AiProvider`: Groq, Gemini fallback, `FakeAiProvider` | Backend |
 | `READING_SCHOOLS`, `LIFE_ASPECTS`, Yup schema `PalmResult` trong `shared/`; prompt 3 trường phái trong `backend/src/ai/prompts/` | Cả hai |
 | `POST /readings` với `topics`, idempotency, trừ/hoàn credit, dọn reading kẹt | Backend |
@@ -59,10 +59,10 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 
 ## Phase 4 — Ra mắt
 
-- [ ] Trang `/privacy` (nêu việc giữ HMAC định danh sau khi xoá), `/terms`, `/data-deletion` (hướng dẫn gửi yêu cầu xoá qua email)
+- [ ] Trang `/privacy` (nêu việc giữ HMAC định danh sau khi xoá; server không lưu ảnh nhưng ảnh được gửi cho Groq/Gemini), `/terms`, `/data-deletion` (hướng dẫn gửi yêu cầu xoá qua email)
 - [ ] Script `users:delete` + collection `deleted_identities`; kiểm tra định danh đã xoá khi tạo user ([ADR-0009](adr/0009-manual-account-deletion.md))
 - [ ] Rate limit, header bảo mật, màn chờ "Đang đánh thức máy chủ"
-- [ ] Deploy theo [deployment.md](deployment.md): Vercel + Render + Atlas M0 + R2 (lifecycle 90 ngày)
+- [ ] Deploy theo [deployment.md](deployment.md): Vercel + Render + Atlas M0
 - [ ] Atlas: tạo hai user database `palmsight-app` (readWrite) và `palmsight-readonly` (read); `db:check` chạy hằng tuần bằng GitHub Actions
 - [ ] PWA manifest, icon, cài ra màn hình chính
 - [ ] Đánh giá AI với bộ ảnh mẫu cho cả 3 trường phái

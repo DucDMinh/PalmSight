@@ -1,6 +1,6 @@
 # PalmSight — Tài liệu dự án
 
-Cập nhật: 2026-10-14
+Cập nhật: 2026-10-15
 
 Bối cảnh và quy tắc bất biến: [../CONTEXT.md](../CONTEXT.md). Giới thiệu repo: [../README.md](../README.md).
 
@@ -48,14 +48,13 @@ flowchart TB
     subgraph api["API — NestJS (Node 22)"]
         direction LR
         auth[auth] ~~~ users[users] ~~~ referrals[referrals] ~~~ mail[mail]
-        readings[readings] ~~~ credits["credits<br/>(CreditLedgerService)"] ~~~ ai[ai] ~~~ storage[storage]
+        readings[readings] ~~~ credits["credits<br/>(CreditLedgerService)"] ~~~ ai[ai]
     end
     oauth["Google / Facebook<br/>xác minh token"]
     smtp["Gmail SMTP<br/>email xác minh, đặt lại mật khẩu"]
     groq["Groq<br/>AI vision chính"]
     gemini["Gemini<br/>AI dự phòng"]
     mongo[("MongoDB<br/>Atlas M0 / replica set local")]
-    r2[("Object storage<br/>ảnh, signed URL")]
 
     client --> ngrok -->|"REST /api/v1 · Bearer JWT"| api
     api --> oauth
@@ -63,13 +62,12 @@ flowchart TB
     api --> groq
     api --> gemini
     api --> mongo
-    api --> r2
 
     classDef accent stroke:#2f6fde,stroke-width:2px
     class credits accent
 ```
 
-Client chỉ gọi API của chính dự án. API key AI, chuỗi kết nối database và thông tin storage chỉ nằm trên server. Mọi cộng/trừ credits đi qua module `credits` (`CreditLedgerService`), trong cùng MongoDB transaction với nghiệp vụ gây ra nó.
+Client chỉ gọi API của chính dự án. API key AI và chuỗi kết nối database chỉ nằm trên server. Server không lưu ảnh lòng bàn tay: ảnh được xử lý trong bộ nhớ, gửi cho AI rồi bỏ ([ADR-0010](adr/0010-no-image-storage.md)). Mọi cộng/trừ credits đi qua module `credits` (`CreditLedgerService`), trong cùng MongoDB transaction với nghiệp vụ gây ra nó.
 
 ## Tech stack và cấu trúc thư mục
 
@@ -80,12 +78,11 @@ Client chỉ gọi API của chính dự án. API key AI, chuỗi kết nối da
 | Backend | NestJS (Node 22) + Mongoose (`@nestjs/mongoose`) | API tách biệt, cấu trúc module rõ ràng |
 | Database | MongoDB 7 (replica set) | Lựa chọn của team; transaction nhiều document cho sổ cái credits |
 | Rate limit | `@nestjs/throttler`, lưu trong bộ nhớ | Chỉ chạy 1 instance API, không cần Redis |
-| Lưu ảnh | S3-compatible (Cloudflare R2; MinIO khi dev) | Bucket private, truy cập qua signed URL; tự xoá ảnh cũ bằng lifecycle rule |
-| Xử lý ảnh | `sharp` | Resize, xoay EXIF, xoá metadata |
+| Xử lý ảnh | multer `memoryStorage` + `sharp` | Resize, xoay EXIF, xoá metadata, hoàn toàn trong bộ nhớ; không lưu ảnh ([ADR-0010](adr/0010-no-image-storage.md)) |
 | Đăng nhập | Email/username + mật khẩu (hash argon2id); Google Identity Services, Facebook Login SDK; JWT tự cấp | Cách chính là mật khẩu, Google/Facebook là phụ; server tự xác minh token của provider. Xem [ADR-0008](adr/0008-email-password-auth.md) |
 | Gửi email | `nodemailer` + Gmail SMTP (App Password); Mailpit khi dev | Xác minh email, đặt lại mật khẩu; không cần domain riêng |
 | AI | Groq (free key), fallback Gemini | Xem [ai-integration.md](ai-integration.md) |
-| Dev | Docker Compose (mongo, minio, mailpit) + ngrok | HTTPS công khai cho OAuth và test trên điện thoại |
+| Dev | Docker Compose (mongo, mailpit) + ngrok | HTTPS công khai cho OAuth và test trên điện thoại |
 
 ```text
 palmsight/
@@ -102,7 +99,7 @@ palmsight/
 │     ├─ services/            # apiClient: gọi /api/v1, gắn Bearer token
 │     └─ consts/              # route, query key
 ├─ backend/                   # NestJS
-│  ├─ .env.example            # secret của server (MongoDB, JWT, SMTP, S3, AI…)
+│  ├─ .env.example            # secret của server (MongoDB, JWT, SMTP, AI…)
 │  ├─ scripts/                # db:sync-indexes, db:seed, db:check, credits:adjust, credits:reconcile, users:delete
 │  └─ src/
 │     ├─ auth/                # register, verify-email, login, password reset, google.verifier, facebook.verifier, jwt
@@ -111,8 +108,7 @@ palmsight/
 │     ├─ credits/             # CreditLedgerService (mọi cộng/trừ đi qua đây)
 │     ├─ referrals/
 │     ├─ readings/
-│     ├─ ai/                  # AiProvider, groq.provider, gemini.provider, prompts/
-│     └─ storage/
+│     └─ ai/                  # AiProvider, groq.provider, gemini.provider, prompts/
 ├─ shared/                    # @palmsight/shared: DTO, enum, READING_SCHOOLS, Yup schema (PalmResult, đăng ký, đăng nhập) dùng chung
 ├─ docs/
 ├─ pnpm-workspace.yaml        # frontend, backend, shared

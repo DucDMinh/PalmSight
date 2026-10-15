@@ -74,7 +74,6 @@ erDiagram
         array topics
         string hand
         string status
-        string imageKey
         object result
         Date deletedAt
     }
@@ -220,14 +219,15 @@ Index:
 | `topics` | string[] | bắt buộc, ≥ 1 phần tử | Các mục được bói (đã điền đủ khi người dùng chọn "Bói toàn bộ"), theo thứ tự chuẩn của trường phái |
 | `hand` | `LEFT` \| `RIGHT` | bắt buộc | Người dùng chọn; AI không được đổi |
 | `status` | `PROCESSING` \| `DONE` \| `FAILED` \| `REJECTED` | bắt buộc | `REJECTED` = ảnh không phải lòng bàn tay |
-| `imageKey` | string \| null | | Key trong object storage; `null` sau khi ảnh bị xoá |
 | `result` | object \| null | | `PalmResult`, theo schema ở [ai-integration.md](ai-integration.md) |
 | `rejectReason` | string \| null | | |
 | `aiProvider`, `aiModel` | string \| null | | Phục vụ debug, đổi model |
 | `errorCode` | string \| null | | |
 | `latencyMs` | int \| null | | |
 | `createdAt`, `completedAt` | Date | | |
-| `deletedAt` | Date \| null | | Người dùng xoá reading: ẩn khỏi API. Document được giữ vì sổ cái tham chiếu tới nó; `result` và `imageKey` về `null` |
+| `deletedAt` | Date \| null | | Người dùng xoá reading: ẩn khỏi API. Document được giữ vì sổ cái tham chiếu tới nó; `result` về `null` |
+
+Reading không có field ảnh: server không lưu ảnh lòng bàn tay ([ADR-0010](adr/0010-no-image-storage.md)).
 
 Index:
 - `{ userId: 1, idempotencyKey: 1 }` unique. Reading đã xoá vẫn giữ key, nên gửi lại key đó trả `404`.

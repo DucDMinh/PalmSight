@@ -174,7 +174,7 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | POST | `/readings` | Bearer | header + body multipart | Gửi ảnh + trường phái + các mục muốn bói, trừ 1 credit, nhận kết quả |
 | GET | `/readings` | Bearer | query phân trang | Lịch sử các lần xem |
 | GET | `/readings/{id}` | Bearer | path | Chi tiết một lần xem |
-| DELETE | `/readings/{id}` | Bearer | path | Xoá ảnh và kết quả, ẩn khỏi lịch sử |
+| DELETE | `/readings/{id}` | Bearer | path | Xoá kết quả, ẩn khỏi lịch sử |
 
 Danh sách trường phái và các mục bói không có endpoint riêng: web đọc từ `@palmsight/shared` (`READING_SCHOOLS`, `LIFE_ASPECTS`).
 
@@ -631,10 +631,10 @@ Content-Type: image/jpeg
 | 6 | Validate `school`, `topics`, `hand`, `aiConsent` | `400 VALIDATION_ERROR` | Không |
 | 7 | Kiểm tra loại ảnh bằng magic bytes | `415 UNSUPPORTED_IMAGE_TYPE` | Không |
 | 8 | Trừ 1 credit + tạo reading `PROCESSING` trong 1 transaction | `402 INSUFFICIENT_CREDITS` | — |
-| 9 | Xử lý ảnh, lưu storage, gọi AI | `REJECTED` → `200`; `FAILED` → `503`; cả hai đều hoàn credit | Có, rồi hoàn |
+| 9 | Xử lý ảnh trong bộ nhớ, gọi AI (ảnh không được lưu, xem [ADR-0010](adr/0010-no-image-storage.md)) | `REJECTED` → `200`; `FAILED` → `503`; cả hai đều hoàn credit | Có, rồi hoàn |
 | 10 | Lưu kết quả | `DONE` → `200` | Có |
 
-Ở bước 5, multer có thể dừng đọc và trả `413` ngay khi luồng upload vượt 8 MB.
+Ở bước 5, multer (dùng `memoryStorage`, không ghi ra đĩa) có thể dừng đọc và trả `413` ngay khi luồng upload vượt 8 MB.
 
 **Response**
 
@@ -727,7 +727,6 @@ Query: `cursor`, `limit`. Trả mọi reading **chưa bị xoá** của user, �
       "topics": ["nguHanh", "thienVan", "love"],
       "hand": "LEFT",
       "summary": "Tay Thổ, thực tế và đáng tin cậy...",
-      "thumbnailUrl": "https://<r2>/readings/...jpg?X-Amz-Signature=...",
       "createdAt": "2026-10-14T08:31:00Z"
     },
     {
@@ -737,7 +736,6 @@ Query: `cursor`, `limit`. Trả mọi reading **chưa bị xoá** của user, �
       "topics": ["heartLine"],
       "hand": "RIGHT",
       "summary": null,
-      "thumbnailUrl": "https://...",
       "createdAt": "2026-10-13T10:02:00Z"
     }
   ],
@@ -748,7 +746,8 @@ Query: `cursor`, `limit`. Trả mọi reading **chưa bị xoá** của user, �
 | Trường | Ghi chú |
 | --- | --- |
 | `summary` | Chỉ có khi `DONE`; trạng thái khác là `null` |
-| `thumbnailUrl` | Signed URL 5 phút trỏ tới chính ảnh đã lưu (cạnh dài 1280 px; MVP chưa có ảnh thu nhỏ riêng). `null` khi ảnh đã hết hạn 90 ngày hoặc chưa lưu được |
+
+Reading không có trường ảnh nào, vì server không lưu ảnh.
 
 Khi đọc danh sách, reading kẹt `PROCESSING` quá 2 phút được chuyển sang `FAILED` và hoàn credit trước khi trả về. Xem [workflow.md](workflow.md#3-xem-bói).
 
@@ -766,7 +765,6 @@ Path: `id` là ObjectId của reading. ID sai định dạng, không tồn tại
   "hand": "LEFT",
   "result": { "...": "PalmResult" },
   "rejectReason": null,
-  "imageUrl": "https://<r2>/readings/...jpg?X-Amz-Signature=...",
   "createdAt": "2026-10-14T08:31:00Z",
   "completedAt": "2026-10-14T08:31:07Z"
 }
@@ -779,13 +777,13 @@ Path: `id` là ObjectId của reading. ID sai định dạng, không tồn tại
 | `REJECTED` | `null` | có | có |
 | `FAILED` | `null` | `null` | có |
 
-`imageUrl` là signed URL sống 5 phút, hoặc `null` nếu ảnh đã hết hạn 90 ngày. Reading kẹt `PROCESSING` quá 2 phút được dọn như ở `GET /readings`.
+Reading kẹt `PROCESSING` quá 2 phút được dọn như ở `GET /readings`.
 
 ### DELETE /readings/{id}
 
 Path: `id`. Không có body.
 
-- Server xoá file ảnh trong storage, đặt `result = null`, `imageKey = null`, `deletedAt = now`, rồi trả `204`.
+- Server đặt `result = null`, `deletedAt = now`, rồi trả `204`.
 - Reading bị **ẩn hẳn**: không còn trong `GET /readings`; `GET`/`DELETE /readings/{id}` trả `404`.
 - Document vẫn được giữ, vì sổ cái credits tham chiếu tới nó.
 - Không hoàn credit.

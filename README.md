@@ -23,12 +23,12 @@ Dự án nhỏ của 2 người, làm cho vui.
 | --- | --- |
 | Frontend | React + Vite (SPA), TypeScript, Tailwind CSS, shadcn/ui, PWA |
 | Backend | NestJS (Node 22), Mongoose |
-| Dữ liệu | MongoDB 7, S3-compatible storage (Cloudflare R2 / MinIO) |
+| Dữ liệu | MongoDB 7; ảnh tay xử lý trong bộ nhớ bằng `sharp`, không lưu |
 | Đăng nhập | Email/username + mật khẩu (argon2id), Google Identity Services, Facebook Login, JWT |
 | Gửi email | Gmail SMTP qua nodemailer (Mailpit khi dev) |
 | AI | Groq (model vision, free API key), Gemini làm dự phòng |
 | Dev | pnpm workspaces, Docker Compose, ngrok |
-| Deploy (free) | Vercel, Render, MongoDB Atlas M0, Cloudflare R2 |
+| Deploy (free) | Vercel, Render, MongoDB Atlas M0 |
 
 ## Kiến trúc
 
@@ -36,7 +36,6 @@ Dự án nhỏ của 2 người, làm cho vui.
 flowchart LR
     web["Web / PWA<br/>React + Vite :5173"] -->|"/api/v1 (proxy / rewrite)"| api["API<br/>NestJS :4000"]
     api --> mongo[(MongoDB)]
-    api --> s3[(Object storage)]
     api --> oauth["Google / Facebook"]
     api --> ai["Groq → Gemini"]
 ```
@@ -52,7 +51,7 @@ git clone <repo-url> palmsight && cd palmsight
 cp backend/.env.example backend/.env     # secret của server, xem chú thích trong file
 cp frontend/.env.example frontend/.env   # chỉ biến công khai VITE_*
 pnpm install
-docker compose up -d            # MongoDB (replica set) + MinIO + Mailpit
+docker compose up -d            # MongoDB (replica set) + Mailpit
 pnpm --filter backend db:sync-indexes
 pnpm dev                        # frontend :5173, backend :4000
 ngrok http 5173 --url=<static-domain>.ngrok-free.app   # khi cần test đăng nhập / điện thoại

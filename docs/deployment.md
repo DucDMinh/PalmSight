@@ -9,7 +9,6 @@ Mục tiêu: chạy thật với chi phí 0 đồng. Giới hạn của các gó
 | Web (SPA React + Vite) | Vercel Hobby, host file tĩnh | Chỉ dùng cho dự án phi thương mại; có sẵn domain `*.vercel.app` |
 | API (NestJS) | Render Free Web Service | Tự ngủ sau ~15 phút không có request; lần gọi đầu mất 30–60 giây để thức dậy |
 | Database | MongoDB Atlas M0 | 512 MB, có replica set nên dùng được transaction |
-| Lưu ảnh | Cloudflare R2 | 10 GB miễn phí; bucket private + lifecycle rule xoá ảnh sau 90 ngày |
 | AI | Groq free tier, Gemini free tier | Giới hạn request/phút và /ngày |
 | Gửi email | Gmail SMTP (tài khoản Gmail riêng + App Password) | Giới hạn khoảng vài trăm email/ngày; dễ vào Spam. **Cần kiểm tra Render free có cho kết nối ra cổng SMTP 465/587 không**: một số nền tảng free chặn cổng này. Nếu bị chặn, chuyển sang dịch vụ gửi mail qua HTTP API (Resend, Brevo) |
 | Theo dõi lỗi | Sentry Developer (free) | Tuỳ chọn |
@@ -74,8 +73,6 @@ Mỗi dịch vụ có danh sách biến riêng, tương ứng một file `.env.e
 | `PUBLIC_BASE_URL` | `https://<app>.vercel.app` |
 | `MONGODB_URI` | Chuỗi `mongodb+srv://...` của Atlas |
 | `JWT_ACCESS_SECRET` | Chuỗi ngẫu nhiên mới, ≥ 32 byte |
-| `S3_ENDPOINT` | Endpoint R2 `https://<account-id>.r2.cloudflarestorage.com` |
-| `S3_FORCE_PATH_STYLE` | `false` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | `smtp.gmail.com`, `465`, `true` |
 | `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Gmail của dự án + App Password; `MAIL_FROM` dùng đúng địa chỉ Gmail đó |
 
@@ -110,7 +107,6 @@ Nếu chỉ chơi với bạn bè, có thể giữ chế độ Development/Testi
 | Việc | Cách làm |
 | --- | --- |
 | Backup MongoDB | Atlas M0 không có backup tự động. Thỉnh thoảng chạy `mongodump` bằng tay, hoặc dùng GitHub Actions theo lịch |
-| Xoá ảnh quá 90 ngày | Lifecycle rule của R2, không cần code |
 | Dọn reading kẹt `PROCESSING` | Chạy định kỳ trong API khi API đang thức, và khi người dùng mở reading |
 | Đối soát credits | Chạy tay `credits:reconcile` khi nghi có sai lệch |
 | Kiểm tra dữ liệu mồ côi | Chạy `db:check` mỗi tuần, hoặc theo lịch bằng GitHub Actions; xem mục dưới |
@@ -124,10 +120,10 @@ Health check: `GET /api/v1/health` kiểm tra kết nối MongoDB (không gọi 
 
 Không xoá hay sửa tay (bằng Compass, Atlas Data Explorer, mongosh) các collection `users`, `credit_transactions`, `referrals`, `readings`, `deleted_identities`. MongoDB không có khoá ngoại, nên xoá thẳng một user sẽ:
 
-- để lại reading, ảnh, session, referral và giao dịch trỏ vào user không tồn tại;
+- để lại reading, session, referral và giao dịch trỏ vào user không tồn tại;
 - làm sổ cái lệch với số dư;
 - **bỏ qua bước ghi `deleted_identities`**, nên người đó đăng ký lại vẫn nhận +3 và nhập mã được;
-- để ảnh và kết quả bói nằm lại, tức là chưa xoá xong theo yêu cầu của người dùng.
+- để kết quả bói nằm lại, tức là chưa xoá xong theo yêu cầu của người dùng.
 
 Mọi thay đổi đi qua API hoặc script có sẵn. Nếu cần một thao tác mà chưa có script, viết script mới (đi qua `CreditLedgerService` nếu đụng tới credits) và ghi vào PR, không sửa tay.
 
@@ -150,8 +146,7 @@ Chỉ đọc, không tự sửa gì. In báo cáo và trả exit code khác 0 n�
 | --- | --- |
 | Tổng sổ cái bằng số dư | Như `credits:reconcile` |
 | Giao dịch, reading, session, referral, password reset có `userId` không tồn tại trong `users` | Ai đó đã xoá user trực tiếp |
-| User có `deletedAt` nhưng còn email, username, mật khẩu, identity, session, hoặc reading còn ảnh/kết quả | `users:delete` chạy dở, hoặc ai đó sửa tay |
-| Object trong `readings/` của bucket không còn reading tương ứng (hoặc reading có `imageKey = null`) | Ảnh mồ côi cần xoá |
+| User có `deletedAt` nhưng còn email, username, mật khẩu, identity, session, hoặc reading còn kết quả | `users:delete` chạy dở, hoặc ai đó sửa tay |
 | Reading `PROCESSING` quá 10 phút | Job dọn reading kẹt không chạy |
 
 Khi có vấn đề: tìm nguyên nhân trước, rồi sửa bằng script có `--note`. Không xoá tay cho "sạch" báo cáo.

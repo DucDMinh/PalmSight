@@ -111,13 +111,13 @@ Bước 4 — **Chụp ảnh**:
 
 Thứ tự khối:
 
-1. Ảnh thu nhỏ, nhãn trường phái và nhãn "Toàn bộ" hoặc "N mục".
+1. Biểu tượng và nhãn trường phái, tay đã chụp, nhãn "Toàn bộ" hoặc "N mục". Không có ảnh tay: server không lưu ảnh ([ADR-0010](adr/0010-no-image-storage.md)).
 2. `summary`.
 3. Các `sections` đã chọn, theo đúng thứ tự, mỗi mục gồm "Quan sát" và "Ý nghĩa". Ẩn khối này nếu không chọn mục riêng nào.
 4. Các khía cạnh cuộc sống đã chọn. Ẩn khối này nếu không chọn khía cạnh nào.
 5. Lời khuyên.
 6. **Câu miễn trừ.**
-7. Nút "Bói thêm mục khác / trường phái khác (−1 credit)": mở lại bước chọn, dùng lại ảnh vừa chụp nếu còn trên máy.
+7. Nút "Bói thêm mục khác / trường phái khác (−1 credit)": mở lại bước chọn, dùng lại ảnh vừa chụp nếu app còn giữ trong bộ nhớ (chưa tải lại trang); không còn thì chụp lại.
 8. Nút chia sẻ (chỉ phần chữ, không kèm ảnh tay) và nút xoá. Bấm xoá → hộp xác nhận → `DELETE /readings/{id}` → quay về `/readings`. Reading đã xoá biến mất khỏi lịch sử và không mở lại được.
 
 UI vẽ `sections` theo cách chung: tiêu đề + quan sát + ý nghĩa. Vì vậy thêm trường phái mới không cần sửa màn hình này.

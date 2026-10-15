@@ -11,20 +11,21 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 | Đăng ký chưa xác minh | Người dùng nhập | Chờ xác minh email | Tự xoá sau 24 giờ |
 | Tên, ảnh đại diện, email | Google / Facebook | Hiển thị hồ sơ, gộp tài khoản | Tới khi xoá tài khoản |
 | ID tài khoản Google/Facebook | Google / Facebook | Đăng nhập | Tới khi xoá tài khoản |
-| Ảnh lòng bàn tay | Người dùng tải lên | Phân tích bói | 90 ngày (lifecycle rule của bucket), hoặc tới khi người dùng xoá |
+| Ảnh lòng bàn tay | Người dùng tải lên | Phân tích bói | **Không lưu.** Chỉ nằm trong bộ nhớ server trong lúc xử lý request, rồi bị bỏ. Bản đã xoá EXIF được gửi tới Groq (dự phòng Gemini) và chịu chính sách lưu giữ của nhà cung cấp đó |
 | Kết quả bói | AI | Hiển thị, lịch sử | Tới khi người dùng xoá reading/tài khoản |
 | Lịch sử credits | Hệ thống | Đối soát | Giữ cả sau khi xoá tài khoản (đã ẩn danh) |
 | HMAC của email và ID Google/Facebook đã xoá | Hệ thống, lúc xoá tài khoản | Không cho tài khoản tạo lại nhận credits khuyến mãi | Vô thời hạn; không đảo ngược được |
 
-Ảnh lòng bàn tay có thể bị xem là dữ liệu sinh trắc học. Nếu app được dùng rộng rãi, nên tìm hiểu quy định bảo vệ dữ liệu cá nhân của Việt Nam (Nghị định 13/2023/NĐ-CP và luật bảo vệ dữ liệu cá nhân mới). Thiết kế dưới đây giảm rủi ro bằng cách giữ ảnh ít nhất có thể.
+Ảnh lòng bàn tay có thể bị xem là dữ liệu sinh trắc học. Nếu app được dùng rộng rãi, nên tìm hiểu quy định bảo vệ dữ liệu cá nhân của Việt Nam (Nghị định 13/2023/NĐ-CP và luật bảo vệ dữ liệu cá nhân mới). Thiết kế dưới đây giảm rủi ro bằng cách không lưu ảnh trên server ([ADR-0010](adr/0010-no-image-storage.md)).
 
 ## Bảo vệ ảnh
 
 - Màn chụp ảnh có checkbox đồng ý: ảnh được gửi tới nhà cung cấp AI bên thứ ba (Groq, dự phòng Google Gemini) để phân tích. Server cũng kiểm tra: `POST /readings` thiếu `aiConsent=true` thì bị từ chối.
-- Bucket private; key ảnh là `readings/{userId}/{readingId}.jpg`; chỉ truy cập qua signed URL 5 phút sau khi kiểm tra quyền sở hữu.
-- Xoá toàn bộ EXIF (có GPS) trước khi lưu và trước khi gửi AI.
-- Lifecycle rule của bucket tự xoá object trong `readings/` sau 90 ngày, không cần job.
-- `DELETE /readings/{id}` xoá ảnh và kết quả ngay lập tức, ẩn reading khỏi API. Chỉ giữ lại document rỗng (trường phái, mục, trạng thái, thời gian) để sổ cái credits còn tham chiếu được.
+- Trang `/privacy` nêu rõ: server không lưu ảnh, nhưng ảnh được gửi cho Groq/Gemini và chịu chính sách lưu giữ của họ. Kiểm tra điều khoản free tier của từng nhà cung cấp (có dùng dữ liệu gửi lên để cải thiện model không) trước khi ra mắt.
+- Server không lưu ảnh: multer dùng `memoryStorage`, `sharp` xử lý buffer trong bộ nhớ. Không ghi ảnh ra ổ đĩa, thư mục tạm (`/tmp`), object storage hay database. Buffer bị bỏ khi request kết thúc.
+- Xoá toàn bộ EXIF (có GPS) trước khi gửi AI.
+- Client chỉ giữ ảnh vừa chụp trong bộ nhớ của app (để gửi lại khi mất mạng, hoặc "Bói thêm"); không lưu vào `localStorage` hay IndexedDB.
+- `DELETE /readings/{id}` xoá kết quả ngay lập tức, ẩn reading khỏi API. Chỉ giữ lại document rỗng (trường phái, mục, trạng thái, thời gian) để sổ cái credits còn tham chiếu được.
 - Không log ảnh, base64 ảnh hay toàn bộ response AI.
 
 ## Xoá tài khoản
@@ -38,7 +39,7 @@ Không có tính năng tự xoá trong app, để chặn vòng xoá–đăng ký
    - email người gửi khớp `users.email`; hoặc
    - với tài khoản không có email: hỏi thêm thông tin chỉ chủ tài khoản biết, ví dụ số credits hiện tại, ngày xem bói gần nhất.
 3. Trong vòng 30 ngày, dev chạy `pnpm --filter backend users:delete --user <id> --note "<link yêu cầu>"`. Script:
-   - xoá ảnh trong storage, kết quả bói, mật khẩu, identity, session, token đặt lại mật khẩu;
+   - xoá kết quả bói, mật khẩu, identity, session, token đặt lại mật khẩu;
    - ẩn danh hoá user (xoá tên, username, email, avatar; đặt `deletedAt`);
    - ghi HMAC của email và ID Google/Facebook vào `deleted_identities`.
 4. Trả lời email xác nhận đã xoá.
@@ -99,7 +100,7 @@ Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từn
 
 **Toàn vẹn dữ liệu:**
 - `CreditLedgerService` kiểm tra `matchedCount === 1` sau mỗi lần cộng/trừ. Lệnh trúng 0 user thì rollback, không ghi sổ cái.
-- Không sửa hay xoá trực tiếp trên database. Script `db:check` phát hiện dữ liệu mồ côi (giao dịch, reading, session, referral, ảnh trỏ vào user không tồn tại) và tài khoản xoá chưa sạch. Xem [deployment.md](deployment.md#vận-hành).
+- Không sửa hay xoá trực tiếp trên database. Script `db:check` phát hiện dữ liệu mồ côi (giao dịch, reading, session, referral trỏ vào user không tồn tại) và tài khoản xoá chưa sạch. Xem [deployment.md](deployment.md#vận-hành).
 
 ## AI
 

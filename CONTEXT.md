@@ -36,7 +36,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | 8 | Không cần chống gian lận chặt (không kiểm tra thiết bị/IP), không cần trang admin |
 | 9 | Người dùng chọn 1 trong 3 trường phái, rồi tích các mục muốn bói (hoặc bói toàn bộ); kết quả chỉ gồm các mục đã chọn; chụp 1 tay |
 | 10 | AI dùng API key miễn phí của **Groq** |
-| 11 | Chỉ tiếng Việt; giữ ảnh 90 ngày |
+| 11 | Chỉ tiếng Việt; không lưu ảnh lòng bàn tay trên server |
 | 12 | Giữ ngrok cho dev; deploy ưu tiên gói miễn phí |
 | 13 | Tên app: **PalmSight** |
 | 14 | **Không có tự xoá tài khoản** trong app (chặn xoá–đăng ký lại để farm credits). Xoá thủ công theo yêu cầu qua email; tài khoản tạo lại từ định danh đã xoá có 0 credits và không được nhập mã |
@@ -51,7 +51,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Referrer | Chủ mã giới thiệu, người được thưởng +2. |
 | Referee | Người nhập mã của referrer. Được thưởng +1 (`REFEREE_BONUS`). |
 | Referral code | Mã 8 ký tự in hoa, mỗi user một mã, sinh khi tạo tài khoản. |
-| Reading | Một lần xem bói: ảnh + trường phái + các mục đã chọn + kết quả AI + trạng thái. |
+| Reading | Một lần xem bói: trường phái + các mục đã chọn + tay + kết quả AI + trạng thái. Không chứa ảnh. |
 | Trường phái (`school`) | Cách diễn giải chỉ tay: `WESTERN`, `EASTERN`, `VEDIC`. Định nghĩa trong `READING_SCHOOLS`. |
 | Mục bói (`topic`) | Một thứ người dùng tích để bói: mục riêng của trường phái hoặc một khía cạnh cuộc sống. |
 | Section | Mục riêng của trường phái (ví dụ `nguHanh`, `heartLine`), trả về trong `result.sections`. |
@@ -70,8 +70,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 5. `SIGNUP_BONUS` chỉ cộng khi **tạo user** (xác minh email đăng ký, hoặc lần đầu đăng nhập Google/Facebook), một lần mỗi user. Gắn thêm mật khẩu hoặc Google/Facebook vào user cũ không cộng thêm. User tạo lại từ định danh có trong `deleted_identities` không được cộng.
 6. Mỗi user chỉ nhập mã giới thiệu **một lần**. Không được nhập mã của chính mình hoặc của người mình đã mời. Thưởng người nhập (+1) và chủ mã (+2) ghi trong cùng một transaction với document `referrals`.
 7. Mọi reading có `school` và `topics` (≥ 1 mục, đã chuẩn hoá). Kết quả AI phải có **đúng** các mục trong `topics`: không thiếu, không thừa. Giá luôn 1 credit, dù chọn bao nhiêu mục.
-8. API key AI, secret OAuth, mật khẩu SMTP, chuỗi kết nối MongoDB và thông tin storage **chỉ nằm trên server**. Repo công khai: không bao giờ commit `.env`.
-9. Ảnh người dùng nằm trong bucket **private**, chỉ truy cập qua signed URL ngắn hạn; xoá EXIF trước khi lưu.
+8. API key AI, secret OAuth, mật khẩu SMTP và chuỗi kết nối MongoDB **chỉ nằm trên server**. Repo công khai: không bao giờ commit `.env`.
+9. **Server không lưu ảnh lòng bàn tay** ([ADR-0010](docs/adr/0010-no-image-storage.md)). Ảnh chỉ nằm trong bộ nhớ trong lúc xử lý request (multer `memoryStorage`, `sharp` xử lý buffer), được xoá EXIF trước khi gửi AI, và không được ghi ra ổ đĩa, thư mục tạm, storage, database hay log.
 10. Mọi trang kết quả hiển thị câu miễn trừ: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 11. **Không lưu mật khẩu thô hay token thô.** Mật khẩu hash bằng argon2id. Token trong link email và refresh token chỉ lưu bản hash SHA-256.
 12. **Không sửa hay xoá dữ liệu trực tiếp trên database** (Compass, Atlas UI, mongosh) với `users`, `credit_transactions`, `referrals`, `readings`, `deleted_identities`. Thay đổi phải đi qua API hoặc script: xoá user bằng `users:delete`, chỉnh credits bằng `credits:adjust`. MongoDB không có khoá ngoại, nên xoá tay sẽ để lại dữ liệu mồ côi, sổ cái lệch và bỏ qua bước chặn nhận thưởng lại. Xem dữ liệu hằng ngày bằng user database **chỉ đọc**.
@@ -90,6 +90,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | [0007](docs/adr/0007-vite-spa-frontend.md) | Frontend là SPA React + Vite; repo `frontend/` · `backend/` · `shared/`; web và API chung một domain qua proxy/rewrite |
 | [0008](docs/adr/0008-email-password-auth.md) | Đăng ký email/username + mật khẩu, bắt buộc xác minh email; Google/Facebook là cách đăng nhập phụ; gộp theo email đã xác minh; gửi mail qua Gmail SMTP |
 | [0009](docs/adr/0009-manual-account-deletion.md) | Không cho tự xoá tài khoản; xoá thủ công theo yêu cầu; HMAC định danh đã xoá để chặn nhận thưởng lại |
+| [0010](docs/adr/0010-no-image-storage.md) | Không lưu ảnh lòng bàn tay trên server; xử lý trong bộ nhớ, gửi AI rồi bỏ |
 
 ## Quy ước code
 

@@ -70,7 +70,7 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 
 ### Xoá reading
 
-- [ ] `DELETE /readings/{id}` → `204`; ảnh bị xoá khỏi storage; reading biến mất khỏi `GET /readings`; `GET`/`DELETE` lần sau trả `404`.
+- [ ] `DELETE /readings/{id}` → `204`; `result` về `null`; reading biến mất khỏi `GET /readings`; `GET`/`DELETE` lần sau trả `404`.
 - [ ] Xoá reading đang `PROCESSING` → `409 READING_IN_PROGRESS`.
 - [ ] Xoá reading không hoàn credit; giao dịch `READING_SPEND` vẫn còn trong lịch sử credits.
 
@@ -110,7 +110,7 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 
 ### Xoá tài khoản theo yêu cầu (`users:delete`)
 
-- [ ] Script xoá ảnh, kết quả, mật khẩu, identity, session; ẩn danh hoá user; sổ cái credits còn nguyên; tổng `amount` vẫn bằng `creditBalance`.
+- [ ] Script xoá kết quả, mật khẩu, identity, session; ẩn danh hoá user; sổ cái credits còn nguyên; tổng `amount` vẫn bằng `creditBalance`.
 - [ ] Script ghi HMAC của email và mọi ID Google/Facebook vào `deleted_identities`; không lưu giá trị gốc.
 - [ ] Đăng ký lại cùng email → xác minh → user mới, `isNewUser = true`, **0 credits**, `referralBlocked = true`, không có `SIGNUP_BONUS`.
 - [ ] Đăng nhập lại cùng Google/Facebook → như trên.
@@ -121,7 +121,8 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 ### Ảnh
 
 - [ ] File > 8 MB → `413`; file `.jpg` nhưng nội dung không phải ảnh → `415`.
-- [ ] Ảnh lưu trong storage không còn EXIF.
+- [ ] Ảnh gửi cho AI (bắt qua `FakeAiProvider`) không còn EXIF.
+- [ ] Sau `POST /readings`, không có file nào được ghi ra đĩa hay thư mục tạm; document reading và response không có trường ảnh nào ([ADR-0010](adr/0010-no-image-storage.md)).
 
 ## Mock AI
 
