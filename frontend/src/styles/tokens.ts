@@ -31,10 +31,10 @@ export const PALMSIGHT_TOKENS = {
     warning: "#ff9f0a",
     warningHover: "#cc7f08",
     warningActive: "#995f06",
-    danger: "#ff3b30",
-    dangerHover: "#d70015",
-    dangerActive: "#a50011",
-    success: "#30d158",
+    danger: "#ba1a1a",
+    dangerHover: "#93000a",
+    dangerActive: "#690005",
+    success: "#1b6e32",
   },
   typography: {
     fontFamily:

@@ -11,9 +11,10 @@ export default function Navbar() {
   const [openPopover, setPopover] = useState(false);
 
   const displayName =
-    user?.firstname && user?.lastname
+    user?.displayName ||
+    (user?.firstname && user?.lastname
       ? `${user.firstname} ${user.lastname}`
-      : user?.username || "Người dùng";
+      : user?.username || "Người dùng");
   const displayEmail = user?.email || "";
   const initial = displayName.charAt(0).toUpperCase() || "P";
 

@@ -24,6 +24,9 @@ import Loading from "./components/ui/loading";
 import { showError } from "./helpers/toast";
 import BaseUrl from "./consts/baseUrl";
 import Login from "./pages/Login";
+import RegisterPage from "./pages/Register";
+import CheckEmailPage from "./pages/CheckEmail";
+import VerifyEmailPage from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import DefaultLayout from "./layouts/DefaultLayout";
 import Homepage from "./pages/Homepage";
@@ -62,6 +65,9 @@ const App = () => {
       <Router>
         <Routes>
           <Route path={BaseUrl.Login} element={<Login />} />
+          <Route path={BaseUrl.Register} element={<RegisterPage />} />
+          <Route path={BaseUrl.CheckEmail} element={<CheckEmailPage />} />
+          <Route path={BaseUrl.VerifyEmail} element={<VerifyEmailPage />} />
           <Route path={BaseUrl.ForgotPassword} element={<ForgotPassword />} />
           <Route
             path={BaseUrl.Homepage}

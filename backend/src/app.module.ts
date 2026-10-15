@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HealthModule } from './health';
+import { MailModule } from './mail/mail.module';
+import { CreditsModule } from './credits/credits.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -11,9 +14,13 @@ import { HealthModule } from './health';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         uri: config.getOrThrow<string>('MONGODB_URI'),
+        autoIndex: false,
       }),
     }),
     HealthModule,
+    MailModule,
+    CreditsModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

@@ -11,6 +11,7 @@ import {
   LIFE_ASPECTS,
   CREDIT_AMOUNTS,
   registerSchema,
+  registerFormSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
@@ -85,52 +86,121 @@ describe('@palmsight/shared', () => {
   });
 
   describe('Yup Schemas', () => {
-    describe('registerSchema', () => {
-      it('should validate valid registration input', async () => {
-        const valid = {
+    describe('registerSchema & registerFormSchema (TC-001, TC-002, TC-003)', () => {
+      it('TC-001: should validate valid registration input, lowercase username/email and uppercase referralCode', async () => {
+        const input = {
           displayName: 'Nguyễn Văn A',
-          username: 'nguyenvana',
-          email: 'a@example.com',
-          password: 'mat-khau-du-dai',
-          referralCode: 'K7QX4MZP',
+          username: '  nguyenvana  ',
+          email: '  nguyenvana@example.com  ',
+          password: 'matkhau_123456',
+          referralCode: 'k7qx4mzp',
         };
-        await expect(registerSchema.validate(valid)).resolves.toMatchObject({
+        const validated = await registerSchema.validate(input);
+        expect(validated.displayName).toBe('Nguyễn Văn A');
+        expect(validated.username).toBe('nguyenvana');
+        expect(validated.email).toBe('nguyenvana@example.com');
+        expect(validated.password).toBe('matkhau_123456');
+        expect(validated.referralCode).toBe('K7QX4MZP');
+      });
+
+      it('TC-002: should reject invalid registration boundary values', async () => {
+        // username too short
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'ab',
+            email: 'test@example.com',
+            password: 'validPassword123',
+          }),
+        ).rejects.toThrow('Username chỉ gồm chữ thường, số, dấu gạch dưới, từ 3-20 ký tự');
+
+        // username invalid chars
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'user@domain',
+            email: 'test@example.com',
+            password: 'validPassword123',
+          }),
+        ).rejects.toThrow('Username chỉ gồm chữ thường, số, dấu gạch dưới, từ 3-20 ký tự');
+
+        // invalid email
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'validuser',
+            email: 'email-khong-hop-le',
+            password: 'validPassword123',
+          }),
+        ).rejects.toThrow('Email không đúng định dạng');
+
+        // password too short
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'validuser',
+            email: 'test@example.com',
+            password: '12345',
+          }),
+        ).rejects.toThrow('Mật khẩu phải có ít nhất 8 ký tự');
+
+        // password equals username or email
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'nguyenvana',
+            email: 'test@example.com',
+            password: 'nguyenvana',
+          }),
+        ).rejects.toThrow('Mật khẩu không được trùng với username hoặc email');
+
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'validuser',
+            email: 'test@example.com',
+            password: 'test@example.com',
+          }),
+        ).rejects.toThrow('Mật khẩu không được trùng với username hoặc email');
+
+        // referral code invalid length / chars
+        await expect(
+          registerSchema.validate({
+            displayName: 'A',
+            username: 'validuser',
+            email: 'test@example.com',
+            password: 'validPassword123',
+            referralCode: '1234',
+          }),
+        ).rejects.toThrow('Mã giới thiệu phải gồm 8 ký tự hợp lệ');
+      });
+
+      it('TC-003: registerFormSchema should reject when confirmPassword does not match password', async () => {
+        const invalidForm = {
           displayName: 'Nguyễn Văn A',
           username: 'nguyenvana',
-          email: 'a@example.com',
-          password: 'mat-khau-du-dai',
-          referralCode: 'K7QX4MZP',
+          email: 'nguyenvana@example.com',
+          password: 'MatKhau123',
+          confirmPassword: 'MatKhauKhac',
+        };
+        await expect(registerFormSchema.validate(invalidForm)).rejects.toThrow(
+          'Mật khẩu xác nhận không khớp',
+        );
+
+        const validForm = {
+          displayName: 'Nguyễn Văn A',
+          username: 'nguyenvana',
+          email: 'nguyenvana@example.com',
+          password: 'MatKhau123',
+          confirmPassword: 'MatKhau123',
+        };
+        await expect(registerFormSchema.validate(validForm)).resolves.toMatchObject({
+          password: 'MatKhau123',
+          confirmPassword: 'MatKhau123',
         });
       });
-
-      it('should fail when password equals username or email', async () => {
-        const invalidUsername = {
-          displayName: 'Test',
-          username: 'myusername',
-          email: 'test@example.com',
-          password: 'myusername',
-        };
-        await expect(registerSchema.validate(invalidUsername)).rejects.toThrow();
-
-        const invalidEmail = {
-          displayName: 'Test',
-          username: 'myusername2',
-          email: 'test@example.com',
-          password: 'test@example.com',
-        };
-        await expect(registerSchema.validate(invalidEmail)).rejects.toThrow();
-      });
-
-      it('should reject invalid username format', async () => {
-        const invalid = {
-          displayName: 'Test',
-          username: 'User@Name!',
-          email: 'test@example.com',
-          password: 'validPassword123',
-        };
-        await expect(registerSchema.validate(invalid)).rejects.toThrow();
-      });
     });
+
 
     describe('loginSchema', () => {
       it('should validate valid login input', async () => {

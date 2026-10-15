@@ -85,11 +85,11 @@ module.exports = {
           active: "#995f06",
         },
         "terminal-danger": {
-          DEFAULT: "#ff3b30",
-          hover: "#d70015",
-          active: "#a50011",
+          DEFAULT: "#ba1a1a",
+          hover: "#93000a",
+          active: "#690005",
         },
-        "terminal-success": "#30d158",
+        "terminal-success": "#1b6e32",
 
         // shadcn semantic mappings
         border: "hsl(var(--border))",
