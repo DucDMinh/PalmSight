@@ -11,7 +11,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 - [ ] ESLint, Prettier, TypeScript strict, Vitest
 - [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node) + MinIO + Mailpit
 - [ ] Schema Mongoose cho 8 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
-- [ ] Vite `server.proxy` `/api/v1/*` → API, `envDir: '..'`; `GET /api/v1/health`
+- [ ] Vite `server.proxy` `/api/v1/*` → API (đích `API_PROXY_TARGET`, `allowedHosts` từ `DEV_ALLOWED_HOSTS` trong `frontend/.env`); `GET /api/v1/health`
 - [ ] GitHub Actions: lint, typecheck, test, build
 
 **Xong khi:** `pnpm dev` chạy được frontend + backend, CI xanh.

@@ -41,7 +41,7 @@ Cấu hình trong `frontend/vercel.json`. Header bảo mật cũng khai báo ở
 - Vercel không đọc biến môi trường trong `rewrites`, nên URL của API trên Render ghi thẳng vào file. URL này không phải secret. Đổi URL API thì phải sửa file này.
 - `cleanUrls` cho phép `privacy.html` được phục vụ tại `/privacy`.
 
-Khi dev, Vite dev server làm việc tương tự bằng `server.proxy`, với đích là `API_PROXY_TARGET`.
+Khi dev, Vite dev server làm việc tương tự bằng `server.proxy`, với đích là `API_PROXY_TARGET` trong `frontend/.env`.
 
 Cần lưu ý về thời gian chờ:
 
@@ -52,21 +52,32 @@ Cần lưu ý về thời gian chờ:
 
 ## Biến môi trường
 
-Toàn bộ danh sách ở [.env.example](../.env.example). Khác biệt so với dev:
+Mỗi dịch vụ có danh sách biến riêng, tương ứng một file `.env.example`:
+
+| Dịch vụ | Danh sách biến | Đặt ở |
+| --- | --- | --- |
+| API (NestJS) | [backend/.env.example](../backend/.env.example) | Render → Environment |
+| Web (Vite) | [frontend/.env.example](../frontend/.env.example), chỉ các biến `VITE_*` | Vercel → Environment Variables |
+
+**Vercel (web):**
+
+| Biến | Production |
+| --- | --- |
+| `VITE_GOOGLE_CLIENT_ID`, `VITE_FACEBOOK_APP_ID` | Cùng giá trị với `GOOGLE_CLIENT_ID`, `FACEBOOK_APP_ID` của API. Được nhúng vào bundle lúc build, nên đổi giá trị thì phải deploy lại |
+| `API_PROXY_TARGET`, `DEV_ALLOWED_HOSTS` | Không đặt: chỉ dùng khi dev |
+
+**Render (API)**, những biến khác với giá trị dev:
 
 | Biến | Production |
 | --- | --- |
 | `NODE_ENV` | `production` |
 | `PUBLIC_BASE_URL` | `https://<app>.vercel.app` |
-| `VITE_GOOGLE_CLIENT_ID`, `VITE_FACEBOOK_APP_ID` | Đặt ở Vercel. Được nhúng vào bundle lúc build, nên đổi giá trị thì phải deploy lại |
 | `MONGODB_URI` | Chuỗi `mongodb+srv://...` của Atlas |
 | `JWT_ACCESS_SECRET` | Chuỗi ngẫu nhiên mới, ≥ 32 byte |
 | `S3_ENDPOINT` | Endpoint R2 `https://<account-id>.r2.cloudflarestorage.com` |
 | `S3_FORCE_PATH_STYLE` | `false` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | `smtp.gmail.com`, `465`, `true` |
 | `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Gmail của dự án + App Password; `MAIL_FROM` dùng đúng địa chỉ Gmail đó |
-
-`API_PROXY_TARGET` chỉ dùng khi dev, production không cần.
 
 Secret chỉ đặt trong phần Environment của Render, không bao giờ commit (repo công khai). Vercel chỉ cần các biến `VITE_*`, vốn không phải secret.
 
@@ -127,7 +138,7 @@ Mọi thay đổi đi qua API hoặc script có sẵn. Nếu cần một thao t�
 | `palmsight-app` | `readWrite` trên database `palmsight` | API trên Render; các script khi dev chạy tay |
 | `palmsight-readonly` | `read` trên database `palmsight` | Xem dữ liệu hằng ngày bằng Compass hoặc mongosh |
 
-- Chuỗi kết nối của `palmsight-app` chỉ nằm trong env của Render và trong `.env` của người chạy script, không dùng để mở Compass.
+- Chuỗi kết nối của `palmsight-app` chỉ nằm trong env của Render và trong `backend/.env` của người chạy script, không dùng để mở Compass.
 - Trên Atlas, tài khoản thành viên nên có project role chỉ đọc dữ liệu (ví dụ *Project Data Access Read Only*) khi xem bằng Data Explorer. Chỉ nâng quyền khi thật sự cần, rồi hạ lại.
 - Khi dev local thì không cần tách quyền, vì dữ liệu là dữ liệu thử.
 

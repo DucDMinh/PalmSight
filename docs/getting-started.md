@@ -18,8 +18,18 @@
 git clone <repo-url> palmsight
 cd palmsight
 pnpm install
-cp .env.example .env
+cp backend/.env.example backend/.env      # secret của server
+cp frontend/.env.example frontend/.env    # chỉ biến công khai VITE_* và biến dùng khi dev
 ```
+
+Mỗi phía có file env riêng, khớp với lúc deploy: backend tương ứng Environment của Render, frontend tương ứng Environment của Vercel.
+
+| File | Ai đọc | Chứa |
+| --- | --- | --- |
+| `backend/.env` | NestJS (`@nestjs/config` đọc `.env` ở thư mục đang chạy) | MongoDB, JWT, OAuth secret, SMTP, S3, AI, hằng số credits |
+| `frontend/.env` | Vite | `VITE_*` (bị nhúng vào bundle, **không** đặt secret), `API_PROXY_TARGET`, `DEV_ALLOWED_HOSTS` |
+
+Google client ID và Facebook app ID có mặt ở cả hai file (`GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID`…), với cùng giá trị. Đây là giá trị công khai nên lặp lại không sao.
 
 ## 3. Khởi động dịch vụ nền
 
@@ -35,9 +45,9 @@ docker compose up -d
 | Mailpit SMTP | `localhost:1025` | Bắt mọi email backend gửi ra; không gửi tới hộp thư thật |
 | Mailpit UI | `http://localhost:8025` | Mở để bấm link xác minh email và link đặt lại mật khẩu khi dev |
 
-Link trong email được tạo từ `PUBLIC_BASE_URL`. Khi test trên điện thoại qua ngrok, đặt biến này là domain ngrok, để link mở được trên điện thoại.
+Link trong email được tạo từ `PUBLIC_BASE_URL` trong `backend/.env`. Khi test trên điện thoại qua ngrok, đặt biến này là domain ngrok, để link mở được trên điện thoại.
 
-Chuỗi kết nối trong `.env`:
+Chuỗi kết nối trong `backend/.env`:
 
 ```bash
 MONGODB_URI=mongodb://localhost:27017/palmsight?replicaSet=rs0&directConnection=true
@@ -54,10 +64,10 @@ pnpm --filter backend db:seed            # vài user mẫu đã xác minh, có s
 
 ### ngrok (làm trước, vì đăng nhập Facebook cần URL HTTPS)
 
-1. Đăng ký tại ngrok.com, copy authtoken vào `NGROK_AUTHTOKEN`, chạy `ngrok config add-authtoken <token>`.
+1. Đăng ký tại ngrok.com, rồi chạy `ngrok config add-authtoken <token>`. Token được lưu trong cấu hình của ngrok trên máy, không nằm trong file env của dự án.
 2. Dashboard → **Domains** → nhận static domain miễn phí, ví dụ `palmsight-dev.ngrok-free.app`. Mỗi thành viên nên có domain riêng.
-3. Đặt `PUBLIC_BASE_URL=https://palmsight-dev.ngrok-free.app`.
-4. Thêm domain ngrok vào `server.allowedHosts` trong `frontend/vite.config.ts`. Có thể đọc từ `PUBLIC_BASE_URL`. Nếu thiếu, Vite chặn request với lỗi "Blocked request. This host is not allowed".
+3. Trong `backend/.env`: đặt `PUBLIC_BASE_URL=https://palmsight-dev.ngrok-free.app`.
+4. Trong `frontend/.env`: đặt `DEV_ALLOWED_HOSTS=palmsight-dev.ngrok-free.app`. `vite.config.ts` đọc biến này để điền `server.allowedHosts`. Nếu thiếu, Vite chặn request với lỗi "Blocked request. This host is not allowed".
 
 ### Gmail SMTP (chỉ cần khi muốn gửi email thật)
 
@@ -66,7 +76,7 @@ Khi dev, Mailpit là đủ. Chỉ làm bước này khi muốn thử gửi tới
 1. Tạo một tài khoản Gmail riêng cho dự án. Không dùng Gmail cá nhân, vì mật khẩu ứng dụng cho phép gửi mail thay bạn.
 2. Bật **Xác minh 2 bước** cho tài khoản đó (bắt buộc để có App Password).
 3. myaccount.google.com → **Security → App passwords** → tạo mật khẩu cho "PalmSight", copy chuỗi 16 ký tự.
-4. Điền vào `.env`:
+4. Điền vào `backend/.env`:
 
    ```bash
    SMTP_HOST=smtp.gmail.com
@@ -81,22 +91,22 @@ Gmail ghi đè địa chỉ người gửi bằng `SMTP_USER`, nên `MAIL_FROM` 
 
 ### Groq
 
-1. Tạo key tại console.groq.com → **API Keys**, điền `GROQ_API_KEY`.
-2. Kiểm tra trang **Models**, chọn một model hỗ trợ ảnh (vision), điền `AI_MODEL`.
+1. Tạo key tại console.groq.com → **API Keys**, điền `GROQ_API_KEY` trong `backend/.env`.
+2. Kiểm tra trang **Models**, chọn một model hỗ trợ ảnh (vision), điền `AI_MODEL` trong `backend/.env`.
 
 ### Google
 
 1. console.cloud.google.com → tạo project → **APIs & Services → OAuth consent screen**, loại External, thêm email của 2 thành viên làm test user.
 2. **Credentials → Create credentials → OAuth client ID**, loại *Web application*.
 3. **Authorized JavaScript origins**: `http://localhost:5173` và domain ngrok của từng thành viên.
-4. Điền client ID vào cả `GOOGLE_CLIENT_ID` và `VITE_GOOGLE_CLIENT_ID`.
+4. Điền client ID vào `GOOGLE_CLIENT_ID` (`backend/.env`) và `VITE_GOOGLE_CLIENT_ID` (`frontend/.env`).
 
 ### Facebook
 
 1. developers.facebook.com → **Create App** → use case *Authenticate and request data from users with Facebook Login*.
 2. **App settings → Basic**: điền App Domains (domain ngrok), Privacy Policy URL, Data Deletion Instructions URL.
 3. **Facebook Login → Settings**: thêm domain ngrok vào Allowed Domains for the JavaScript SDK.
-4. Điền `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `VITE_FACEBOOK_APP_ID`.
+4. Điền `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` vào `backend/.env`; `VITE_FACEBOOK_APP_ID` (cùng giá trị app ID) vào `frontend/.env`. App secret **chỉ** nằm ở backend.
 5. Ở chế độ Development, chỉ tài khoản được thêm vào **App roles** mới đăng nhập được. Hãy thêm thành viên thứ hai vào đó.
 
 Hai thành viên có thể dùng chung một Google project và một Facebook App: mỗi người chỉ cần thêm domain ngrok của mình vào danh sách.
@@ -110,7 +120,7 @@ ngrok http 5173 --url=palmsight-dev.ngrok-free.app
 
 Vite dev server ở cổng 5173 proxy `/api/v1/*` sang API ở cổng 4000 (`API_PROXY_TARGET`). Vì vậy chỉ cần tunnel cổng 5173, và cookie `rt` dùng chung một domain. Mở `https://palmsight-dev.ngrok-free.app` trên điện thoại để thử camera.
 
-Vite đọc `.env` ở thư mục gốc repo (`envDir: '..'`). Trình duyệt chỉ thấy các biến `VITE_*`. Đổi `.env` thì phải khởi động lại `pnpm dev`.
+Vite đọc `frontend/.env`; trình duyệt chỉ thấy các biến `VITE_*`. Backend đọc `backend/.env`. Đổi file env của phía nào thì phải khởi động lại phía đó.
 
 ## 7. Lệnh thường dùng
 
@@ -134,7 +144,8 @@ Kể cả khi dev, đừng sửa tay `users` hay `credit_transactions` trong Com
 | Triệu chứng | Cách xử lý |
 | --- | --- |
 | `Transaction numbers are only allowed on a replica set member or mongos` | Thiếu `replicaSet=rs0` trong `MONGODB_URI`, hoặc replica set chưa được khởi tạo; chạy lại `docker compose up -d` |
-| Mở qua ngrok báo "Blocked request. This host is not allowed" | Thêm domain ngrok vào `server.allowedHosts` của Vite |
+| Mở qua ngrok báo "Blocked request. This host is not allowed" | Đặt `DEV_ALLOWED_HOSTS=<domain ngrok>` trong `frontend/.env`, rồi khởi động lại Vite |
+| Backend treo ở bước khởi động, log dừng sau `ConfigModule dependencies initialized` | Không kết nối được MongoDB: kiểm tra container đang chạy, và `MONGODB_URI` trong `backend/.env` đúng cổng |
 | Mở thẳng `/scan` hoặc tải lại trang bị 404 khi chạy `vite preview` hay deploy | Thiếu SPA fallback về `/index.html`; trên Vercel xem `frontend/vercel.json` |
 | `Cannot find module '@palmsight/shared'` | Chưa build `shared`; chạy `pnpm --filter @palmsight/shared build` hoặc `pnpm dev` |
 | Gọi API qua ngrok nhận về trang HTML cảnh báo | Client gửi header `ngrok-skip-browser-warning: true` |

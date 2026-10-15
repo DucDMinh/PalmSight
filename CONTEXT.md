@@ -110,6 +110,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 - **Frontend:**
   - Access token chỉ giữ trong bộ nhớ, không lưu `localStorage`.
   - Không đặt secret trong biến `VITE_*`, vì chúng được nhúng vào bundle.
+- **Biến môi trường tách theo phía:** `backend/.env` và `frontend/.env`, mỗi phía có `.env.example` riêng. Secret của server không bao giờ nằm trong `frontend/`. Thêm biến mới thì cập nhật đúng file `.env.example` của phía dùng nó.
   - Form dùng Formik + Yup (có sẵn trong boilerplate). Schema dùng chung với API lấy từ `@palmsight/shared`.
 - Các hằng số nghiệp vụ (đăng ký 3, chủ mã 2, người nhập mã 1, giá xem 1, trần 10) đọc từ env, không hard-code.
 - Ngày (khi tính trần 10 lượt/ngày) tính theo giờ Việt Nam (`Asia/Ho_Chi_Minh`).
@@ -125,7 +126,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Request/response, mã lỗi | [docs/api-contract.md](docs/api-contract.md) |
 | Trường phái, mục bói, prompt, schema kết quả AI | [docs/ai-integration.md](docs/ai-integration.md) |
 | Màn hình và trạng thái UI | [docs/screens.md](docs/screens.md) |
-| Biến môi trường | [.env.example](.env.example) |
+| Biến môi trường | [backend/.env.example](backend/.env.example) (secret của server), [frontend/.env.example](frontend/.env.example) (chỉ biến công khai `VITE_*`) |
 
 ## Câu hỏi mở
 

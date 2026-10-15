@@ -49,7 +49,8 @@ Yêu cầu: Node 22, pnpm 9, Docker, tài khoản ngrok (free), API key Groq (fr
 
 ```bash
 git clone <repo-url> palmsight && cd palmsight
-cp .env.example .env            # điền các key, xem chú thích trong file
+cp backend/.env.example backend/.env     # secret của server, xem chú thích trong file
+cp frontend/.env.example frontend/.env   # chỉ biến công khai VITE_*
 pnpm install
 docker compose up -d            # MongoDB (replica set) + MinIO + Mailpit
 pnpm --filter backend db:sync-indexes
@@ -63,13 +64,12 @@ Hướng dẫn đầy đủ, gồm cách tạo Google OAuth client và Facebook 
 
 ```text
 palmsight/
-├─ frontend/        # SPA React + Vite, PWA
-├─ backend/         # NestJS API + Mongoose
+├─ frontend/        # SPA React + Vite, PWA; .env.example riêng (chỉ biến VITE_*)
+├─ backend/         # NestJS API + Mongoose; .env.example riêng (secret của server)
 ├─ shared/          # @palmsight/shared: DTO, enum, trường phái bói, Yup schema dùng chung
 ├─ docs/            # tài liệu thiết kế
 ├─ .github/         # template issue / PR
-├─ docker-compose.yml
-└─ .env.example
+└─ docker-compose.yml
 ```
 
 ## Tài liệu

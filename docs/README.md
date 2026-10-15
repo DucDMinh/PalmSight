@@ -92,7 +92,8 @@ palmsight/
 ├─ frontend/                  # SPA React + Vite, PWA
 │  ├─ public/                 # icon PWA; privacy.html, terms.html, data-deletion.html (HTML tĩnh)
 │  ├─ vercel.json             # rewrite /api/v1 → Render, SPA fallback, header bảo mật
-│  ├─ vite.config.ts          # proxy /api/v1 khi dev, vite-plugin-pwa, envDir: '..'
+│  ├─ vite.config.ts          # proxy /api/v1 khi dev, allowedHosts, vite-plugin-pwa
+│  ├─ .env.example            # chỉ biến công khai VITE_* + biến dùng khi dev
 │  └─ src/
 │     ├─ pages/               # Landing, Login, Register, VerifyEmail, ForgotPassword, ResetPassword, Scan, ReadingDetail, Readings, Wallet, Referral, Account...
 │     ├─ components/          # ui/ (shadcn), SchoolPicker, CameraCapture, CreditBadge, ReadingCard...
@@ -101,6 +102,7 @@ palmsight/
 │     ├─ services/            # apiClient: gọi /api/v1, gắn Bearer token
 │     └─ consts/              # route, query key
 ├─ backend/                   # NestJS
+│  ├─ .env.example            # secret của server (MongoDB, JWT, SMTP, S3, AI…)
 │  ├─ scripts/                # db:sync-indexes, db:seed, db:check, credits:adjust, credits:reconcile, users:delete
 │  └─ src/
 │     ├─ auth/                # register, verify-email, login, password reset, google.verifier, facebook.verifier, jwt

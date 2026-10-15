@@ -3,6 +3,7 @@
 - Trạng thái: Accepted
 - Ngày: 2026-10-14
 - Thay thế một phần [ADR-0005](0005-monorepo-nextjs-nestjs.md): phần web (Next.js) và cấu trúc thư mục. Các quyết định còn lại của ADR-0005 (NestJS, MongoDB + Mongoose, pnpm workspaces, không Redis) giữ nguyên.
+- Sửa đổi 2026-10-15: bỏ file `.env` chung ở gốc repo (`envDir: '..'`), tách thành `frontend/.env` và `backend/.env`. Lý do: ranh giới secret rõ ràng, khớp với env riêng của Vercel và Render, không phải chỉnh đường dẫn.
 
 ## Bối cảnh
 
@@ -31,7 +32,11 @@ PalmSight không cần những thứ Next.js mạnh:
 - **Web và API vẫn chạy chung một domain**, để cookie `rt` là cookie first-party:
   - Dev: `server.proxy` của Vite chuyển `/api/v1/*` sang `http://localhost:4000`.
   - Prod: `frontend/vercel.json` rewrite `/api/v1/*` sang URL của API trên Render, các đường dẫn còn lại rewrite về `/index.html` (SPA fallback).
-- Biến môi trường cho trình duyệt dùng tiền tố `VITE_`. Vite đọc file `.env` ở thư mục gốc repo (`envDir: '..'`).
+- **Mỗi phía một file env riêng:** `frontend/.env` (Vite) và `backend/.env` (NestJS), mỗi phía có `.env.example` của mình. Không có file env chung ở gốc repo.
+  - Frontend chỉ chứa biến công khai `VITE_*`, cùng các biến chỉ dùng khi dev mà `vite.config.ts` đọc: `API_PROXY_TARGET`, `DEV_ALLOWED_HOSTS`.
+  - Secret của server không bao giờ nằm trong thư mục `frontend/`.
+  - Cả hai phía dùng vị trí mặc định của Vite và `@nestjs/config`, không phải chỉnh đường dẫn.
+  - Cái giá: Google client ID và Facebook app ID (công khai) lặp lại ở cả hai file.
 
 ## Các phương án đã cân nhắc
 
@@ -48,7 +53,7 @@ PalmSight không cần những thứ Next.js mạnh:
 - Header bảo mật của web (CSP, HSTS…) khai báo trong `frontend/vercel.json`. Header của API do NestJS đặt.
 - Giá trị `VITE_*` được nhúng vào bundle lúc build: lộ ra trình duyệt, và phải build lại khi đổi giá trị. Không bao giờ đặt secret vào biến `VITE_*`.
 - URL API trên Render ghi thẳng trong `vercel.json`, vì Vercel không đọc biến môi trường trong rewrite. URL này không phải secret.
-- Khi dev qua ngrok, phải thêm domain ngrok vào `server.allowedHosts` của Vite.
+- Khi dev qua ngrok, phải thêm domain ngrok vào `server.allowedHosts` của Vite, đặt qua biến `DEV_ALLOWED_HOSTS` trong `frontend/.env`.
 - Từ boilerplate:
   - **Giữ lại:** `components/ui` (shadcn), Tailwind, React Router, TanStack Query, axios, zustand, Formik + Yup. Yup cũng là thư viện validate của backend và `shared/`.
   - **Phải viết lại hoặc bỏ:**
