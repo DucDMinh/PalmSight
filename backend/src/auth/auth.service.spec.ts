@@ -56,8 +56,14 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
       findOneAndUpdate: vi.fn(),
       deleteOne: vi.fn(),
     };
+    const mockExistsQuery = () => {
+      const q: any = Promise.resolve(false);
+      q.session = vi.fn().mockReturnValue(q);
+      return q;
+    };
+
     userModel = {
-      exists: vi.fn().mockResolvedValue(false),
+      exists: vi.fn().mockImplementation(mockExistsQuery),
       findOne: vi.fn(),
       create: vi.fn(),
     };

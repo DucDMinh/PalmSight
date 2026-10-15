@@ -6,7 +6,6 @@ describe('AuthRateLimitGuard', () => {
   let guard: AuthRateLimitGuard;
 
   const createMockContext = (ip = '192.168.1.1', email?: string, path = '/api/v1/auth/register') => {
-    const headers: Record<string, string> = {};
     const resHeaders: Record<string, unknown> = {};
     const req = {
       headers: { 'x-forwarded-for': ip },
