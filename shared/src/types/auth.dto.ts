@@ -54,3 +54,21 @@ export interface AuthResponseDto {
   isNewUser: boolean;
   user: UserSummaryDto;
 }
+
+export interface ErrorDetailField {
+  field: string;
+  message: string;
+}
+
+export interface ApiErrorResponse {
+  error: {
+    code: string;
+    message: string;
+    details?: {
+      fields?: ErrorDetailField[];
+      requestId?: string;
+      [key: string]: unknown;
+    };
+  };
+}
+
