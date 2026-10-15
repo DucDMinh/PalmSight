@@ -15,18 +15,25 @@
 | **Query** | Chỉ dùng cho `GET`: phân trang `cursor`, `limit` | Request `POST`/`DELETE` **không** đọc query; tham số trên query bị bỏ qua |
 | **Header** | `Authorization` (access token), `Idempotency-Key` (chỉ `POST /readings`) | Xem bảng header bên dưới |
 | **Cookie** | Refresh token `rt`, chỉ dùng ở `/auth/*` | Trình duyệt tự gửi; client không đọc được (HttpOnly) |
-| **Body JSON** | `POST /auth/google`, `POST /auth/facebook`, `POST /me/referral` | `Content-Type: application/json`. Có trường lạ hoặc thiếu trường bắt buộc → `400 VALIDATION_ERROR` |
+| **Body JSON** | Mọi `POST /auth/*` trừ refresh/logout; `PUT /me/password`; `POST /me/referral` | `Content-Type: application/json`. Có trường lạ hoặc thiếu trường bắt buộc → `400 VALIDATION_ERROR` |
 | **Body multipart** | Chỉ `POST /readings` (có file ảnh) | `Content-Type: multipart/form-data`. Mọi giá trị không phải file đều là chuỗi |
 | **Không có body** | `POST /auth/refresh`, `POST /auth/logout`, mọi `GET` và `DELETE` | Body gửi kèm (nếu có) bị bỏ qua |
 
-Tóm tắt các request `POST`:
+Tóm tắt các request `POST`/`PUT`:
 
 | Endpoint | Path | Query | Header | Cookie | Body |
 | --- | --- | --- | --- | --- | --- |
+| `POST /auth/register` | — | — | — | — | JSON `{ displayName, username, email, password, referralCode? }` |
+| `POST /auth/verify-email` | — | — | — | `rt` (nếu có) | JSON `{ token }` |
+| `POST /auth/resend-verification` | — | — | — | — | JSON `{ email }` |
+| `POST /auth/login` | — | — | — | `rt` (nếu có) | JSON `{ login, password }` |
+| `POST /auth/forgot-password` | — | — | — | — | JSON `{ email }` |
+| `POST /auth/reset-password` | — | — | — | — | JSON `{ token, newPassword }` |
 | `POST /auth/google` | — | — | — | `rt` (nếu có) | JSON `{ idToken }` |
 | `POST /auth/facebook` | — | — | — | `rt` (nếu có) | JSON `{ accessToken }` |
 | `POST /auth/refresh` | — | — | `Origin` | `rt` (bắt buộc) | — |
 | `POST /auth/logout` | — | — | `Origin` | `rt` (nếu có) | — |
+| `PUT /me/password` | — | — | `Authorization` | — | JSON `{ currentPassword, newPassword }` |
 | `POST /me/referral` | — | — | `Authorization` | — | JSON `{ code }` |
 | `POST /readings` | — | — | `Authorization`, `Idempotency-Key` | — | multipart `school`, `topics`, `hand`, `aiConsent`, `image` |
 
@@ -42,11 +49,11 @@ Tóm tắt các request `POST`:
 | `X-Request-Id` | response | Mọi response | ID để tra log; trùng `details.requestId` của lỗi 500 |
 | `Retry-After` | response | `429` | Số giây cần chờ |
 | `Idempotent-Replayed` | response | `POST /readings` trả lại kết quả cũ | `true` |
-| `Set-Cookie` | response | Đăng nhập, refresh, logout, xoá tài khoản | Cookie `rt` |
+| `Set-Cookie` | response | Đăng nhập, refresh, logout | Cookie `rt` |
 
 ### Xác thực
 
-- **Access token**: JWT HS256, sống 15 phút. Server trả trong body (`accessToken`, `expiresIn`). Client giữ trong bộ nhớ, không lưu `localStorage`, và gửi qua header `Authorization`.
+- **Access token**: JWT HS256, sống 15 phút, chứa `sub` (user ID) và `sid` (session ID). Server trả trong body (`accessToken`, `expiresIn`). Client giữ trong bộ nhớ, không lưu `localStorage`, và gửi qua header `Authorization`.
 - **Refresh token**: cookie `rt` với thuộc tính `HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=2592000` (30 ngày). Xoay vòng mỗi lần refresh. Vì `Path=/api/v1/auth`, cookie chỉ được gửi tới các endpoint `/auth/*`.
 - Khi mở app hoặc tải lại trang: gọi `POST /auth/refresh`. Nếu `200` thì đã đăng nhập; nếu `401` thì chuyển tới `/login`.
 - Gặp `401 TOKEN_EXPIRED`: gọi `/auth/refresh` rồi gửi lại request ban đầu **một lần**. Gặp `401 UNAUTHENTICATED`: chuyển tới `/login`.
@@ -100,13 +107,22 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | --- | --- | --- |
 | `VALIDATION_ERROR` | 400 | Body, query hoặc header sai định dạng, thiếu trường bắt buộc, hoặc có trường lạ; `details.fields` liệt kê trường lỗi |
 | `IDEMPOTENCY_KEY_REQUIRED` | 400 | Thiếu header `Idempotency-Key` ở `POST /readings` |
+| `VERIFICATION_TOKEN_INVALID` | 400 | Link xác minh email sai, hết hạn hoặc đã dùng |
+| `RESET_TOKEN_INVALID` | 400 | Link đặt lại mật khẩu sai, hết hạn hoặc đã dùng |
+| `CURRENT_PASSWORD_INCORRECT` | 400 | `PUT /me/password`: mật khẩu hiện tại sai |
 | `UNAUTHENTICATED` | 401 | Thiếu hoặc sai access token; hoặc cookie `rt` thiếu, sai, hết hạn, đã thu hồi |
 | `TOKEN_EXPIRED` | 401 | Access token hết hạn → client gọi `/auth/refresh` |
+| `INVALID_CREDENTIALS` | 401 | Sai email/username hoặc mật khẩu. Không nói rõ sai phần nào |
 | `OAUTH_INVALID_TOKEN` | 401 | Token Google/Facebook không hợp lệ |
 | `INSUFFICIENT_CREDITS` | 402 | Số dư < 1 khi xem bói |
+| `EMAIL_NOT_VERIFIED` | 403 | Đăng nhập đúng mật khẩu nhưng email chưa được xác minh |
+| `REFERRAL_NOT_ALLOWED` | 403 | Tài khoản được tạo lại từ email/Google/Facebook đã bị xoá, nên không được nhập mã giới thiệu |
 | `ORIGIN_NOT_ALLOWED` | 403 | Header `Origin` không khớp `PUBLIC_BASE_URL` ở `/auth/refresh`, `/auth/logout` |
 | `NOT_FOUND` | 404 | Tài nguyên không tồn tại, đã xoá, hoặc không thuộc về user |
 | `REFERRAL_CODE_NOT_FOUND` | 404 | Mã giới thiệu không tồn tại hoặc sai định dạng |
+| `EMAIL_TAKEN` | 409 | Đăng ký với email đã thuộc một tài khoản có mật khẩu |
+| `USERNAME_TAKEN` | 409 | Username đã có người dùng hoặc đang được giữ bởi một đăng ký chưa xác minh |
+| `PASSWORD_NOT_SET` | 409 | `PUT /me/password` với tài khoản chưa có mật khẩu (chỉ đăng nhập Google/Facebook) → dùng "Quên mật khẩu" để đặt |
 | `REFERRAL_ALREADY_USED` | 409 | Tài khoản đã nhập mã trước đó |
 | `READING_IN_PROGRESS` | 409 | Reading đang `PROCESSING`: gửi lại cùng `Idempotency-Key`, hoặc xoá reading đang xử lý |
 | `IMAGE_TOO_LARGE` | 413 | Ảnh > 8 MB |
@@ -122,6 +138,9 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | Endpoint | Giới hạn |
 | --- | --- |
 | `/auth/*` | 10 request/phút/IP |
+| `POST /auth/register`, `/auth/resend-verification`, `/auth/forgot-password` | Thêm giới hạn 3 email/giờ cho mỗi địa chỉ email, chống spam hộp thư người khác. Vượt giới hạn: register trả `429`; hai endpoint còn lại vẫn trả `202` nhưng không gửi |
+| `POST /auth/login` | Thêm: 5 lần sai liên tiếp với cùng một `login` trong 15 phút → `429` cho tới hết 15 phút, kể cả khi lần sau đúng mật khẩu |
+| `PUT /me/password` | 5 request/giờ/user |
 | `POST /me/referral` | 5 request/giờ/user |
 | `POST /readings` | 5 request/phút/user, kể cả request trả lại kết quả cũ |
 | Còn lại | 60 request/phút |
@@ -130,13 +149,19 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 
 | Method | Path | Auth | Đầu vào | Mô tả |
 | --- | --- | --- | --- | --- |
+| POST | `/auth/register` | — | body JSON | Đăng ký bằng email + mật khẩu, gửi email xác minh |
+| POST | `/auth/verify-email` | — | body JSON | Xác minh email: tạo tài khoản và đăng nhập luôn |
+| POST | `/auth/resend-verification` | — | body JSON | Gửi lại email xác minh |
+| POST | `/auth/login` | — | body JSON | Đăng nhập bằng email hoặc username + mật khẩu |
+| POST | `/auth/forgot-password` | — | body JSON | Gửi email đặt lại mật khẩu |
+| POST | `/auth/reset-password` | — | body JSON | Đặt mật khẩu mới bằng token trong email |
 | POST | `/auth/google` | — | body JSON | Đăng nhập bằng Google ID token |
 | POST | `/auth/facebook` | — | body JSON | Đăng nhập bằng Facebook access token |
 | POST | `/auth/refresh` | cookie `rt` | — | Cấp access token mới |
 | POST | `/auth/logout` | cookie `rt` | — | Thu hồi phiên |
 | GET | `/health` | — | — | Kiểm tra kết nối MongoDB, dùng cho deploy |
 | GET | `/me` | Bearer | — | Hồ sơ, số dư, mã giới thiệu |
-| DELETE | `/me` | Bearer | — | Xoá tài khoản |
+| PUT | `/me/password` | Bearer | body JSON | Đổi mật khẩu |
 | POST | `/me/referral` | Bearer | body JSON | Nhập mã giới thiệu |
 | GET | `/me/referrals` | Bearer | query phân trang | Danh sách người mình đã giới thiệu |
 | GET | `/me/credit-transactions` | Bearer | query phân trang | Lịch sử biến động credits |
@@ -147,14 +172,181 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 
 Danh sách trường phái và các mục bói không có endpoint riêng: web đọc từ `@palmsight/shared` (`READING_SCHOOLS`, `LIFE_ASPECTS`).
 
+### Response đăng nhập (dùng chung)
+
+`POST /auth/verify-email`, `/auth/login`, `/auth/google`, `/auth/facebook` thành công đều trả cùng một dạng:
+
+```json
+// 200 OK
+// Set-Cookie: rt=<refresh token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=2592000
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "expiresIn": 900,
+  "isNewUser": true,
+  "user": {
+    "id": "6710a1b2c3d4e5f6a7b8c9d0",
+    "displayName": "Nguyễn Văn A",
+    "username": "nguyenvana",
+    "avatarUrl": null,
+    "creditBalance": 3,
+    "referralCode": "K7QX4MZP"
+  }
+}
+```
+
+- `isNewUser = true` chỉ khi request này **tạo** user mới. Khi đó client chuyển tới `/referral/enter`, trừ khi `GET /me` trả `referral.canEnterCode = false`.
+- User tạo lại từ email/Google/Facebook đã bị xoá vẫn là user mới (`isNewUser = true`), nhưng có `creditBalance = 0` và không được nhập mã. Xem [ADR-0009](adr/0009-manual-account-deletion.md).
+- Gộp vào user có sẵn thì `isNewUser = false`.
+- `username` là `null` với user chỉ đăng nhập bằng Google/Facebook.
+- Request gửi kèm cookie `rt` của một phiên cũ trên trình duyệt này: server thu hồi phiên cũ trước khi cấp phiên mới.
+
+### Quy tắc dữ liệu tài khoản
+
+Định nghĩa một lần bằng Yup trong `@palmsight/shared`, dùng cho cả form và API. Server chuẩn hoá giá trị trước, rồi mới kiểm tra.
+
+| Trường | Chuẩn hoá | Ràng buộc |
+| --- | --- | --- |
+| `displayName` | Bỏ khoảng trắng hai đầu | 1–50 ký tự |
+| `username` | Bỏ khoảng trắng hai đầu, đổi sang chữ thường | `^[a-z0-9_]{3,20}$`. Không có `@`, nên không bao giờ trùng dạng với email |
+| `email` | Bỏ khoảng trắng hai đầu, đổi sang chữ thường | Email hợp lệ, ≤ 254 ký tự |
+| `password`, `newPassword` | Không chuẩn hoá | 8–128 ký tự. Không trùng email hoặc username (so không phân biệt hoa/thường) |
+| `login` | Bỏ khoảng trắng hai đầu, đổi sang chữ thường | Có `@` → tìm theo email; không có → tìm theo username |
+| `token` | — | Chuỗi base64url 43 ký tự, lấy từ link trong email |
+
+**Link trong email** trỏ tới trang của web, không trỏ thẳng tới API:
+
+- `https://<domain>/verify-email?token=<token>`
+- `https://<domain>/reset-password?token=<token>`
+
+Trang web đọc `token` từ query, xoá nó khỏi thanh địa chỉ (`history.replaceState`), rồi gửi lên API trong **body** của request `POST`.
+
+### POST /auth/register
+
+Không tạo user ngay. Server lưu đăng ký vào `pending_registrations`, gửi email xác minh, rồi trả `202`. Người dùng phải bấm link trong email trước khi đăng nhập được.
+
+| Vị trí | Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- | --- |
+| body | `displayName` | string | có | Xem [Quy tắc dữ liệu tài khoản](#quy-tắc-dữ-liệu-tài-khoản) |
+| body | `username` | string | có | Như trên; unique |
+| body | `email` | string | có | Như trên |
+| body | `password` | string | có | Như trên |
+| body | `referralCode` | string | không | Mã giới thiệu, điền sẵn từ cookie `ref_code`. Chuẩn hoá như ở `POST /me/referral`. Lúc đăng ký chỉ kiểm tra định dạng; mã sai định dạng → `400 VALIDATION_ERROR` |
+
+```http
+POST /api/v1/auth/register
+Content-Type: application/json
+
+{ "displayName": "Nguyễn Văn A", "username": "nguyenvana", "email": "a@example.com", "password": "mat-khau-du-dai" }
+```
+
+```json
+// 202 Accepted
+{ "email": "a@example.com", "verificationExpiresAt": "2026-10-15T08:30:00Z" }
+```
+
+| Tình huống | Kết quả |
+| --- | --- |
+| Email mới hoàn toàn | Lưu đăng ký chờ, gửi email xác minh, `202` |
+| Email đã có đăng ký chờ xác minh | Thay đăng ký cũ bằng dữ liệu mới, gửi link mới (link cũ hết hiệu lực), `202` |
+| Email thuộc user chỉ có Google/Facebook (chưa có mật khẩu) | Như email mới. Khi xác minh, mật khẩu và username được **gắn vào user đó**, không cộng bonus |
+| Email thuộc user đã có mật khẩu | `409 EMAIL_TAKEN` |
+| Username đã thuộc user khác, hoặc đang được giữ bởi đăng ký chờ của email khác | `409 USERNAME_TAKEN` |
+
+Lỗi: `VALIDATION_ERROR`, `EMAIL_TAKEN`, `USERNAME_TAKEN`, `RATE_LIMITED`.
+
+### POST /auth/verify-email
+
+Trang `/verify-email` gọi endpoint này với `token` lấy từ link.
+
+| Vị trí | Trường | Kiểu | Bắt buộc |
+| --- | --- | --- | --- |
+| body | `token` | string | có |
+
+Server tìm đăng ký chờ theo hash của token, rồi trong **một transaction**:
+
+- Email chưa thuộc user nào → tạo user (`displayName`, `username`, `email`, `passwordHash`), sinh `referralCode`, cộng `SIGNUP_BONUS`. Trả `isNewUser = true`. Nếu email nằm trong `deleted_identities`: không cộng `SIGNUP_BONUS`, và đặt `referralBlocked = true`.
+- Email thuộc user chỉ có Google/Facebook → gắn `username`, `passwordHash` vào user đó. Trả `isNewUser = false`.
+- Xoá đăng ký chờ (token chỉ dùng được một lần).
+
+Nếu đăng ký có `referralCode` và user vừa được **tạo mới**: sau transaction trên, server chạy đúng logic của `POST /me/referral` với mã đó.
+
+- Mã hợp lệ → người dùng +1, chủ mã +2 (hoặc 0 nếu chủ mã hết lượt trong ngày); `GET /me` trả `referral.canEnterCode = false`.
+- Mã lỗi (không tồn tại, của chính mình…) thì bỏ qua, request vẫn thành công; người dùng nhập tay lại được ở `/referral/enter`.
+- Response được trả **sau** bước này, nên `user.creditBalance` đã gồm +1 nếu mã hợp lệ (ví dụ 4 thay vì 3).
+
+Lý do: link xác minh thường được mở bằng trình duyệt khác (từ app mail), nên cookie `ref_code` bị mất.
+
+Response: [Response đăng nhập](#response-đăng-nhập-dùng-chung), tức là xác minh xong thì đăng nhập luôn.
+
+Lỗi: `VALIDATION_ERROR`, `VERIFICATION_TOKEN_INVALID` (token sai, hết hạn 24 giờ, hoặc đã dùng), `RATE_LIMITED`.
+
+### POST /auth/resend-verification
+
+| Vị trí | Trường | Kiểu | Bắt buộc |
+| --- | --- | --- | --- |
+| body | `email` | string | có |
+
+Luôn trả `202` với body rỗng, dù email có đăng ký chờ hay không, để không lộ email nào đã đăng ký. Nếu có đăng ký chờ: sinh token mới (token cũ hết hiệu lực), gia hạn thêm 24 giờ, gửi lại email.
+
+Lỗi: `VALIDATION_ERROR`, `RATE_LIMITED`.
+
+### POST /auth/login
+
+| Vị trí | Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- | --- |
+| body | `login` | string | có | Email **hoặc** username |
+| body | `password` | string | có | 1–128 ký tự (không kiểm tra độ mạnh khi đăng nhập) |
+| cookie | `rt` | — | không | Phiên cũ, sẽ bị thu hồi |
+
+```http
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{ "login": "nguyenvana", "password": "mat-khau-du-dai" }
+```
+
+| Tình huống | Kết quả |
+| --- | --- |
+| Đúng `login` và mật khẩu | `200`, [Response đăng nhập](#response-đăng-nhập-dùng-chung), `isNewUser = false` |
+| Không có user, sai mật khẩu, hoặc user chưa đặt mật khẩu (chỉ dùng Google/Facebook) | `401 INVALID_CREDENTIALS`, cùng một thông báo cho mọi trường hợp |
+| `login` + mật khẩu khớp một đăng ký **chưa xác minh** | `403 EMAIL_NOT_VERIFIED`, `details: { "email": "a@example.com" }` để client hiện nút gửi lại email |
+| 5 lần sai liên tiếp trong 15 phút | `429 RATE_LIMITED` |
+
+Lỗi: `VALIDATION_ERROR`, `INVALID_CREDENTIALS`, `EMAIL_NOT_VERIFIED`, `RATE_LIMITED`.
+
+### POST /auth/forgot-password
+
+| Vị trí | Trường | Kiểu | Bắt buộc |
+| --- | --- | --- | --- |
+| body | `email` | string | có |
+
+Luôn trả `202` với body rỗng. Nếu email thuộc một user chưa xoá, server tạo token đặt lại mật khẩu (sống 1 giờ, dùng một lần; token cũ chưa dùng của user đó bị huỷ) và gửi email.
+
+Áp dụng cả với user chỉ có Google/Facebook. Đây là cách để họ **đặt mật khẩu lần đầu**; sau đó họ đăng nhập được bằng email + mật khẩu. User Facebook không có email thì không dùng được cách này.
+
+Lỗi: `VALIDATION_ERROR`, `RATE_LIMITED`.
+
+### POST /auth/reset-password
+
+| Vị trí | Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- | --- |
+| body | `token` | string | có | Lấy từ link trong email |
+| body | `newPassword` | string | có | Xem [Quy tắc dữ liệu tài khoản](#quy-tắc-dữ-liệu-tài-khoản) |
+
+Server đặt `passwordHash` mới, đánh dấu token đã dùng, **thu hồi mọi phiên** của user, trả `204`. Client chuyển tới `/login` với thông báo "Đã đặt lại mật khẩu".
+
+Lỗi: `VALIDATION_ERROR`, `RESET_TOKEN_INVALID`, `RATE_LIMITED`.
+
 ### POST /auth/google · POST /auth/facebook
 
-Client lấy token từ Google Identity Services hoặc Facebook Login SDK, rồi gửi lên trong **body JSON**. Server tự xác minh token với provider.
+Đây là cách đăng nhập **phụ**, bên cạnh email/mật khẩu. Client lấy token từ Google Identity Services hoặc Facebook Login SDK, rồi gửi lên trong **body JSON**. Server tự xác minh token với provider.
 
-- Chưa có user tương ứng → tạo user mới và cộng `SIGNUP_BONUS`.
-- Email đã xác minh trùng với user có sẵn → gộp vào user đó.
+- Identity Google/Facebook này đã gắn với user → đăng nhập vào user đó.
+- Chưa gắn, nhưng email (đã xác minh bởi provider) trùng một user có sẵn → gắn identity vào user đó. Áp dụng cả với user đăng ký bằng mật khẩu, vì email của họ cũng đã được xác minh.
+- Không trùng ai → tạo user mới, không có username và mật khẩu, cộng `SIGNUP_BONUS`. Nếu ID Google/Facebook hoặc email nằm trong `deleted_identities`: không cộng bonus, và đặt `referralBlocked = true`.
+- Email trùng một đăng ký **chưa xác minh**: bỏ qua đăng ký đó và xử lý như trên. Nếu sau này đăng ký đó được xác minh, mật khẩu sẽ được gắn vào user này (xem `POST /auth/verify-email`).
 
-Luồng chi tiết ở [workflow.md](workflow.md#1-đăng-nhập-google--facebook).
+Luồng chi tiết ở [workflow.md](workflow.md#14-đăng-nhập-google--facebook).
 
 **Request**
 
@@ -178,26 +370,7 @@ Content-Type: application/json
 { "accessToken": "EAAGm0PX4ZCps..." }
 ```
 
-**Response**
-
-```json
-// 200 OK
-// Set-Cookie: rt=<refresh token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=2592000
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-  "expiresIn": 900,
-  "isNewUser": true,
-  "user": {
-    "id": "6710a1b2c3d4e5f6a7b8c9d0",
-    "displayName": "Nguyễn Văn A",
-    "avatarUrl": "https://...",
-    "creditBalance": 3,
-    "referralCode": "K7QX4MZP"
-  }
-}
-```
-
-`isNewUser = true` chỉ khi request này tạo user mới, kể cả user tạo lại sau khi đã xoá tài khoản. Gộp identity vào user cũ thì `isNewUser = false`.
+Response: [Response đăng nhập](#response-đăng-nhập-dùng-chung).
 
 Lỗi: `VALIDATION_ERROR`, `OAUTH_INVALID_TOKEN`, `RATE_LIMITED`.
 
@@ -243,11 +416,13 @@ Không cần đăng nhập. Trả `200 { "status": "ok", "db": "ok" }`, hoặc `
 {
   "id": "6710a1b2c3d4e5f6a7b8c9d0",
   "displayName": "Nguyễn Văn A",
+  "username": "nguyenvana",
   "email": "a@example.com",
   "avatarUrl": "https://...",
   "creditBalance": 4,
   "referralCode": "K7QX4MZP",
   "referralLink": "https://<domain>/r/K7QX4MZP",
+  "hasPassword": true,
   "providers": ["GOOGLE"],
   "referral": {
     "canEnterCode": true,
@@ -258,25 +433,41 @@ Không cần đăng nhập. Trả `200 { "status": "ok", "db": "ok" }`, hoặc `
 
 | Trường | Ghi chú |
 | --- | --- |
-| `email` | `null` nếu Facebook không trả email |
-| `providers` | Các cách đăng nhập đã liên kết: `GOOGLE`, `FACEBOOK` |
-| `referral.canEnterCode` | `true` khi user chưa từng nhập mã |
+| `username` | `null` nếu user chưa từng đăng ký bằng mật khẩu |
+| `email` | `null` nếu user chỉ đăng nhập Facebook và Facebook không trả email |
+| `hasPassword` | `true` khi đăng nhập được bằng email/username + mật khẩu. `/account` dựa vào trường này để hiện "Đổi mật khẩu" hay "Đặt mật khẩu" |
+| `providers` | Google/Facebook đã liên kết: `GOOGLE`, `FACEBOOK`; mảng rỗng nếu chỉ dùng mật khẩu |
+| `id` | Hiện ở `/account` dưới tên "ID tài khoản". Người dùng gửi kèm ID này khi yêu cầu xoá tài khoản |
+| `referral.canEnterCode` | `true` khi user chưa từng nhập mã **và** không bị `referralBlocked` |
 | `referral.enteredCode` | Mã đã nhập, hoặc `null` |
 
-### DELETE /me
+### PUT /me/password
 
-Không có body. Chỉ cần header `Authorization`.
+Đổi mật khẩu khi đang đăng nhập.
 
-Server lần lượt:
+| Vị trí | Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- | --- |
+| header | `Authorization` | — | có | |
+| body | `currentPassword` | string | có | Mật khẩu hiện tại |
+| body | `newPassword` | string | có | Xem [Quy tắc dữ liệu tài khoản](#quy-tắc-dữ-liệu-tài-khoản); khác `currentPassword` |
 
-1. Xoá mọi ảnh trong storage của user.
-2. Xoá kết quả bói.
-3. Thu hồi mọi session.
-4. Xoá identity, rồi ẩn danh hoá user (xoá tên, email, avatar, đặt `deletedAt`).
+```http
+PUT /api/v1/me/password
+Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
+Content-Type: application/json
 
-`_id`, sổ cái credits và các document `referrals` được giữ lại để đối soát. Server trả `204` và xoá cookie `rt`. Xem [security-privacy.md](security-privacy.md#xoá-tài-khoản).
+{ "currentPassword": "mat-khau-cu", "newPassword": "mat-khau-moi-du-dai" }
+```
 
-Sau khi xoá, đăng nhập lại bằng cùng Google/Facebook sẽ tạo **user mới**: nhận `SIGNUP_BONUS` và được nhập mã giới thiệu lại. Hành vi này được chấp nhận, xem [business-rules.md](business-rules.md#quy-tắc-credits).
+Server trả `204` và thu hồi **mọi phiên khác**. Phiên hiện tại được giữ: server nhận ra nó qua claim `sid` (session ID) trong access token, vì cookie `rt` không được gửi tới `/me/*`.
+
+User chưa có mật khẩu (`hasPassword = false`) nhận `409 PASSWORD_NOT_SET`. Họ đặt mật khẩu bằng `POST /auth/forgot-password`.
+
+Lỗi: `VALIDATION_ERROR`, `CURRENT_PASSWORD_INCORRECT`, `PASSWORD_NOT_SET`, `RATE_LIMITED`.
+
+### Xoá tài khoản: không có endpoint
+
+API không cho người dùng tự xoá tài khoản. Người dùng gửi yêu cầu qua email theo hướng dẫn ở `/data-deletion`; dev xoá bằng script `users:delete`. Xem [ADR-0009](adr/0009-manual-account-deletion.md) và [security-privacy.md](security-privacy.md#xoá-tài-khoản).
 
 ### POST /me/referral
 
@@ -297,12 +488,22 @@ Content-Type: application/json
 
 ```json
 // 201 Created
-{ "accepted": true, "referrer": { "displayName": "Trần B" } }
+{
+  "accepted": true,
+  "referrer": { "displayName": "Trần B" },
+  "creditsEarned": 1,
+  "creditBalance": 4
+}
 ```
+
+| Trường | Ghi chú |
+| --- | --- |
+| `creditsEarned` | Credits **người nhập** vừa nhận (`REFEREE_REWARD_CREDITS`, mặc định 1). Luôn có, kể cả khi chủ mã đã hết lượt thưởng trong ngày |
+| `creditBalance` | Số dư của người nhập sau khi cộng; client dùng để cập nhật số credits trên màn hình |
 
 Server trả `201` khi mã được ghi nhận, kể cả khi chủ mã đã hết lượt thưởng trong ngày (`CAPPED`). Response không cho người nhập biết chủ mã có được cộng hay không. Thứ tự kiểm tra theo [business-rules.md](business-rules.md#kiểm-tra-khi-nhập-mã-giới-thiệu). Mã của tài khoản đã xoá được coi là không tồn tại.
 
-Lỗi: `VALIDATION_ERROR` (thiếu `code` hoặc `code` không phải chuỗi), `REFERRAL_CODE_NOT_FOUND`, `REFERRAL_SELF`, `REFERRAL_ALREADY_USED`, `REFERRAL_CYCLE`, `RATE_LIMITED`.
+Lỗi: `VALIDATION_ERROR` (thiếu `code` hoặc `code` không phải chuỗi), `REFERRAL_NOT_ALLOWED`, `REFERRAL_CODE_NOT_FOUND`, `REFERRAL_SELF`, `REFERRAL_ALREADY_USED`, `REFERRAL_CYCLE`, `RATE_LIMITED`.
 
 ### GET /me/referrals
 
@@ -341,7 +542,7 @@ Query: `cursor`, `limit`.
 }
 ```
 
-`readingId` chỉ có với `READING_SPEND`/`READING_REFUND`; `note` chỉ có với `ADMIN_ADJUST`. Giao dịch của reading đã xoá vẫn hiện, nhưng `readingId` của nó mở ra `404`.
+`readingId` chỉ có với `READING_SPEND`/`READING_REFUND`. `type` có thể là `REFERRAL_BONUS` (người khác nhập mã của mình, +2) hoặc `REFEREE_BONUS` (mình nhập mã của người khác, +1). `note` chỉ có với `ADMIN_ADJUST`. Giao dịch của reading đã xoá vẫn hiện, nhưng `readingId` của nó mở ra `404`.
 
 ### POST /readings
 

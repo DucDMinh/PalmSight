@@ -9,8 +9,8 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
   - Chuyển husky và `LICENSE` của boilerplate lên gốc, hoặc xoá.
 - [ ] Dọn boilerplate `frontend/` theo danh sách giữ/bỏ trong ADR-0007; sửa import sai chữ hoa/thường (`CommonIcons` → `commonIcons`)
 - [ ] ESLint, Prettier, TypeScript strict, Vitest
-- [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node) + MinIO
-- [ ] Schema Mongoose cho 5 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
+- [ ] `docker-compose.yml`: MongoDB 7 (replica set 1 node) + MinIO + Mailpit
+- [ ] Schema Mongoose cho 8 collection theo [database-erd.md](database-erd.md), script `db:sync-indexes`
 - [ ] Vite `server.proxy` `/api/v1/*` → API, `envDir: '..'`; `GET /api/v1/health`
 - [ ] GitHub Actions: lint, typecheck, test, build
 
@@ -20,13 +20,17 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 
 | Việc | Gợi ý chia việc |
 | --- | --- |
-| `POST /auth/google`, `POST /auth/facebook`, refresh, logout | Backend |
-| Tạo user, gộp tài khoản theo email, sinh `referralCode`, `SIGNUP_BONUS` +3 | Backend |
+| `MailService` (nodemailer, template tiếng Việt) + Mailpit | Backend |
+| `POST /auth/register`, `verify-email`, `resend-verification`, `login` (email hoặc username), refresh, logout | Backend |
+| `POST /auth/forgot-password`, `reset-password`, `PUT /me/password` | Backend |
+| `POST /auth/google`, `POST /auth/facebook`, gộp tài khoản theo email đã xác minh | Backend |
+| Tạo user, sinh `referralCode`, `SIGNUP_BONUS` +3 | Backend |
 | `CreditLedgerService` + test song song | Backend |
 | `GET /me`, `GET /me/credit-transactions` | Backend |
-| Màn `/login`, `/wallet`, `/account` | Frontend |
+| Yup schema đăng ký/đăng nhập trong `shared/` | Cả hai |
+| Màn `/login`, `/register`, `/register/check-email`, `/verify-email`, `/forgot-password`, `/reset-password`, `/account`, `/account/password`, `/wallet` | Frontend |
 
-**Xong khi:** cả 2 thành viên đăng nhập được bằng Google và Facebook qua ngrok, thấy 3 credits.
+**Xong khi:** cả 2 thành viên đăng ký bằng email (xác minh qua Gmail thật), đăng nhập bằng username, đặt lại được mật khẩu; đăng nhập Google và Facebook qua ngrok gộp vào đúng tài khoản; thấy đúng 3 credits.
 
 ## Phase 2 — Xem bói
 
@@ -34,7 +38,7 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 | --- | --- |
 | Upload + `sharp` (HEIC, EXIF, resize) + lưu MinIO/R2 | Backend |
 | `AiProvider`: Groq, Gemini fallback, `FakeAiProvider` | Backend |
-| `READING_SCHOOLS`, `LIFE_ASPECTS` + prompt + zod `PalmResult` cho 3 trường phái | Cả hai |
+| `READING_SCHOOLS`, `LIFE_ASPECTS` + prompt + Yup schema `PalmResult` cho 3 trường phái | Cả hai |
 | `POST /readings` với `topics`, idempotency, trừ/hoàn credit, dọn reading kẹt | Backend |
 | Màn `/scan` (chọn trường phái, tích mục / bói toàn bộ, chọn tay, camera), `/readings/:id`, `/readings` | Frontend |
 
@@ -45,15 +49,17 @@ Mỗi phase kết thúc bằng một bản chạy được. Chưa gán ngày; ư
 | Việc | Gợi ý chia việc |
 | --- | --- |
 | `/r/:code` + cookie `ref_code` | Frontend |
-| `POST /me/referral` (4 kiểm tra + trần 10 lượt/ngày), `GET /me/referrals` | Backend |
+| `POST /me/referral` (5 kiểm tra + trần 10 lượt/ngày; người nhập +1, chủ mã +2 trong một transaction), `GET /me/referrals` | Backend |
+| Áp dụng `referralCode` lúc xác minh email đăng ký | Backend |
 | Màn `/referral/enter`, `/referral`, nhập mã từ `/account` | Frontend |
 | Script `credits:adjust`, `credits:reconcile` | Backend |
 
-**Xong khi:** thành viên A nhập mã của B, B nhận +2 ngay; các ca trong [testing.md](testing.md) đều qua.
+**Xong khi:** thành viên A nhập mã của B, A nhận +1 và B nhận +2 ngay; các ca trong [testing.md](testing.md) đều qua.
 
 ## Phase 4 — Ra mắt
 
-- [ ] Trang `/privacy`, `/terms`, `/data-deletion`; xoá tài khoản (`DELETE /me`)
+- [ ] Trang `/privacy` (nêu việc giữ HMAC định danh sau khi xoá), `/terms`, `/data-deletion` (hướng dẫn gửi yêu cầu xoá qua email)
+- [ ] Script `users:delete` + collection `deleted_identities`; kiểm tra định danh đã xoá khi tạo user ([ADR-0009](adr/0009-manual-account-deletion.md))
 - [ ] Rate limit, header bảo mật, màn chờ "Đang đánh thức máy chủ"
 - [ ] Deploy theo [deployment.md](deployment.md): Vercel + Render + Atlas M0 + R2 (lifecycle 90 ngày)
 - [ ] PWA manifest, icon, cài ra màn hình chính

@@ -11,6 +11,7 @@ Mục tiêu: chạy thật với chi phí 0 đồng. Giới hạn của các gó
 | Database | MongoDB Atlas M0 | 512 MB, có replica set nên dùng được transaction |
 | Lưu ảnh | Cloudflare R2 | 10 GB miễn phí; bucket private + lifecycle rule xoá ảnh sau 90 ngày |
 | AI | Groq free tier, Gemini free tier | Giới hạn request/phút và /ngày |
+| Gửi email | Gmail SMTP (tài khoản Gmail riêng + App Password) | Giới hạn khoảng vài trăm email/ngày; dễ vào Spam. **Cần kiểm tra Render free có cho kết nối ra cổng SMTP 465/587 không**: một số nền tảng free chặn cổng này. Nếu bị chặn, chuyển sang dịch vụ gửi mail qua HTTP API (Resend, Brevo) |
 | Theo dõi lỗi | Sentry Developer (free) | Tuỳ chọn |
 
 Lựa chọn thay thế cho API nếu Render không hợp: Koyeb free hoặc một VPS rẻ. **ngrok không dùng ở production.**
@@ -62,6 +63,8 @@ Toàn bộ danh sách ở [.env.example](../.env.example). Khác biệt so với
 | `JWT_ACCESS_SECRET` | Chuỗi ngẫu nhiên mới, ≥ 32 byte |
 | `S3_ENDPOINT` | Endpoint R2 `https://<account-id>.r2.cloudflarestorage.com` |
 | `S3_FORCE_PATH_STYLE` | `false` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE` | `smtp.gmail.com`, `465`, `true` |
+| `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | Gmail của dự án + App Password; `MAIL_FROM` dùng đúng địa chỉ Gmail đó |
 
 `API_PROXY_TARGET` chỉ dùng khi dev, production không cần.
 
@@ -77,7 +80,7 @@ Secret chỉ đặt trong phần Environment của Render, không bao giờ comm
    - Root Directory: `frontend`.
    - Build: `pnpm --filter "frontend..." build`.
    - Output: `dist`.
-4. Smoke test: đăng nhập Google, đăng nhập Facebook, xem bói 1 lần, kiểm tra số dư.
+4. Smoke test: đăng ký bằng email (nhận được email xác minh, bấm link, có 3 credits), đăng nhập bằng username, quên mật khẩu, đăng nhập Google, đăng nhập Facebook, xem bói 1 lần, kiểm tra số dư.
 
 Thay đổi schema MongoDB phải tương thích với dữ liệu cũ: field mới cần có giá trị mặc định, và code phải đọc được document thiếu field đó.
 

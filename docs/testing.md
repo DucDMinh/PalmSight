@@ -6,9 +6,9 @@
 
 | Tầng | Công cụ | Phạm vi | Chạy khi |
 | --- | --- | --- | --- |
-| Unit | Vitest | Hàm thuần: sinh mã giới thiệu, kiểm tra quy tắc referral, map lỗi, zod schema `PalmResult` cho từng trường phái | Mỗi commit |
-| Integration | Vitest + `mongodb-memory-server` (`MongoMemoryReplSet`) + Supertest | Service và endpoint NestJS với MongoDB thật chạy trong bộ nhớ; AI và OAuth được mock | Mỗi PR |
-| E2E | Playwright (viewport điện thoại) | Luồng chính trên trình duyệt, đăng nhập bằng provider giả ở môi trường test | Trước khi merge vào `main` |
+| Unit | Vitest | Hàm thuần: sinh mã giới thiệu, kiểm tra quy tắc referral, map lỗi, Yup schema `PalmResult` cho từng trường phái | Mỗi commit |
+| Integration | Vitest + `mongodb-memory-server` (`MongoMemoryReplSet`) + Supertest | Service và endpoint NestJS với MongoDB thật chạy trong bộ nhớ; AI, OAuth và `MailService` được mock. Mock mail giữ email đã gửi trong bộ nhớ, để test lấy token từ link | Mỗi PR |
+| E2E | Playwright (viewport điện thoại) | Luồng chính trên trình duyệt: đăng ký → lấy link xác minh từ Mailpit API → đăng nhập bằng mật khẩu → xem bói. Google/Facebook dùng provider giả ở môi trường test | Trước khi merge vào `main` |
 | AI eval | Script thủ công + bộ ảnh mẫu | Chất lượng và an toàn nội dung bói | Khi đổi prompt, model hoặc thêm trường phái |
 
 Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `MongoMemoryServer` đơn lẻ. Lý do: transaction chỉ chạy trên replica set. Ngoài ra unique index phải được tạo trước khi chạy test (`syncIndexes()`).
@@ -36,7 +36,10 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 
 ### Referral
 
-- [ ] Mã hợp lệ → chủ mã +2 ngay, `REWARDED`, người nhập không đổi số dư.
+- [ ] Mã hợp lệ → `REWARDED`; người nhập +1 (`REFEREE_BONUS`), chủ mã +2 (`REFERRAL_BONUS`); cả hai giao dịch có cùng `referralId`; response có `creditsEarned = 1` và `creditBalance` đúng.
+- [ ] Chủ mã đã đủ 10 lượt trong ngày → `CAPPED`; người nhập **vẫn +1**, chủ mã không đổi.
+- [ ] Lỗi giữa chừng khi cộng cho một bên → transaction rollback: không có referral, không ai được cộng.
+- [ ] Tài khoản `referralBlocked = true` nhập mã → `403 REFERRAL_NOT_ALLOWED`; `GET /me` trả `canEnterCode = false`.
 - [ ] Mỗi mã lỗi trong [business-rules.md](business-rules.md) trả đúng HTTP status và `code`.
 - [ ] Nhập mã sau khi tạo tài khoản lâu (ví dụ 30 ngày) vẫn được chấp nhận.
 - [ ] **Một user gửi 10 request nhập mã song song → chỉ 1 referral được tạo.**
@@ -61,6 +64,31 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] Xoá reading đang `PROCESSING` → `409 READING_IN_PROGRESS`.
 - [ ] Xoá reading không hoàn credit; giao dịch `READING_SPEND` vẫn còn trong lịch sử credits.
 
+### Đăng ký và đăng nhập bằng mật khẩu
+
+- [ ] Đăng ký → `202`, có 1 email trong Mailpit, **chưa** có document `users`, chưa có credits.
+- [ ] Đăng nhập trước khi xác minh với đúng mật khẩu → `403 EMAIL_NOT_VERIFIED`; sai mật khẩu → `401 INVALID_CREDENTIALS`.
+- [ ] Bấm link → user được tạo, đúng 3 credits, 1 `SIGNUP_BONUS`, `isNewUser = true`; dùng lại link → `400 VERIFICATION_TOKEN_INVALID`.
+- [ ] **Bấm link xác minh 2 lần song song → chỉ tạo 1 user, 1 `SIGNUP_BONUS`.**
+- [ ] Link quá 24 giờ → `400`; đăng ký chờ bị TTL xoá, username được giải phóng.
+- [ ] Đăng ký lại cùng email trước khi xác minh → link cũ hết hiệu lực, link mới dùng được.
+- [ ] Username trùng user khác, hoặc trùng đăng ký chờ của email khác → `409 USERNAME_TAKEN`. Email thuộc user đã có mật khẩu → `409 EMAIL_TAKEN`.
+- [ ] Đăng nhập được bằng email và bằng username; viết hoa/thường hay thêm khoảng trắng hai đầu đều được.
+- [ ] Sai mật khẩu 5 lần → lần thứ 6 (kể cả đúng mật khẩu) → `429`.
+- [ ] `login`, `forgot-password`, `resend-verification` trả cùng một response dù email có tồn tại hay không.
+- [ ] Mật khẩu < 8 ký tự, hoặc trùng email/username → `400 VALIDATION_ERROR`.
+- [ ] Đăng ký có `referralCode` hợp lệ → sau khi xác minh, user có 4 credits (3 + 1), chủ mã +2, `canEnterCode = false`; response xác minh trả `creditBalance = 4`. Mã không tồn tại → user vẫn được tạo với 3 credits, `canEnterCode = true`.
+- [ ] Quên mật khẩu → đặt lại → mọi phiên cũ bị thu hồi; link dùng lần 2 → `400 RESET_TOKEN_INVALID`.
+- [ ] Đổi mật khẩu sai mật khẩu cũ → `400 CURRENT_PASSWORD_INCORRECT`; đúng → phiên khác bị thu hồi, phiên hiện tại vẫn refresh được.
+
+### Gộp tài khoản
+
+- [ ] User mật khẩu `a@x.com` đăng nhập Google cùng email → gắn Google vào user đó, không cộng credits.
+- [ ] User Google `a@x.com` đăng ký mật khẩu cùng email → `202`; xác minh → gắn username + mật khẩu vào user Google, `isNewUser = false`, không cộng credits.
+- [ ] User Google dùng "Quên mật khẩu" → đặt được mật khẩu, đăng nhập được bằng email.
+- [ ] Đăng ký chờ `a@x.com` (chưa xác minh), rồi đăng nhập Google `a@x.com` → tạo user Google; xác minh sau đó → mật khẩu gắn vào user Google, tổng chỉ 3 credits.
+- [ ] Facebook không trả email → luôn tạo user riêng, không gộp.
+
 ### Auth
 
 - [ ] Google ID token sai `aud` / hết hạn → `401 OAUTH_INVALID_TOKEN`.
@@ -68,7 +96,16 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] Refresh token dùng lại sau khi đã xoay → thu hồi mọi phiên.
 - [ ] `/auth/refresh` với `Origin` lạ → `403 ORIGIN_NOT_ALLOWED`.
 - [ ] Mã giới thiệu viết thường hoặc có khoảng trắng hai đầu vẫn được chấp nhận; mã sai định dạng → `404 REFERRAL_CODE_NOT_FOUND`.
-- [ ] Xoá tài khoản rồi đăng nhập lại cùng Google → user mới, `isNewUser = true`, có 3 credits.
+- [ ] Không có route `DELETE /me` (trả `404`).
+
+### Xoá tài khoản theo yêu cầu (`users:delete`)
+
+- [ ] Script xoá ảnh, kết quả, mật khẩu, identity, session; ẩn danh hoá user; sổ cái credits còn nguyên; tổng `amount` vẫn bằng `creditBalance`.
+- [ ] Script ghi HMAC của email và mọi ID Google/Facebook vào `deleted_identities`; không lưu giá trị gốc.
+- [ ] Đăng ký lại cùng email → xác minh → user mới, `isNewUser = true`, **0 credits**, `referralBlocked = true`, không có `SIGNUP_BONUS`.
+- [ ] Đăng nhập lại cùng Google/Facebook → như trên.
+- [ ] Đăng ký lại với email mới hoàn toàn → 3 credits bình thường.
+- [ ] Mã giới thiệu của tài khoản đã xoá → `404 REFERRAL_CODE_NOT_FOUND`.
 - [ ] User A không đọc/xoá được reading của user B: trả `404` chứ không phải `403`, để không lộ là reading đó có tồn tại.
 
 ### Ảnh

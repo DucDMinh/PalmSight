@@ -11,6 +11,8 @@ Mỗi file ghi một quyết định kiến trúc: bối cảnh, lựa chọn v�
 | [0005](0005-monorepo-nextjs-nestjs.md) | Monorepo Next.js + NestJS + MongoDB | Superseded một phần by 0007 |
 | [0006](0006-reading-schools.md) | Trường phái bói, chọn mục bói và kết quả dạng `sections` chung | Accepted |
 | [0007](0007-vite-spa-frontend.md) | Frontend SPA React + Vite; repo `frontend/` · `backend/` · `shared/` | Accepted |
+| [0008](0008-email-password-auth.md) | Đăng ký/đăng nhập email + mật khẩu; Google/Facebook là cách đăng nhập phụ | Accepted |
+| [0009](0009-manual-account-deletion.md) | Không cho tự xoá tài khoản; xoá thủ công theo yêu cầu, chặn nhận thưởng lại | Accepted |
 
 ## Mẫu
 

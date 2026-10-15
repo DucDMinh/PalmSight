@@ -32,6 +32,10 @@ docker compose up -d
 | MongoDB 7 | `localhost:27017` | Chạy dạng replica set 1 node (`rs0`), cần cho transaction; container tự chạy `rs.initiate()` |
 | MinIO API | `localhost:9000` | `minioadmin` / `minioadmin` |
 | MinIO Console | `http://localhost:9001` | Tạo bucket `palmsight-images` (private) |
+| Mailpit SMTP | `localhost:1025` | Bắt mọi email backend gửi ra; không gửi tới hộp thư thật |
+| Mailpit UI | `http://localhost:8025` | Mở để bấm link xác minh email và link đặt lại mật khẩu khi dev |
+
+Link trong email được tạo từ `PUBLIC_BASE_URL`. Khi test trên điện thoại qua ngrok, đặt biến này là domain ngrok, để link mở được trên điện thoại.
 
 Chuỗi kết nối trong `.env`:
 
@@ -43,7 +47,7 @@ MONGODB_URI=mongodb://localhost:27017/palmsight?replicaSet=rs0&directConnection=
 
 ```bash
 pnpm --filter backend db:sync-indexes    # tạo index + validator theo schema
-pnpm --filter backend db:seed            # vài user mẫu có sẵn credits
+pnpm --filter backend db:seed            # vài user mẫu đã xác minh, có sẵn credits, mật khẩu in ra màn hình
 ```
 
 ## 5. Lấy API key và cấu hình đăng nhập
@@ -54,6 +58,26 @@ pnpm --filter backend db:seed            # vài user mẫu có sẵn credits
 2. Dashboard → **Domains** → nhận static domain miễn phí, ví dụ `palmsight-dev.ngrok-free.app`. Mỗi thành viên nên có domain riêng.
 3. Đặt `PUBLIC_BASE_URL=https://palmsight-dev.ngrok-free.app`.
 4. Thêm domain ngrok vào `server.allowedHosts` trong `frontend/vite.config.ts`. Có thể đọc từ `PUBLIC_BASE_URL`. Nếu thiếu, Vite chặn request với lỗi "Blocked request. This host is not allowed".
+
+### Gmail SMTP (chỉ cần khi muốn gửi email thật)
+
+Khi dev, Mailpit là đủ. Chỉ làm bước này khi muốn thử gửi tới hộp thư thật, hoặc khi deploy.
+
+1. Tạo một tài khoản Gmail riêng cho dự án. Không dùng Gmail cá nhân, vì mật khẩu ứng dụng cho phép gửi mail thay bạn.
+2. Bật **Xác minh 2 bước** cho tài khoản đó (bắt buộc để có App Password).
+3. myaccount.google.com → **Security → App passwords** → tạo mật khẩu cho "PalmSight", copy chuỗi 16 ký tự.
+4. Điền vào `.env`:
+
+   ```bash
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_SECURE=true
+   SMTP_USER=palmsight.app@gmail.com
+   SMTP_PASS=<app password 16 ký tự>
+   MAIL_FROM="PalmSight <palmsight.app@gmail.com>"
+   ```
+
+Gmail ghi đè địa chỉ người gửi bằng `SMTP_USER`, nên `MAIL_FROM` phải dùng đúng địa chỉ đó.
 
 ### Groq
 
@@ -99,6 +123,7 @@ Vite đọc `.env` ở thư mục gốc repo (`envDir: '..'`). Trình duyệt ch
 | `pnpm test:e2e` | Playwright end-to-end |
 | `pnpm --filter backend credits:adjust --user <id> --amount 5 --note "test"` | Cộng/trừ credits tay |
 | `pnpm --filter backend credits:reconcile` | Kiểm tra sổ cái khớp số dư |
+| `pnpm --filter backend users:delete --user <id> --note "<link yêu cầu>"` | Xoá tài khoản theo yêu cầu của người dùng ([ADR-0009](adr/0009-manual-account-deletion.md)) |
 | `docker compose down -v` | Xoá sạch dữ liệu local |
 
 ## Lỗi hay gặp
@@ -112,5 +137,8 @@ Vite đọc `.env` ở thư mục gốc repo (`envDir: '..'`). Trình duyệt ch
 | Gọi API qua ngrok nhận về trang HTML cảnh báo | Client gửi header `ngrok-skip-browser-warning: true` |
 | Google báo `origin_mismatch` | Thêm đúng origin (kể cả `https://`) vào OAuth client |
 | Facebook báo "App not active" | Thêm tài khoản vào App roles |
+| Không thấy email xác minh khi dev | Mở Mailpit `http://localhost:8025`; kiểm tra `SMTP_HOST=localhost`, `SMTP_PORT=1025` |
+| Gmail báo `535 Username and Password not accepted` | Dùng App Password, không dùng mật khẩu Gmail; tài khoản phải bật xác minh 2 bước |
+| Link trong email trỏ về `localhost` khi mở trên điện thoại | Đặt `PUBLIC_BASE_URL` là domain ngrok rồi gửi lại email |
 | Camera không mở trên điện thoại | Phải mở qua HTTPS (ngrok), không dùng địa chỉ IP trong mạng LAN |
 | `AI_UNAVAILABLE` liên tục | Kiểm tra `GROQ_API_KEY`, tên model, hạn mức free tier |

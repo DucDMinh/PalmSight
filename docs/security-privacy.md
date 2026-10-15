@@ -6,11 +6,15 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 
 | Dữ liệu | Nguồn | Mục đích | Lưu bao lâu |
 | --- | --- | --- | --- |
+| Tên hiển thị, username, email | Người dùng nhập khi đăng ký | Hiển thị hồ sơ, đăng nhập, gửi email xác minh và đặt lại mật khẩu | Tới khi xoá tài khoản |
+| Hash mật khẩu (argon2id) | Người dùng nhập | Đăng nhập | Tới khi xoá tài khoản |
+| Đăng ký chưa xác minh | Người dùng nhập | Chờ xác minh email | Tự xoá sau 24 giờ |
 | Tên, ảnh đại diện, email | Google / Facebook | Hiển thị hồ sơ, gộp tài khoản | Tới khi xoá tài khoản |
 | ID tài khoản Google/Facebook | Google / Facebook | Đăng nhập | Tới khi xoá tài khoản |
 | Ảnh lòng bàn tay | Người dùng tải lên | Phân tích bói | 90 ngày (lifecycle rule của bucket), hoặc tới khi người dùng xoá |
 | Kết quả bói | AI | Hiển thị, lịch sử | Tới khi người dùng xoá reading/tài khoản |
-| Lịch sử credits | Hệ thống | Đối soát | Tới khi xoá tài khoản |
+| Lịch sử credits | Hệ thống | Đối soát | Giữ cả sau khi xoá tài khoản (đã ẩn danh) |
+| HMAC của email và ID Google/Facebook đã xoá | Hệ thống, lúc xoá tài khoản | Không cho tài khoản tạo lại nhận credits khuyến mãi | Vô thời hạn; không đảo ngược được |
 
 Ảnh lòng bàn tay có thể bị xem là dữ liệu sinh trắc học. Nếu app được dùng rộng rãi, nên tìm hiểu quy định bảo vệ dữ liệu cá nhân của Việt Nam (Nghị định 13/2023/NĐ-CP và luật bảo vệ dữ liệu cá nhân mới). Thiết kế dưới đây giảm rủi ro bằng cách giữ ảnh ít nhất có thể.
 
@@ -25,12 +29,46 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 
 ## Xoá tài khoản
 
-- Người dùng tự xoá ở `/account` (`DELETE /me`): xoá ảnh, kết quả, identity, session; ẩn danh hoá user (xoá tên, email, avatar). `_id` và sổ cái credits được giữ lại để đối soát.
-- Không giữ lại gì để nhận diện người đã xoá. Đăng nhập lại bằng cùng Google/Facebook sẽ tạo tài khoản mới, kể cả nhận lại bonus đăng ký (chấp nhận, xem [business-rules.md](business-rules.md#quy-tắc-credits)).
-- Facebook bắt buộc cung cấp **Data Deletion Instructions URL**; trang `/data-deletion` hướng dẫn thao tác trên.
+Không có tính năng tự xoá trong app, để chặn vòng xoá–đăng ký lại nhằm farm credits. Xem [ADR-0009](adr/0009-manual-account-deletion.md).
+
+**Quy trình xoá theo yêu cầu:**
+
+1. Người dùng làm theo hướng dẫn ở `/data-deletion`: gửi email tới `SUPPORT_EMAIL` **từ chính email của tài khoản**. Tài khoản không có email (chỉ Facebook) gửi kèm ID tài khoản copy từ `/account`.
+2. Dev xác minh người gửi là chủ tài khoản:
+   - email người gửi khớp `users.email`; hoặc
+   - với tài khoản không có email: hỏi thêm thông tin chỉ chủ tài khoản biết, ví dụ số credits hiện tại, ngày xem bói gần nhất.
+3. Trong vòng 30 ngày, dev chạy `pnpm --filter backend users:delete --user <id> --note "<link yêu cầu>"`. Script:
+   - xoá ảnh trong storage, kết quả bói, mật khẩu, identity, session, token đặt lại mật khẩu;
+   - ẩn danh hoá user (xoá tên, username, email, avatar; đặt `deletedAt`);
+   - ghi HMAC của email và ID Google/Facebook vào `deleted_identities`.
+4. Trả lời email xác nhận đã xoá.
+
+**Giữ lại sau khi xoá:**
+
+- `_id` và sổ cái credits, để đối soát.
+- HMAC của các định danh, dùng khoá `IDENTITY_HASH_SECRET`. Nhờ đó tài khoản tạo lại từ cùng email/Google/Facebook bắt đầu với 0 credits và không được nhập mã giới thiệu.
+- Không giữ email hay ID gốc. Trang `/privacy` phải nói rõ việc giữ mã băm này.
+
+Facebook bắt buộc cung cấp **Data Deletion Instructions URL**: dùng trang `/data-deletion`.
 
 ## Xác thực
 
+- **Mật khẩu:**
+  - Hash bằng argon2id (thư viện `argon2`, tham số mặc định); không bao giờ log hay trả về mật khẩu, kể cả bản hash.
+  - Độ dài 8–128 ký tự, không bắt buộc ký tự đặc biệt, không được trùng email hoặc username.
+  - Khi so sánh, luôn chạy hàm verify kể cả khi không tìm thấy user (verify với một hash giả), để thời gian phản hồi không lộ là user có tồn tại hay không.
+- **Chống dò mật khẩu:** 5 lần sai liên tiếp với cùng `login` trong 15 phút → khoá 15 phút (`429`); thêm 10 request/phút/IP cho `/auth/*`. Đếm trong bộ nhớ, nên mất khi API khởi động lại; chấp nhận được với quy mô dự án.
+- **Chống dò email/username:**
+  - `login`, `forgot-password`, `resend-verification` không tiết lộ email có tồn tại hay không.
+  - `register` vẫn báo `EMAIL_TAKEN`/`USERNAME_TAKEN` để người dùng sửa được. Chấp nhận mức lộ thông tin này, có rate limit đi kèm.
+- **Token trong link email** (xác minh, đặt lại mật khẩu):
+  - 32 byte ngẫu nhiên (`crypto.randomBytes`), mã hoá base64url; database chỉ lưu hash SHA-256.
+  - Dùng một lần; sống 24 giờ (xác minh) hoặc 1 giờ (đặt lại mật khẩu).
+  - Trang web xoá token khỏi thanh địa chỉ ngay sau khi đọc. Token chỉ được gửi lên trong body `POST`, không bao giờ nằm trong URL gọi API.
+- **Đặt lại mật khẩu** thu hồi mọi phiên. **Đổi mật khẩu** thu hồi mọi phiên trừ phiên hiện tại.
+- **Gộp tài khoản theo email** chỉ dùng email đã xác minh: link xác minh của ta, hoặc `email_verified` của Google, hoặc email Facebook trả về. Không ai gắn được mật khẩu vào tài khoản của người khác, vì phải bấm link trong hộp thư của email đó.
+- **`IDENTITY_HASH_SECRET`:** secret ≥ 32 byte chỉ nằm trên server, dùng làm khoá HMAC cho `deleted_identities`. Không bao giờ đổi sau khi đã có dữ liệu.
+- **SMTP:** App Password của Gmail là secret, chỉ nằm trong env của server. Dùng tài khoản Gmail riêng cho dự án.
 - **Google:** xác minh ID token phía server bằng thư viện chính thức, kiểm tra `aud` = `GOOGLE_CLIENT_ID`, `iss`, `exp`, `email_verified`.
 - **Facebook:** gọi `debug_token` với app access token để chắc token được cấp cho **đúng app này**, rồi gọi `/me?fields=id,name,email,picture`.
 - **Access token:** JWT 15 phút, giữ trong bộ nhớ trình duyệt (không lưu localStorage). Khi mở app hoặc tải lại trang, SPA gọi `/auth/refresh` để lấy access token mới từ cookie `rt`.
@@ -49,7 +87,10 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 | Hoàn credit nhiều lần | Unique index `(readingId, type)` trên sổ cái |
 | Nhập mã nhiều lần | Unique index `referrals.refereeId` |
 | Hai người nhập mã của nhau để cùng được thưởng | Chặn bằng `REFERRAL_CYCLE` |
-| Gắn cả Google + Facebook để nhận bonus 2 lần | Gộp theo email đã xác minh; bonus unique theo user |
+| Gắn cả mật khẩu + Google + Facebook để nhận bonus nhiều lần | Gộp theo email đã xác minh; bonus unique theo user |
+| Xoá tài khoản rồi đăng ký lại để nhận lại +3 và nhập mã lần nữa | Không có tự xoá; xoá thủ công ghi HMAC định danh vào `deleted_identities`; tài khoản tạo lại có 0 credits, `referralBlocked = true` |
+| Tạo tài khoản ảo nhập mã của chính mình để nhận +2 và +1 | +1 rơi vào tài khoản ảo, vô ích với tài khoản chính; +2 cho chủ mã bị giới hạn bởi trần 10 lượt/ngày; tài khoản ảo phải xác minh email thật |
+| Đăng ký hàng loạt bằng email giả để nhận +3 | Bắt buộc xác minh email trước khi tạo user; giới hạn 3 email/giờ cho mỗi địa chỉ. Email dùng một lần (temp mail) vẫn lọt; chấp nhận |
 | Dò mã giới thiệu | Rate limit 5 lần/giờ cho `POST /me/referral` |
 | Một người tạo nhiều tài khoản ảo để tự nhận thưởng | Chấp nhận rủi ro; trần 10 lượt/ngày giới hạn thiệt hại |
 
@@ -58,7 +99,7 @@ Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từn
 ## AI
 
 - Prompt yêu cầu bỏ qua mọi chữ trong ảnh, để chữ chèn vào ảnh không điều khiển được AI (prompt injection).
-- Output phải qua zod schema; chuỗi bị giới hạn độ dài; UI chỉ hiển thị dạng text, không render HTML hay markdown từ AI.
+- Output phải qua Yup schema `PalmResult`; chuỗi bị giới hạn độ dài; UI chỉ hiển thị dạng text, không render HTML hay markdown từ AI.
 - Cấm nội dung: chẩn đoán bệnh, tuổi thọ, cái chết, tai nạn, lời khuyên tài chính/pháp lý cụ thể.
 - API key chỉ ở server; rate limit 5 lần/phút/user để bảo vệ hạn mức miễn phí.
 

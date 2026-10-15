@@ -24,7 +24,7 @@ PalmSight không cần những thứ Next.js mạnh:
   | --- | --- | --- |
   | `frontend/` | `frontend` | SPA React + Vite |
   | `backend/` | `backend` | NestJS + Mongoose |
-  | `shared/` | `@palmsight/shared` | zod schema, enum, `READING_SCHOOLS`, `LIFE_ASPECTS`, DTO |
+  | `shared/` | `@palmsight/shared` | Yup schema, enum, `READING_SCHOOLS`, `LIFE_ASPECTS`, DTO |
 
   `packages/shared` và `apps/api` trong các ADR cũ nay là `shared/` và `backend/`.
 - `shared/` được build ra `dist/` (ESM + CJS + `.d.ts`) để cả Vite và NestJS (CommonJS) cùng import được. `pnpm dev` chạy `shared` ở chế độ watch.
@@ -50,11 +50,11 @@ PalmSight không cần những thứ Next.js mạnh:
 - URL API trên Render ghi thẳng trong `vercel.json`, vì Vercel không đọc biến môi trường trong rewrite. URL này không phải secret.
 - Khi dev qua ngrok, phải thêm domain ngrok vào `server.allowedHosts` của Vite.
 - Từ boilerplate:
-  - **Giữ lại:** `components/ui` (shadcn), Tailwind, React Router, TanStack Query, axios, zustand.
+  - **Giữ lại:** `components/ui` (shadcn), Tailwind, React Router, TanStack Query, axios, zustand, Formik + Yup. Yup cũng là thư viện validate của backend và `shared/`.
   - **Phải viết lại hoặc bỏ:**
-    - đăng nhập username/password giả và token lưu `localStorage` → Google/Facebook, access token giữ trong bộ nhớ;
+    - đăng nhập giả (`don`/`don`) và token lưu `localStorage` → gọi API thật (email/username + mật khẩu, Google, Facebook theo [ADR-0008](0008-email-password-auth.md)), access token giữ trong bộ nhớ;
+    - trang ForgotPassword, ChangePassword: giữ giao diện, viết lại logic theo API thật;
     - phân quyền theo role (`withCheckRole`, `PERMISSION_ENUM`);
     - tiếng Anh và bộ chọn ngôn ngữ;
-    - Yup → zod schema;
     - layout sidebar → layout mobile với thanh tab dưới;
-    - các trang mẫu (Todos, Examples, ChangePassword, ForgotPassword).
+    - các trang mẫu (Todos, Examples).

@@ -64,7 +64,7 @@ Danh sách trường phái, tên hiển thị, mô tả ngắn, các mục riên
 
 ## Prompt
 
-Model được yêu cầu trả về đúng một object JSON (bật JSON mode `response_format: { type: "json_object" }`); server validate bằng zod, sai schema thì gọi lại 1 lần, vẫn sai thì `FAILED` và hoàn credit.
+Model được yêu cầu trả về đúng một object JSON (bật JSON mode `response_format: { type: "json_object" }`); server validate bằng Yup schema `PalmResult`, sai schema thì gọi lại 1 lần, vẫn sai thì `FAILED` và hoàn credit.
 
 **System prompt (phần chung)**
 

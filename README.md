@@ -1,6 +1,6 @@
 # PalmSight
 
-Web app bói chỉ tay bằng AI: chọn trường phái (phương Tây, phương Đông, Ấn Độ), tích các mục muốn bói, chụp ảnh lòng bàn tay, AI đọc các đường chỉ và trả về một bài bói bằng tiếng Việt. Mỗi lần xem tốn 1 credit. Tài khoản mới được tặng 3 credits; mỗi khi có người nhập mã giới thiệu của bạn, bạn được thêm 2 credits.
+Web app bói chỉ tay bằng AI: chọn trường phái (phương Tây, phương Đông, Ấn Độ), tích các mục muốn bói, chụp ảnh lòng bàn tay, AI đọc các đường chỉ và trả về một bài bói bằng tiếng Việt. Mỗi lần xem tốn 1 credit. Tài khoản mới được tặng 3 credits; nhập mã giới thiệu của bạn bè được thêm 1 credit; mỗi khi có người nhập mã giới thiệu của bạn, bạn được thêm 2 credits.
 
 Dự án nhỏ của 2 người, làm cho vui.
 
@@ -8,9 +8,10 @@ Dự án nhỏ của 2 người, làm cho vui.
 
 ## Tính năng
 
-- Đăng nhập bằng **Google** hoặc **Facebook**, không cần mật khẩu. Hai cách đăng nhập cùng email được gộp thành một tài khoản.
+- **Đăng ký / đăng nhập** bằng email hoặc username + mật khẩu (xác minh email bắt buộc, có quên mật khẩu), hoặc đăng nhập nhanh bằng **Google** / **Facebook**. Các cách đăng nhập cùng email được gộp thành một tài khoản.
 - **Credits**: +3 khi tạo tài khoản, −1 mỗi lần xem, tự hoàn lại nếu AI lỗi hoặc ảnh không phải bàn tay. Credits không hết hạn.
-- **Mã giới thiệu**: mỗi tài khoản có một mã 8 ký tự. Người khác nhập mã của bạn (bất cứ lúc nào, một lần) thì bạn được +2 credits ngay.
+- **Mã giới thiệu**: mỗi tài khoản có một mã 8 ký tự. Người khác nhập mã của bạn (bất cứ lúc nào, một lần) thì bạn được +2 credits, người nhập được +1 credit, cộng ngay.
+- **Xoá tài khoản**: không có nút tự xoá; gửi yêu cầu qua email theo hướng dẫn ở `/data-deletion`.
 - **Chọn trường phái bói**: chỉ tay phương Tây, phương Đông (Trung Hoa) hoặc Ấn Độ.
 - **Chọn mục bói**: tích từng mục (đường chỉ, gò, tình cảm, sự nghiệp…) hoặc bói toàn bộ. Giá vẫn 1 credit.
 - **Chụp ảnh** bằng camera điện thoại (PWA) hoặc tải ảnh có sẵn.
@@ -23,7 +24,8 @@ Dự án nhỏ của 2 người, làm cho vui.
 | Frontend | React + Vite (SPA), TypeScript, Tailwind CSS, shadcn/ui, PWA |
 | Backend | NestJS (Node 22), Mongoose |
 | Dữ liệu | MongoDB 7, S3-compatible storage (Cloudflare R2 / MinIO) |
-| Đăng nhập | Google Identity Services, Facebook Login, JWT |
+| Đăng nhập | Email/username + mật khẩu (argon2id), Google Identity Services, Facebook Login, JWT |
+| Gửi email | Gmail SMTP qua nodemailer (Mailpit khi dev) |
 | AI | Groq (model vision, free API key), Gemini làm dự phòng |
 | Dev | pnpm workspaces, Docker Compose, ngrok |
 | Deploy (free) | Vercel, Render, MongoDB Atlas M0, Cloudflare R2 |
@@ -49,7 +51,7 @@ Yêu cầu: Node 22, pnpm 9, Docker, tài khoản ngrok (free), API key Groq (fr
 git clone <repo-url> palmsight && cd palmsight
 cp .env.example .env            # điền các key, xem chú thích trong file
 pnpm install
-docker compose up -d            # MongoDB (replica set) + MinIO
+docker compose up -d            # MongoDB (replica set) + MinIO + Mailpit
 pnpm --filter backend db:sync-indexes
 pnpm dev                        # frontend :5173, backend :4000
 ngrok http 5173 --url=<static-domain>.ngrok-free.app   # khi cần test đăng nhập / điện thoại
@@ -63,7 +65,7 @@ Hướng dẫn đầy đủ, gồm cách tạo Google OAuth client và Facebook 
 palmsight/
 ├─ frontend/        # SPA React + Vite, PWA
 ├─ backend/         # NestJS API + Mongoose
-├─ shared/          # @palmsight/shared: DTO, enum, trường phái bói, zod schema dùng chung
+├─ shared/          # @palmsight/shared: DTO, enum, trường phái bói, Yup schema dùng chung
 ├─ docs/            # tài liệu thiết kế
 ├─ .github/         # template issue / PR
 ├─ docker-compose.yml

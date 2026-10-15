@@ -1,6 +1,6 @@
 # ADR-0002: Đăng nhập bằng token từ SDK, server tự xác minh
 
-- Trạng thái: Accepted
+- Trạng thái: Accepted. Được bổ sung bởi [ADR-0008](0008-email-password-auth.md): thêm đăng ký/đăng nhập email + mật khẩu; Google/Facebook thành cách đăng nhập phụ
 - Ngày: 2026-10-14
 
 ## Bối cảnh

@@ -47,7 +47,7 @@ docs(api): document REFERRAL_CYCLE error
 ## Code style
 
 - TypeScript strict, ESLint + Prettier (chạy `pnpm lint --fix`).
-- Validate mọi input từ ngoài bằng zod; schema dùng chung đặt ở `shared/`.
+- Validate mọi input từ ngoài bằng Yup (`.noUnknown()`, `abortEarly: false`); schema dùng chung đặt ở `shared/`.
 - Không hard-code hằng số nghiệp vụ; đọc từ config.
 - Text hiển thị cho người dùng bằng tiếng Việt; code, log, commit bằng tiếng Anh.
 

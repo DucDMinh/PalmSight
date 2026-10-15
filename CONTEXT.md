@@ -11,7 +11,7 @@ PalmSight là web app (PWA) cho người dùng Việt Nam:
 3. Chụp ảnh lòng bàn tay.
 4. Nhận bài bói chỉ tay do AI viết.
 
-App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credits khi đăng ký (+3) và khi có người nhập mã giới thiệu của mình (+2). MVP không bán credits.
+App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credits khi đăng ký (+3), khi nhập mã giới thiệu của người khác (+1), và khi có người nhập mã giới thiệu của mình (+2). MVP không bán credits.
 
 Đây là dự án nhỏ của **2 người**, làm cho vui, repo công khai. Thiết kế ưu tiên đơn giản và các gói miễn phí; không làm những thứ chỉ cần khi có nhiều người dùng (trang admin, chống gian lận nâng cao, Redis…).
 
@@ -28,10 +28,10 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | --- | --- |
 | 1 | Web app (PWA), không làm app native |
 | 2 | Stack: React + Vite (SPA) + NestJS + MongoDB |
-| 3 | Đăng nhập Google / Facebook; cùng email thì gộp một tài khoản |
+| 3 | Đăng ký/đăng nhập bằng email hoặc username + mật khẩu, **bắt buộc xác minh email** trước khi đăng nhập; quên mật khẩu qua email (Gmail SMTP). Google/Facebook là cách đăng nhập phụ. Cùng email đã xác minh thì gộp một tài khoản |
 | 4 | Tài khoản mới được 3 credits; credits không hết hạn; chưa bán credits |
 | 5 | Mỗi lần xem tốn 1 credit; AI lỗi hoặc ảnh không phải bàn tay thì hoàn credit (người dùng không mất credit) |
-| 6 | Người khác nhập mã giới thiệu của mình → mình được +2 **ngay**; người nhập không được gì |
+| 6 | Người khác nhập mã giới thiệu của mình → mình được +2 **ngay**; người nhập được +1 (kể cả khi chủ mã hết lượt trong ngày) |
 | 7 | Nhập mã bất cứ lúc nào, mỗi tài khoản một lần; mỗi chủ mã tối đa 10 lượt thưởng/ngày |
 | 8 | Không cần chống gian lận chặt (không kiểm tra thiết bị/IP), không cần trang admin |
 | 9 | Người dùng chọn 1 trong 3 trường phái, rồi tích các mục muốn bói (hoặc bói toàn bộ); kết quả chỉ gồm các mục đã chọn; chụp 1 tay |
@@ -39,6 +39,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | 11 | Chỉ tiếng Việt; giữ ảnh 90 ngày |
 | 12 | Giữ ngrok cho dev; deploy ưu tiên gói miễn phí |
 | 13 | Tên app: **PalmSight** |
+| 14 | **Không có tự xoá tài khoản** trong app (chặn xoá–đăng ký lại để farm credits). Xoá thủ công theo yêu cầu qua email; tài khoản tạo lại từ định danh đã xoá có 0 credits và không được nhập mã |
 
 ## Thuật ngữ
 
@@ -48,7 +49,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Ledger / sổ cái | Collection `credit_transactions`; mỗi lần cộng/trừ credits là một document. |
 | Balance | `users.creditBalance`, cache của tổng sổ cái. |
 | Referrer | Chủ mã giới thiệu, người được thưởng +2. |
-| Referee | Người nhập mã của referrer. Không được thưởng. |
+| Referee | Người nhập mã của referrer. Được thưởng +1 (`REFEREE_BONUS`). |
 | Referral code | Mã 8 ký tự in hoa, mỗi user một mã, sinh khi tạo tài khoản. |
 | Reading | Một lần xem bói: ảnh + trường phái + các mục đã chọn + kết quả AI + trạng thái. |
 | Trường phái (`school`) | Cách diễn giải chỉ tay: `WESTERN`, `EASTERN`, `VEDIC`. Định nghĩa trong `READING_SCHOOLS`. |
@@ -56,7 +57,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Section | Mục riêng của trường phái (ví dụ `nguHanh`, `heartLine`), trả về trong `result.sections`. |
 | Aspect | Khía cạnh cuộc sống dùng chung (`personality`, `love`, `career`, `finance`, `health`, `family`), định nghĩa trong `LIFE_ASPECTS`. |
 | Idempotency-Key | UUID v4 client gửi trong header của `POST /readings`. Chỉ dùng lại khi không nhận được response, để gửi lại không bị trừ credit hai lần. |
-| Identity | Một cách đăng nhập (Google hoặc Facebook), nhúng trong document user. |
+| Identity | Một liên kết Google hoặc Facebook, nhúng trong document user. Mật khẩu không phải identity mà là field `users.passwordHash`. |
+| Đăng ký chờ (`pending_registrations`) | Đăng ký email/mật khẩu chưa bấm link xác minh. Chưa phải user, chưa có credits; tự xoá sau 24 giờ. |
 | `PalmResult` | JSON kết quả AI trả về, lưu trong `readings.result`. |
 
 ## Quy tắc bất biến (không được phá)
@@ -65,12 +67,13 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 2. **Số dư không bao giờ âm.** Trừ bằng `updateOne` có điều kiện `creditBalance >= 1`. Không đọc số dư rồi mới trừ trong code.
 3. Tổng `amount` của một user luôn bằng `creditBalance`.
 4. **Trừ credit trước khi gọi AI**, hoàn lại (`READING_REFUND`) nếu AI lỗi, timeout hoặc ảnh không phải lòng bàn tay. Mỗi reading tối đa 1 lần trừ và 1 lần hoàn.
-5. `SIGNUP_BONUS` chỉ một lần mỗi user. Gắn thêm Google/Facebook vào user cũ không cộng thêm.
-6. Mỗi user chỉ nhập mã giới thiệu **một lần**. Không được nhập mã của chính mình hoặc của người mình đã mời.
+5. `SIGNUP_BONUS` chỉ cộng khi **tạo user** (xác minh email đăng ký, hoặc lần đầu đăng nhập Google/Facebook), một lần mỗi user. Gắn thêm mật khẩu hoặc Google/Facebook vào user cũ không cộng thêm. User tạo lại từ định danh có trong `deleted_identities` không được cộng.
+6. Mỗi user chỉ nhập mã giới thiệu **một lần**. Không được nhập mã của chính mình hoặc của người mình đã mời. Thưởng người nhập (+1) và chủ mã (+2) ghi trong cùng một transaction với document `referrals`.
 7. Mọi reading có `school` và `topics` (≥ 1 mục, đã chuẩn hoá). Kết quả AI phải có **đúng** các mục trong `topics`: không thiếu, không thừa. Giá luôn 1 credit, dù chọn bao nhiêu mục.
-8. API key AI, secret OAuth, chuỗi kết nối MongoDB và thông tin storage **chỉ nằm trên server**. Repo công khai: không bao giờ commit `.env`.
+8. API key AI, secret OAuth, mật khẩu SMTP, chuỗi kết nối MongoDB và thông tin storage **chỉ nằm trên server**. Repo công khai: không bao giờ commit `.env`.
 9. Ảnh người dùng nằm trong bucket **private**, chỉ truy cập qua signed URL ngắn hạn; xoá EXIF trước khi lưu.
 10. Mọi trang kết quả hiển thị câu miễn trừ: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
+11. **Không lưu mật khẩu thô hay token thô.** Mật khẩu hash bằng argon2id. Token trong link email và refresh token chỉ lưu bản hash SHA-256.
 
 ## Quyết định đã chốt
 
@@ -83,10 +86,15 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | [0005](docs/adr/0005-monorepo-nextjs-nestjs.md) | pnpm workspaces, NestJS + MongoDB (Mongoose), không Redis. Phần Next.js đã bị ADR-0007 thay thế |
 | [0006](docs/adr/0006-reading-schools.md) | Trường phái bói, chọn mục bói; kết quả dạng `sections` chung |
 | [0007](docs/adr/0007-vite-spa-frontend.md) | Frontend là SPA React + Vite; repo `frontend/` · `backend/` · `shared/`; web và API chung một domain qua proxy/rewrite |
+| [0008](docs/adr/0008-email-password-auth.md) | Đăng ký email/username + mật khẩu, bắt buộc xác minh email; Google/Facebook là cách đăng nhập phụ; gộp theo email đã xác minh; gửi mail qua Gmail SMTP |
+| [0009](docs/adr/0009-manual-account-deletion.md) | Không cho tự xoá tài khoản; xoá thủ công theo yêu cầu; HMAC định danh đã xoá để chặn nhận thưởng lại |
 
 ## Quy ước code
 
-- TypeScript strict ở mọi package. Dữ liệu từ ngoài vào (request, response AI) không được để kiểu `any`; phải validate bằng zod.
+- TypeScript strict ở mọi package. Dữ liệu từ ngoài vào (request, response AI) không được để kiểu `any`; phải validate bằng **Yup**.
+  - Schema object dùng `.noUnknown()`, để trường lạ bị từ chối.
+  - Validate với `{ abortEarly: false }`, để trả đủ mọi trường lỗi trong `details.fields`.
+  - Kiểu TypeScript lấy từ schema bằng `InferType`, không khai báo lặp lại.
 - **API:**
   - Đường dẫn `/api/v1`, JSON `camelCase`, ID là ObjectId dạng chuỗi.
   - Lỗi theo dạng `{ error: { code, message, details } }`, với `code` lấy từ bảng trong [api-contract.md](docs/api-contract.md).
@@ -97,8 +105,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 - **Frontend:**
   - Access token chỉ giữ trong bộ nhớ, không lưu `localStorage`.
   - Không đặt secret trong biến `VITE_*`, vì chúng được nhúng vào bundle.
-  - Form validate bằng zod schema.
-- Các hằng số nghiệp vụ (3, 2, 1, 10) đọc từ env, không hard-code.
+  - Form dùng Formik + Yup (có sẵn trong boilerplate). Schema dùng chung với API lấy từ `@palmsight/shared`.
+- Các hằng số nghiệp vụ (đăng ký 3, chủ mã 2, người nhập mã 1, giá xem 1, trần 10) đọc từ env, không hard-code.
 - Ngày (khi tính trần 10 lượt/ngày) tính theo giờ Việt Nam (`Asia/Ho_Chi_Minh`).
 - Văn bản hiển thị cho người dùng: tiếng Việt. Code, tên biến, commit message: tiếng Anh.
 

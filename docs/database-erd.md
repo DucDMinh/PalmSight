@@ -8,8 +8,9 @@ Transaction nhiều document cần **replica set**: MongoDB Atlas (kể cả gó
 
 ```mermaid
 erDiagram
-    users ||--|{ identities : "nhúng trong users"
+    users ||--o{ identities : "nhúng trong users"
     users ||--o{ sessions : "1 : N"
+    users ||--o{ password_resets : "1 : N"
     users ||--o{ referrals : "referrerId 1 : N"
     users ||--o| referrals : "refereeId 1 : 1"
     users ||--o{ readings : "1 : N"
@@ -20,12 +21,30 @@ erDiagram
     users {
         ObjectId _id PK
         string displayName
-        string email "null"
+        string username UK "null"
+        string email UK "null"
+        string passwordHash "null"
         string referralCode UK
         int creditBalance "min 0"
         array identities
         Date createdAt
         Date deletedAt
+    }
+    pending_registrations {
+        ObjectId _id PK
+        string email UK
+        string username UK
+        string displayName
+        string passwordHash
+        string tokenHash UK
+        Date expiresAt "TTL"
+    }
+    password_resets {
+        ObjectId _id PK
+        ObjectId userId FK
+        string tokenHash UK
+        Date expiresAt "TTL"
+        Date usedAt
     }
     identities {
         string provider "GOOGLE | FACEBOOK"
@@ -66,11 +85,21 @@ erDiagram
         string type
         int balanceAfter
         ObjectId readingId FK
-        ObjectId referralId FK, UK
+        ObjectId referralId FK
+    }
+    deleted_identities {
+        ObjectId _id PK
+        string kind "EMAIL | GOOGLE | FACEBOOK"
+        string valueHmac UK
+        Date deletedAt
     }
 ```
 
-`identities` không phải collection riêng mà là mảng nhúng trong `users`: mỗi user có tối đa 2 phần tử (Google, Facebook), và luôn được đọc cùng user.
+`deleted_identities` cố ý không có liên kết tới `users`: nó chỉ chứa mã băm, không chỉ ra được tài khoản nào đã bị xoá.
+
+`identities` không phải collection riêng mà là mảng nhúng trong `users`: mỗi user có 0–2 phần tử (Google, Facebook), và luôn được đọc cùng user. Đăng nhập bằng mật khẩu không phải một identity, mà là field `passwordHash` của user.
+
+Mỗi user phải đăng nhập được bằng ít nhất một cách: có `passwordHash`, hoặc có ít nhất 1 identity. Riêng user đã bị xoá (`users:delete`) thì không còn cách nào.
 
 ## Đặc tả collection
 
@@ -79,14 +108,18 @@ erDiagram
 | Field | Kiểu | Ràng buộc | Ghi chú |
 | --- | --- | --- | --- |
 | `_id` | ObjectId | | |
-| `displayName` | string | bắt buộc, ≤ 100 ký tự | Lấy từ Google/Facebook |
-| `email` | string \| null | lowercase | Facebook có thể không trả email |
-| `avatarUrl` | string \| null | | |
+| `displayName` | string | bắt buộc, 1–50 ký tự | Người dùng nhập khi đăng ký, hoặc lấy từ Google/Facebook (dài quá thì cắt bớt) |
+| `username` | string \| null | lowercase, `^[a-z0-9_]{3,20}$`, unique | Có khi user đăng ký bằng mật khẩu; `null` với user chỉ dùng Google/Facebook |
+| `email` | string \| null | lowercase, unique | Luôn là email **đã xác minh** (qua link xác minh hoặc qua Google/Facebook). `null` nếu user chỉ có Facebook không trả email |
+| `passwordHash` | string \| null | | argon2id. `null` nếu chưa đặt mật khẩu |
+| `passwordUpdatedAt` | Date \| null | | |
+| `avatarUrl` | string \| null | | Chỉ có khi lấy từ Google/Facebook |
 | `referralCode` | string | 8 ký tự, unique | Mã của chính user để chia sẻ |
 | `creditBalance` | int | bắt buộc, validator `minimum: 0` | Cache của sổ cái |
-| `identities` | array | ≥ 1 phần tử | Xem bảng dưới |
+| `identities` | array | 0–2 phần tử | Xem bảng dưới |
+| `referralBlocked` | boolean | bắt buộc, mặc định `false` | `true` khi user được tạo lại từ một định danh có trong `deleted_identities`: không được nhập mã giới thiệu. User loại này cũng không có `SIGNUP_BONUS` |
 | `createdAt`, `updatedAt` | Date | | Mongoose `timestamps` |
-| `deletedAt` | Date \| null | | Đánh dấu tài khoản đã xoá |
+| `deletedAt` | Date \| null | | Đánh dấu tài khoản đã bị xoá bằng script `users:delete` |
 
 Phần tử của `identities`:
 
@@ -100,7 +133,49 @@ Phần tử của `identities`:
 Index:
 - `{ referralCode: 1 }` unique.
 - `{ "identities.provider": 1, "identities.providerUserId": 1 }` unique, để một tài khoản Google/Facebook chỉ thuộc một user.
-- `{ email: 1 }` không unique, dùng khi gộp tài khoản theo email.
+- `{ email: 1 }` unique, `partialFilterExpression: { email: { $type: "string" } }`: mỗi email đã xác minh thuộc đúng một user; dùng khi gộp tài khoản và khi đăng nhập bằng email.
+- `{ username: 1 }` unique, `partialFilterExpression: { username: { $type: "string" } }`.
+
+User đã xoá có `email` và `username` là `null`, nên không chiếm chỗ trong hai index unique trên.
+
+### pending_registrations
+
+Đăng ký bằng email/mật khẩu **chưa xác minh**. User thật chỉ được tạo khi bấm link xác minh. Xem [ADR-0008](adr/0008-email-password-auth.md).
+
+| Field | Kiểu | Ràng buộc | Ghi chú |
+| --- | --- | --- | --- |
+| `_id` | ObjectId | | |
+| `email` | string | bắt buộc, lowercase, unique | Mỗi email chỉ có một đăng ký chờ; đăng ký lại thì ghi đè |
+| `username` | string | bắt buộc, lowercase, unique | Giữ chỗ username tới khi hết hạn |
+| `displayName` | string | bắt buộc, 1–50 ký tự | |
+| `passwordHash` | string | bắt buộc | argon2id |
+| `referralCode` | string \| null | | Mã giới thiệu nhập lúc đăng ký; áp dụng khi xác minh |
+| `tokenHash` | string | bắt buộc, unique | SHA-256 của token trong link; không lưu token thô |
+| `expiresAt` | Date | bắt buộc | 24 giờ sau lần gửi email gần nhất |
+| `lastSentAt` | Date | | Dùng cho giới hạn gửi lại |
+| `createdAt` | Date | | |
+
+Index:
+- `{ email: 1 }` unique, `{ username: 1 }` unique, `{ tokenHash: 1 }` unique.
+- TTL `{ expiresAt: 1 }, { expireAfterSeconds: 0 }`: MongoDB tự xoá đăng ký hết hạn, giải phóng username.
+
+Khi đăng ký mới, username phải không trùng **cả** `users.username` lẫn `pending_registrations.username` của email khác.
+
+### password_resets
+
+| Field | Kiểu | Ràng buộc | Ghi chú |
+| --- | --- | --- | --- |
+| `_id` | ObjectId | | |
+| `userId` | ObjectId | bắt buộc, ref `users` | |
+| `tokenHash` | string | bắt buộc, unique | SHA-256 của token trong link |
+| `expiresAt` | Date | bắt buộc | 1 giờ |
+| `usedAt` | Date \| null | | Đánh dấu đã dùng; token chỉ dùng được một lần |
+| `createdAt` | Date | | |
+
+Index:
+- `{ tokenHash: 1 }` unique.
+- `{ userId: 1 }`: huỷ token cũ khi tạo token mới.
+- TTL `{ expiresAt: 1 }, { expireAfterSeconds: 0 }`.
 
 ### sessions
 
@@ -166,10 +241,10 @@ Index:
 | `_id` | ObjectId | | ObjectId tăng dần theo thời gian, dùng làm cursor phân trang |
 | `userId` | ObjectId | bắt buộc, ref `users` | |
 | `amount` | int | bắt buộc, khác 0 | Dương = cộng, âm = trừ |
-| `type` | `SIGNUP_BONUS` \| `REFERRAL_BONUS` \| `READING_SPEND` \| `READING_REFUND` \| `ADMIN_ADJUST` | bắt buộc | |
+| `type` | `SIGNUP_BONUS` \| `REFERRAL_BONUS` \| `REFEREE_BONUS` \| `READING_SPEND` \| `READING_REFUND` \| `ADMIN_ADJUST` | bắt buộc | |
 | `balanceAfter` | int | bắt buộc | Số dư sau giao dịch |
 | `readingId` | ObjectId | ref `readings` | Chỉ có với `READING_*` |
-| `referralId` | ObjectId | ref `referrals` | Chỉ có với `REFERRAL_BONUS` |
+| `referralId` | ObjectId | ref `referrals` | Chỉ có với `REFERRAL_BONUS` (của chủ mã) và `REFEREE_BONUS` (của người nhập) |
 | `note` | string | | Bắt buộc với `ADMIN_ADJUST` |
 | `createdAt` | Date | | |
 
@@ -179,7 +254,25 @@ Index:
 - `{ userId: 1, _id: -1 }`: lịch sử credits.
 - `{ userId: 1, type: 1 }` unique, `partialFilterExpression: { type: "SIGNUP_BONUS" }`: mỗi user chỉ nhận bonus đăng ký một lần.
 - `{ readingId: 1, type: 1 }` unique, `partialFilterExpression: { readingId: { $exists: true } }`: mỗi reading tối đa 1 lần trừ, 1 lần hoàn.
-- `{ referralId: 1 }` unique, `partialFilterExpression: { referralId: { $exists: true } }`: mỗi referral chỉ thưởng một lần.
+- `{ referralId: 1, type: 1 }` unique, `partialFilterExpression: { referralId: { $exists: true } }`: mỗi referral tối đa 1 lần thưởng chủ mã và 1 lần thưởng người nhập.
+
+### deleted_identities
+
+Định danh của các tài khoản đã bị xoá theo yêu cầu, dùng để tài khoản tạo lại không nhận thưởng lần nữa. Xem [ADR-0009](adr/0009-manual-account-deletion.md).
+
+| Field | Kiểu | Ràng buộc | Ghi chú |
+| --- | --- | --- | --- |
+| `_id` | ObjectId | | |
+| `kind` | `EMAIL` \| `GOOGLE` \| `FACEBOOK` | bắt buộc | |
+| `valueHmac` | string | bắt buộc | HMAC-SHA256 (hex) của `kind + ":" + giá trị`, khoá là `IDENTITY_HASH_SECRET`. Giá trị là email chữ thường, Google `sub` hoặc Facebook `id` |
+| `deletedAt` | Date | bắt buộc | |
+
+Index:
+- `{ valueHmac: 1 }` unique.
+
+Khi tạo user (xác minh email, hoặc lần đầu Google/Facebook), server tính HMAC cho mọi định danh của user đó. Nếu có cái nào nằm trong bảng này: không cộng `SIGNUP_BONUS`, và đặt `referralBlocked = true`. Gắn thêm định danh vào user có sẵn thì không kiểm tra bảng này.
+
+Collection này giữ vô thời hạn; không bao giờ xoá.
 
 ## Quản lý index
 
