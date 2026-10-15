@@ -1,0 +1,332 @@
+<!DOCTYPE html><html lang="vi"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PalmSight — AI đọc chỉ tay</title>
+  <!-- Google Fonts for JetBrains Mono with Vietnamese support -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace !important;
+      letter-spacing: 0 !important;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #fdfcfc;
+      color: #201d1d;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .hairline-border {
+      border: 1px solid rgba(15, 0, 0, 0.12);
+    }
+    .hairline-bottom {
+      border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+    }
+    .hairline-top {
+      border-top: 1px solid rgba(15, 0, 0, 0.12);
+    }
+    .hairline-right {
+      border-right: 1px solid rgba(15, 0, 0, 0.12);
+    }
+    .btn-primary {
+      background-color: #201d1d;
+      color: #fdfcfc;
+      font-size: 16px;
+      font-weight: 500;
+      height: 36px;
+      padding: 4px 20px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: background-color 0.15s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:active {
+      background-color: #0f0000;
+    }
+    .btn-secondary {
+      background-color: #fdfcfc;
+      color: #201d1d;
+      font-size: 16px;
+      font-weight: 500;
+      height: 36px;
+      padding: 4px 20px;
+      border-radius: 4px;
+      border: 1px solid #646262;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    pre {
+      font-family: 'JetBrains Mono', monospace !important;
+      margin: 0;
+      line-height: 1.15;
+    }
+  </style>
+</head>
+<body class="w-full">
+
+  <!-- Top Navigation (56px, cream, 1px hairline below) -->
+  <header class="w-full h-[56px] hairline-bottom bg-[#fdfcfc] sticky top-0 z-50">
+    <div class="max-w-[960px] mx-auto h-full px-4 flex items-center justify-between">
+      <!-- PALMSIGHT block-pixel wordmark left (~120x24px) -->
+      <a href="#" class="inline-block text-[#201d1d] no-underline">
+        <pre class="text-[6.5px] leading-[6.5px] font-bold select-none text-[#201d1d]">███ ███ █   █ █ ███ ███ ███ █ █ ███
+█ █ █ █ █   ███ █    █  █   █ █  █
+███ ███ █   ███ ███  █  █ █ ███  █
+█   █ █ █   █ █   █  █  █ █ █ █  █
+█   █ █ ███ █ █ ███ ███ ███ █ █  █</pre>
+      </a>
+
+      <!-- Right-aligned nav items -->
+      <div class="flex items-center space-x-6">
+        <nav class="flex items-center space-x-6 text-[16px] font-[500] text-[#201d1d]">
+          <a href="#cach-hoat-dong" class="hover:underline text-[#201d1d] no-underline">Cách hoạt động</a>
+          <a href="#truong-phai" class="hover:underline text-[#201d1d] no-underline">Trường phái</a>
+          <a href="#hoi-dap" class="hover:underline text-[#201d1d] no-underline">Hỏi đáp</a>
+        </nav>
+        <button class="btn-primary">Bắt đầu</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="w-full pt-[96px]">
+    <div class="max-w-[960px] mx-auto px-4 text-left">
+      <!-- Dark chip / badge-news -->
+      <div class="inline-block bg-[#201d1d] text-[#fdfcfc] text-[14px] font-[400] rounded-[4px] px-[8px] py-[2px] mb-4">
+        Miễn phí 3 credits
+      </div>
+
+      <!-- H1 -->
+      <h1 class="text-[38px] leading-[1.3] font-[700] text-[#201d1d] max-w-[720px] mb-4">
+        Chụp lòng bàn tay. AI đọc chỉ tay giúp bạn.
+      </h1>
+
+      <!-- Body -->
+      <p class="text-[16px] leading-[1.5] font-[400] text-[#424245] max-w-[560px] mb-6">
+        Chọn phương Tây, phương Đông hoặc Ấn Độ, chụp một tấm ảnh và nhận bài bói trong chưa đầy một phút.
+      </p>
+
+      <!-- CTA buttons -->
+      <div class="flex items-center space-x-4 mb-3">
+        <button class="btn-primary">Bắt đầu xem bói</button>
+        <button class="btn-secondary">Xem ví dụ kết quả</button>
+      </div>
+
+      <!-- Caption -->
+      <div class="text-[14px] leading-[2] font-[400] text-[#646262]">
+        Đăng nhập bằng Google hoặc Facebook.
+      </div>
+    </div>
+
+    <!-- HERO TUI MOCKUP (the ONLY dark block on this page, 1100px wide, fill #201d1d, 0 radius, padding 64px 32px, text-only, no image) -->
+    <div class="max-w-[1100px] mx-auto mt-12 bg-[#201d1d] rounded-none px-[32px] py-[64px] text-left">
+      <!-- 1. PALMSIGHT block-pixel wordmark as monospace text in #fdfcfc, large, left-aligned -->
+      <pre class="text-[15px] sm:text-[18px] md:text-[22px] leading-[1.05] text-[#fdfcfc] font-bold select-none overflow-x-auto">███ ███ █   █ █ ███ ███ ███ █ █ ███
+█ █ █ █ █   ███ █    █  █   █ █  █
+███ ███ █   ███ ███  █  █ █ ███  █
+█   █ █ █   █ █   █  █  █ █ █ █  █
+█   █ █ ███ █ █ ███ ███ ███ █ █  █</pre>
+
+      <!-- 2. 32px gap, then a prompt row -->
+      <div class="mt-[32px] bg-[#302c2c] rounded-[4px] px-[12px] py-[8px] text-[#fdfcfc] text-[16px] leading-[1.5] font-[400]">
+        |  Phương Đông   Tay trái   [Bói toàn bộ]
+      </div>
+
+      <!-- 3. At the bottom edge, keybinding hints in #9a9898 14px -->
+      <div class="mt-8 text-[14px] leading-[1.5] text-[#9a9898] font-[400]">
+        tab đổi trường phái    enter xem bói
+      </div>
+    </div>
+  </section>
+
+  <!-- Section A: Cách hoạt động (96px vertical gap, 1px hairline rule on top, section label = bold 16px) -->
+  <section id="cach-hoat-dong" class="max-w-[960px] mx-auto px-4 mt-[96px] pt-[24px] hairline-top text-left">
+    <h2 class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-4">
+      Cách hoạt động
+    </h2>
+    <div class="space-y-0">
+      <div class="py-[8px] hairline-bottom text-[16px] leading-[1.5]">
+        <span class="font-[700] text-[#201d1d]">[+] Chọn trường phái</span>
+        <span class="text-[#424245] ml-3">Phương Tây, phương Đông hoặc Ấn Độ.</span>
+      </div>
+      <div class="py-[8px] hairline-bottom text-[16px] leading-[1.5]">
+        <span class="font-[700] text-[#201d1d]">[+] Chụp lòng bàn tay</span>
+        <span class="text-[#424245] ml-3">Bằng camera hoặc ảnh có sẵn.</span>
+      </div>
+      <div class="py-[8px] hairline-bottom text-[16px] leading-[1.5]">
+        <span class="font-[700] text-[#201d1d]">[+] Nhận bài bói</span>
+        <span class="text-[#424245] ml-3">Quan sát, ý nghĩa và lời khuyên.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section B: Trường phái (96px vertical gap, 1px hairline on top) -->
+  <section id="truong-phai" class="max-w-[960px] mx-auto px-4 mt-[96px] pt-[24px] hairline-top text-left">
+    <h2 class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-4">
+      Trường phái
+    </h2>
+    <!-- ONE hairline-bordered rectangle (0 radius, no fill) split into three columns by 1px vertical hairlines. Text table, not cards. -->
+    <div class="hairline-border grid grid-cols-1 md:grid-cols-3 rounded-none">
+      <!-- Column 1 -->
+      <div class="p-[16px] md:hairline-right">
+        <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-1">
+          Chỉ tay phương Tây
+        </div>
+        <div class="text-[16px] leading-[1.5] font-[400] text-[#424245] mb-2">
+          Dáng tay 4 nguyên tố, các đường chỉ chính và 7 gò
+        </div>
+        <div class="text-[14px] leading-[1.5] font-[400] text-[#646262]">
+          Tình cảm · Trí tuệ · Sinh mệnh · Định mệnh · Danh vọng
+        </div>
+      </div>
+      <!-- Column 2 -->
+      <div class="p-[16px] md:hairline-right border-t md:border-t-0 hairline-top md:border-none">
+        <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-1">
+          Chỉ tay phương Đông
+        </div>
+        <div class="text-[16px] leading-[1.5] font-[400] text-[#424245] mb-2">
+          Dáng tay ngũ hành, Thiên – Nhân – Địa văn, cung bát quái
+        </div>
+        <div class="text-[14px] leading-[1.5] font-[400] text-[#646262]">
+          Ngũ hành · Thiên văn · Nhân văn · Địa văn · Bát quái · Các ngón tay
+        </div>
+      </div>
+      <!-- Column 3 -->
+      <div class="p-[16px] border-t md:border-t-0 hairline-top md:border-none">
+        <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-1">
+          Chỉ tay Ấn Độ
+        </div>
+        <div class="text-[16px] leading-[1.5] font-[400] text-[#424245] mb-2">
+          Gò theo 9 hành tinh, đường chính, dấu hiệu đặc biệt
+        </div>
+        <div class="text-[14px] leading-[1.5] font-[400] text-[#646262]">
+          9 hành tinh · Đường chính · Dấu hiệu đặc biệt · Ngón cái
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section C: Ví dụ kết quả (96px vertical gap, 1px hairline on top) -->
+  <section class="max-w-[960px] mx-auto px-4 mt-[96px] pt-[24px] hairline-top text-left">
+    <h2 class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-4">
+      Ví dụ kết quả
+    </h2>
+    <!-- One hairline-bordered cream rectangle, padding 24px, typeset like a man page -->
+    <div class="hairline-border bg-[#fdfcfc] p-[24px] rounded-none">
+      <!-- First line, muted 14px -->
+      <div class="text-[14px] leading-[1.5] text-[#646262] font-[400] pb-4 hairline-bottom mb-4 flex justify-between">
+        <span>PALMSIGHT(1)</span>
+        <span>Chỉ tay phương Đông</span>
+        <span>Tay trái</span>
+      </div>
+
+      <!-- Tóm tắt -->
+      <div class="mb-4">
+        <span class="text-[16px] leading-[1.5] font-[700] text-[#201d1d]">Tóm tắt: </span>
+        <span class="text-[16px] leading-[1.5] font-[400] text-[#424245]">Tay Thổ, thực tế và đáng tin cậy. Tình cảm chân thành, chậm mà chắc.</span>
+      </div>
+
+      <!-- Dáng tay ngũ hành -->
+      <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-2">
+        Dáng tay ngũ hành
+      </div>
+      <div class="space-y-1">
+        <div class="text-[16px] leading-[1.5]">
+          <span class="font-[700] text-[#201d1d]">[+] Quan sát</span>
+          <span class="text-[#424245] ml-3">Lòng bàn tay vuông, ngón ngắn và chắc.</span>
+        </div>
+        <div class="text-[16px] leading-[1.5]">
+          <span class="font-[700] text-[#201d1d]">[+] Ý nghĩa</span>
+          <span class="text-[#424245] ml-3">Tay Thổ: thực tế, đáng tin cậy, làm việc đâu ra đó.</span>
+        </div>
+      </div>
+    </div>
+    <!-- Under the rectangle, caption muted -->
+    <div class="text-[14px] leading-[2] text-[#646262] mt-2">
+      Ví dụ minh hoạ, không phải kết quả thật.
+    </div>
+  </section>
+
+  <!-- Section D: Credits (96px vertical gap, 1px hairline on top) -->
+  <section class="max-w-[960px] mx-auto px-4 mt-[96px] pt-[24px] hairline-top text-left">
+    <h2 class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-4">
+      Credits
+    </h2>
+    <div class="space-y-0">
+      <div class="py-[8px] hairline-bottom text-[16px] leading-[1.5] text-[#424245]">
+        <span class="font-[700] text-[#201d1d]">[+] 3 credits</span> khi tạo tài khoản
+      </div>
+      <div class="py-[8px] hairline-bottom text-[16px] leading-[1.5] text-[#424245]">
+        <span class="font-[700] text-[#201d1d]">[+] +2 credits</span> mỗi khi có người nhập mã giới thiệu của bạn
+      </div>
+      <div class="py-[8px] hairline-bottom text-[16px] leading-[1.5] text-[#424245]">
+        <span class="font-[700] text-[#201d1d]">[+] 1 lần xem = 1 credit</span>, dù chọn bao nhiêu mục
+      </div>
+    </div>
+  </section>
+
+  <!-- Section E: Hỏi đáp (96px vertical gap, 1px hairline on top) -->
+  <section id="hoi-dap" class="max-w-[960px] mx-auto px-4 mt-[96px] pt-[24px] hairline-top text-left">
+    <h2 class="text-[16px] leading-[1.5] font-[700] text-[#201d1d] mb-4">
+      Hỏi đáp
+    </h2>
+    <div class="space-y-0">
+      <!-- FAQ row 1 (expanded, starting with "-") -->
+      <div class="py-[12px] hairline-bottom">
+        <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d]">
+          − Ảnh của tôi có được lưu không?
+        </div>
+        <div class="text-[16px] leading-[1.5] font-[400] text-[#424245] mt-1 pl-4">
+          Ảnh lưu tối đa 90 ngày hoặc đến khi bạn xoá. Bạn có thể xoá bất cứ lúc nào.
+        </div>
+      </div>
+      <!-- FAQ row 2 -->
+      <div class="py-[12px] hairline-bottom">
+        <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d]">
+          + Kết quả có chính xác không?
+        </div>
+      </div>
+      <!-- FAQ row 3 -->
+      <div class="py-[12px] hairline-bottom">
+        <div class="text-[16px] leading-[1.5] font-[700] text-[#201d1d]">
+          + Nếu AI bị lỗi thì sao?
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section F: Final CTA Button (96px vertical gap, left-aligned) -->
+  <section class="max-w-[960px] mx-auto px-4 mt-[96px] text-left">
+    <button class="btn-primary">Bắt đầu xem bói</button>
+  </section>
+
+  <!-- Footer (1px hairline on top, padding 32px 0, caption 14px) -->
+  <footer class="max-w-[960px] mx-auto px-4 mt-[96px] pt-[32px] pb-[48px] hairline-top text-left">
+    <!-- One row of three cells separated by 1px vertical hairlines -->
+    <div class="grid grid-cols-3 text-center text-[14px] leading-[2] text-[#424245] hairline-border mb-6">
+      <a href="#" class="py-2 hover:underline text-[#424245] no-underline hairline-right">Chính sách riêng tư</a>
+      <a href="#" class="py-2 hover:underline text-[#424245] no-underline hairline-right">Điều khoản</a>
+      <a href="#" class="py-2 hover:underline text-[#424245] no-underline">Xoá dữ liệu</a>
+    </div>
+
+    <!-- Bottom info -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between text-[14px] leading-[1.5] text-[#646262]">
+      <span>©2026 PalmSight</span>
+      <span class="mt-2 sm:mt-0">Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.</span>
+    </div>
+  </footer>
+
+
+
+</body></html>

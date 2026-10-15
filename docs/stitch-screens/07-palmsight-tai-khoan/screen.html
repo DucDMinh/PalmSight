@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>PalmSight</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"surface-dark":"#201d1d","on-secondary-fixed":"#1c1b1b","surface":"#faf9f9","tertiary-fixed":"#d8e2ff","surface-dim":"#dadada","on-error-container":"#93000a","surface-container-high":"#e9e8e8","canvas":"#fdfcfc","inverse-on-surface":"#f1f0f0","on-background":"#1a1c1c","on-error":"#ffffff","surface-variant":"#e3e2e2","on-primary-fixed-variant":"#4a4646","error-container":"#ffdad6","background":"#faf9f9","success":"#30d158","mute":"#646262","ink-deep":"#0f0000","on-secondary-fixed-variant":"#484646","on-tertiary":"#ffffff","surface-card":"#f1eeee","on-dark-mute":"#9a9898","error":"#ba1a1a","secondary-container":"#e6e1e1","outline":"#7f7575","inverse-primary":"#ccc5c4","on-surface-variant":"#4d4545","tertiary-container":"#001c45","on-secondary":"#ffffff","stone":"#6e6e73","on-tertiary-fixed-variant":"#004493","ink":"#201d1d","secondary":"#605e5e","on-surface":"#1a1c1c","surface-container-lowest":"#ffffff","danger":"#ff3b30","secondary-fixed":"#e6e1e1","surface-tint":"#625d5d","primary-fixed":"#e8e1e0","body":"#424245","warning":"#ff9f0a","surface-container-low":"#f4f3f3","hairline":"rgba(15,0,0,0.12)","surface-container":"#eeeeee","on-tertiary-fixed":"#001a41","secondary-fixed-dim":"#c9c6c5","primary":"#050404","primary-container":"#201d1d","tertiary":"#000310","surface-container-highest":"#e3e2e2","on-secondary-container":"#666464","on-primary-container":"#8a8484","surface-soft":"#f8f7f7","hairline-strong":"#646262","surface-dark-elevated":"#302c2c","on-tertiary-container":"#2a82ff","primary-fixed-dim":"#ccc5c4","on-primary-fixed":"#1e1b1b","ash":"#9a9898","inverse-surface":"#2f3131","charcoal":"#302c2c","surface-bright":"#faf9f9","on-dark":"#fdfcfc","on-primary":"#ffffff","accent":"#007aff","outline-variant":"#d0c4c3","tertiary-fixed-dim":"#adc6ff"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},spacing:{"space-xl":"2rem","margin-desktop":"3rem","gutter-desktop":"1.5rem","space-md":"1rem","margin-tablet":"2rem","margin":"1rem","gutter":"1rem","space-xs":"0.25rem","space-sm":"0.5rem","space-lg":"1.5rem"},fontFamily:{"body-sm":["JetBrains Mono"],"button-md":["\"JetBrains Mono, Berkeley Mono, monospace\""],"code-sm":["JetBrains Mono"],"heading-md":["\"JetBrains Mono, Berkeley Mono, monospace\""],"display-xl":["\"JetBrains Mono, Berkeley Mono, monospace\""],"body-strong":["\"JetBrains Mono, Berkeley Mono, monospace\""],"heading-sm":["JetBrains Mono"],"display-xl-mobile":["JetBrains Mono"],"body-md":["\"JetBrains Mono, Berkeley Mono, monospace\""],"heading-lg":["JetBrains Mono"],"caption-md":["\"JetBrains Mono, Berkeley Mono, monospace\""]},fontSize:{"body-sm":["14px",{lineHeight:"21px",letterSpacing:"0px",fontWeight:"400"}],"button-md":["16px",{lineHeight:"2",fontWeight:"500"}],"code-sm":["12px",{lineHeight:"18px",letterSpacing:"0px",fontWeight:"400"}],"heading-md":["16px",{lineHeight:"1.5",fontWeight:"700"}],"display-xl":["38px",{lineHeight:"1.5",fontWeight:"700"}],"body-strong":["16px",{lineHeight:"1.5",fontWeight:"500"}],"heading-sm":["14px",{lineHeight:"21px",letterSpacing:"0px",fontWeight:"700"}],"display-xl-mobile":["28px",{lineHeight:"42px",letterSpacing:"0px",fontWeight:"700"}],"body-md":["16px",{lineHeight:"1.5",fontWeight:"400"}],"heading-lg":["24px",{lineHeight:"36px",letterSpacing:"0px",fontWeight:"700"}],"caption-md":["14px",{lineHeight:"2",fontWeight:"400"}]}}}};</script></head><body class="bg-canvas text-ink font-body-md"><header class="fixed top-0 left-0 right-0 w-full z-50 bg-canvas border-b border-hairline"><div class="h-14 max-w-[960px] mx-auto px-4 flex items-center justify-between"><div class="flex items-center gap-8"><a aria-label="PALMSIGHT Home" class="inline-block leading-none select-none text-ink hover:opacity-80 transition-opacity" data-path="xem-boi" href="#"><pre class="font-code-sm text-[5px] leading-[5px] tracking-[-0.05em] font-bold text-ink m-0 p-0">███ ███ █   █ █ ███ ███ ███ █ █ ███
+█ █ █ █ █   ███ █    █  █   █ █  █
+███ ███ █   ███ ███  █  █ █ ███  █
+█   █ █ █   █ █   █  █  █ █ █ █  █
+█   █ █ ███ █ █ ███ ███ ███ █ █  █</pre></a><nav class="flex items-center gap-6 h-14" data-active-classes="text-ink border-b-2 border-ash font-body-strong"><a class="h-full inline-flex items-center text-mute font-body-strong text-body-strong hover:text-ink transition-colors" data-path="xem-boi" href="#">Xem bói</a><a class="h-full inline-flex items-center text-mute font-body-strong text-body-strong hover:text-ink transition-colors" data-path="lich-su" href="#">Lịch sử</a><a aria-current="page" class="h-full inline-flex items-center transition-colors text-ink border-b-2 border-ash font-body-strong" data-path="tai-khoan" href="#">Tài khoản</a></nav></div><div class="flex items-center gap-4"><div class="bg-surface-dark text-on-dark font-body-sm text-body-sm px-2 py-0.5 rounded-[4px] leading-tight select-none">4 credits</div><a class="font-body-strong text-body-strong text-ink underline underline-offset-4 hover:opacity-75 transition-opacity" data-path="dang-xuat" href="#">Đăng xuất</a></div></div></header><main class="w-full pt-14 min-h-[calc(100vh-56px)] bg-canvas"><div class="max-w-[960px] mx-auto px-4"><div class="flex flex-col w-full font-body-md text-ink">
+<!-- Top spacing: 48px below nav, container 960px centered -->
+<div class="w-full max-w-[960px] mx-auto pt-12 pb-24">
+<div class="flex flex-row items-start">
+<!-- LEFT SUB-MENU: 200px wide, sticky -->
+<aside class="w-[200px] shrink-0 sticky top-20 self-start">
+<nav class="flex flex-col text-body-md font-body-md" id="sub-nav">
+<div class="py-2">
+<a class="sub-nav-link inline-block font-body-strong text-body-strong text-ink border-b-2 border-ash transition-all" data-target="ho-so" href="#ho-so">Hồ sơ</a>
+</div>
+<div class="py-2">
+<a class="sub-nav-link inline-block font-body-md text-body-md text-mute hover:text-ink transition-all" data-target="bao-mat" href="#bao-mat">Bảo mật</a>
+</div>
+<div class="py-2">
+<a class="sub-nav-link inline-block font-body-md text-body-md text-mute hover:text-ink transition-all" data-target="vi-credits" href="#vi-credits">Ví credits</a>
+</div>
+<div class="py-2">
+<a class="sub-nav-link inline-block font-body-md text-body-md text-mute hover:text-ink transition-all" data-target="gioi-thieu" href="#gioi-thieu">Giới thiệu</a>
+</div>
+</nav>
+</aside>
+<!-- 1px vertical hairline rule -->
+<div class="w-[1px] bg-hairline self-stretch shrink-0 mx-10"></div>
+<!-- RIGHT CONTENT COLUMN: 680px wide -->
+<main class="w-[680px] shrink-0 flex flex-col">
+<!-- ================= SECTION 1: Hồ sơ ================= -->
+<section class="scroll-mt-20" id="ho-so">
+<div class="pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink">Hồ sơ</h2>
+</div>
+<!-- Profile row -->
+<div class="mt-6 flex items-start gap-4">
+<!-- 48px circle avatar -->
+<div class="w-12 h-12 rounded-full bg-surface-card border border-hairline flex items-center justify-center font-heading-md text-heading-md text-ink shrink-0 select-none">
+              N
+            </div>
+<div class="flex flex-col gap-1 min-w-0">
+<span class="font-heading-md text-heading-md text-ink">Nguyễn Văn A</span>
+<span class="font-body-sm text-body-sm text-mute">@minhanh</span>
+<div class="font-body-sm text-body-sm">
+<span class="text-mute">minhanh@example.com</span>
+<span class="text-ink font-body-strong ml-2">[+] Đã xác thực</span>
+</div>
+<span class="font-body-sm text-body-sm text-mute">Đăng nhập bằng: Mật khẩu · Google</span>
+</div>
+</div>
+<!-- List rows with ">" -->
+<div class="mt-8 flex flex-col">
+<div class="py-3 border-b border-hairline flex justify-between items-center cursor-pointer hover:bg-surface-soft px-1 transition-colors">
+<span class="font-body-md text-body-md text-ink">Nhập mã giới thiệu</span>
+<span class="font-body-md text-body-md text-mute">&gt;</span>
+</div>
+<div class="py-3 border-b border-hairline flex justify-between items-center cursor-pointer hover:bg-surface-soft px-1 transition-colors">
+<span class="font-body-md text-body-md text-ink">Chính sách riêng tư</span>
+<span class="font-body-md text-body-md text-mute">&gt;</span>
+</div>
+<div class="py-3 border-b border-hairline flex justify-between items-center cursor-pointer hover:bg-surface-soft px-1 transition-colors">
+<span class="font-body-md text-body-md text-ink">Điều khoản</span>
+<span class="font-body-md text-body-md text-mute">&gt;</span>
+</div>
+<div class="py-3 border-b border-hairline flex justify-between items-center cursor-pointer hover:bg-surface-soft px-1 transition-colors">
+<span class="font-body-md text-body-md text-ink">Hướng dẫn xoá dữ liệu</span>
+<span class="font-body-md text-body-md text-mute">&gt;</span>
+</div>
+</div>
+<!-- Danger box -->
+<div class="mt-8 p-4 bg-canvas border border-hairline rounded-none">
+<h3 class="font-heading-md text-heading-md text-ink">Xoá tài khoản</h3>
+<p class="mt-1.5 font-body-sm text-body-sm text-mute">Xoá ảnh, kết quả bói và thông tin đăng nhập. Không thể hoàn tác.</p>
+<button class="mt-4 h-9 px-5 rounded-[4px] bg-canvas text-danger border border-danger font-body-strong text-body-strong hover:bg-error-container/20 transition-colors inline-flex items-center justify-center" type="button">
+              Xoá tài khoản
+            </button>
+</div>
+</section>
+<!-- ================= SECTION 2: Bảo mật ================= -->
+<section class="mt-24 scroll-mt-20" id="bao-mat">
+<div class="pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink">Bảo mật</h2>
+</div>
+<h3 class="mt-6 font-heading-md text-heading-md text-ink">Đổi mật khẩu</h3>
+<div class="mt-4 flex flex-col gap-6">
+<!-- Field 1 -->
+<div class="flex flex-col">
+<label class="font-heading-md text-heading-md text-ink mb-2">Mật khẩu hiện tại</label>
+<div class="relative w-[360px]">
+<input class="w-full h-10 px-3 pr-14 bg-surface-soft border border-hairline rounded-[4px] font-body-md text-body-md text-ink outline-none focus:border-ink transition-colors" id="current-pass" type="password" value="••••••••"/>
+<button class="absolute right-3 top-2.5 font-body-sm text-body-sm text-mute underline hover:text-ink transition-colors" onclick="togglePass('current-pass', this)" type="button">Hiện</button>
+</div>
+</div>
+<!-- Field 2 -->
+<div class="flex flex-col">
+<label class="font-heading-md text-heading-md text-ink mb-2">Mật khẩu mới</label>
+<div class="relative w-[360px]">
+<input class="w-full h-10 px-3 pr-14 bg-surface-soft border border-hairline rounded-[4px] font-body-md text-body-md text-ink outline-none focus:border-ink transition-colors" id="new-pass" placeholder="" type="password"/>
+<button class="absolute right-3 top-2.5 font-body-sm text-body-sm text-mute underline hover:text-ink transition-colors" onclick="togglePass('new-pass', this)" type="button">Hiện</button>
+</div>
+<span class="mt-1 font-body-sm text-body-sm text-mute">[i] Tối thiểu 8 ký tự.</span>
+</div>
+</div>
+<button class="mt-6 h-9 px-5 w-fit rounded-[4px] bg-surface-dark text-canvas font-button-md text-button-md hover:bg-surface-dark-elevated transition-colors inline-flex items-center justify-center" type="button">
+            Lưu mật khẩu mới
+          </button>
+</section>
+<!-- ================= SECTION 3: Ví credits ================= -->
+<section class="mt-24 scroll-mt-20" id="vi-credits">
+<div class="pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink">Ví credits</h2>
+</div>
+<!-- Balance display -->
+<div class="mt-6 flex flex-col">
+<div class="font-display-xl text-display-xl text-ink leading-tight">4 credits</div>
+<div class="mt-1 font-body-sm text-body-sm text-mute">Credits không hết hạn.</div>
+</div>
+<!-- Monospace text table -->
+<div class="mt-6 w-full flex flex-col">
+<!-- Header row -->
+<div class="pb-2 border-b border-hairline font-body-sm text-body-sm text-mute grid grid-cols-[160px_200px_120px_100px]">
+<div>Ngày</div>
+<div>Loại</div>
+<div>Credits</div>
+<div>Số dư</div>
+</div>
+<!-- Row 1 -->
+<div class="py-3.5 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[160px_200px_120px_100px] items-center">
+<div>14/10/2026 08:31</div>
+<div>Xem bói</div>
+<div class="font-heading-md text-ink">−1</div>
+<div class="font-heading-md text-ink">4</div>
+</div>
+<!-- Row 2 -->
+<div class="py-3.5 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[160px_200px_120px_100px] items-center">
+<div>12/10/2026 02:10</div>
+<div>Thưởng giới thiệu</div>
+<div class="font-heading-md text-ink">+2</div>
+<div class="font-heading-md text-ink">5</div>
+</div>
+<!-- Row 3 -->
+<div class="py-3.5 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[160px_200px_120px_100px] items-center">
+<div>10/10/2026 07:00</div>
+<div>Quà đăng ký</div>
+<div class="font-heading-md text-ink">+3</div>
+<div class="font-heading-md text-ink">3</div>
+</div>
+<!-- Row 4 -->
+<div class="py-3.5 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[160px_200px_120px_100px] items-center">
+<div>09/10/2026 15:12</div>
+<div>Hoàn credit</div>
+<div class="font-heading-md text-ink">+1</div>
+<div class="font-heading-md text-ink">4</div>
+</div>
+<!-- Row 5 -->
+<div class="py-3.5 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[160px_200px_120px_100px] items-center">
+<div>09/10/2026 15:11</div>
+<div>Xem bói</div>
+<div class="font-heading-md text-ink">−1</div>
+<div class="font-heading-md text-ink">3</div>
+</div>
+</div>
+<!-- Under table -->
+<div class="mt-4">
+<a class="font-body-strong text-body-strong text-ink underline underline-offset-4 hover:opacity-75 transition-opacity" href="#">Tải thêm</a>
+</div>
+</section>
+<!-- ================= SECTION 4: Giới thiệu ================= -->
+<section class="mt-24 scroll-mt-20" id="gioi-thieu">
+<div class="pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink">Giới thiệu</h2>
+</div>
+<h3 class="mt-6 font-heading-md text-heading-md text-ink">Mã của tôi</h3>
+<!-- Install-snippet 1 -->
+<div class="mt-2 max-w-[500px] bg-surface-card rounded-[4px] p-4 flex justify-between items-center border border-hairline">
+<span class="text-[28px] leading-[42px] font-bold text-ink tracking-widest font-heading-lg" id="referral-code">K7QX4MZP</span>
+<button class="font-body-strong text-body-strong text-ink underline underline-offset-4 hover:opacity-75 transition-opacity" onclick="copySnippet('referral-code', this)" type="button">
+              Sao chép
+            </button>
+</div>
+<!-- Second snippet row -->
+<div class="mt-4 max-w-[500px]">
+<div class="bg-surface-card rounded-[4px] px-3.5 py-2.5 font-body-sm text-body-sm text-ink border border-hairline select-all" id="referral-link">
+              palmsight.app/r/K7QX4MZP
+            </div>
+<div class="mt-3 flex gap-3">
+<button class="h-9 px-5 rounded-[4px] bg-surface-dark text-canvas font-button-md text-button-md hover:bg-surface-dark-elevated transition-colors inline-flex items-center justify-center" type="button">
+                Chia sẻ
+              </button>
+<button class="h-9 px-5 rounded-[4px] bg-canvas text-ink border border-hairline-strong font-button-md text-button-md hover:bg-surface-soft transition-colors inline-flex items-center justify-center" onclick="copySnippet('referral-link', this)" type="button">
+                Sao chép liên kết
+              </button>
+</div>
+</div>
+<!-- Cách nhận credits -->
+<h3 class="mt-8 font-heading-md text-heading-md text-ink">Cách nhận credits</h3>
+<div class="mt-2 flex flex-col gap-2 font-body-md text-body-md text-body">
+<div>[+] Mỗi người đăng ký bằng mã của bạn, bạn nhận +2 credits</div>
+<div>[+] Tối đa 10 lượt thưởng mỗi ngày</div>
+<div>[+] Bạn bè không nhận thêm credits</div>
+</div>
+<!-- Người đã mời -->
+<h3 class="mt-8 font-heading-md text-heading-md text-ink">Người đã mời</h3>
+<div class="mt-1 font-body-sm text-body-sm text-mute">3 lượt được thưởng · +6 credits</div>
+<!-- Table người đã mời -->
+<div class="mt-4 w-full flex flex-col">
+<!-- Header row -->
+<div class="pb-2 border-b border-hairline font-body-sm text-body-sm text-mute grid grid-cols-[180px_140px_320px]">
+<div>Tên</div>
+<div>Ngày</div>
+<div>Kết quả</div>
+</div>
+<!-- Row 1 -->
+<div class="py-3 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[180px_140px_320px] items-center">
+<div>Lê C***</div>
+<div>12/10/2026</div>
+<div class="font-heading-md text-ink">+2 credits</div>
+</div>
+<!-- Row 2 -->
+<div class="py-3 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[180px_140px_320px] items-center">
+<div>Phạm D***</div>
+<div>13/10/2026</div>
+<div class="text-mute font-body-sm">Đã ghi nhận · không cộng (hết lượt hôm nay)</div>
+</div>
+<!-- Row 3 -->
+<div class="py-3 border-b border-hairline font-body-md text-body-md text-body grid grid-cols-[180px_140px_320px] items-center">
+<div>Người dùng đã xoá</div>
+<div>08/10/2026</div>
+<div class="font-heading-md text-ink">+2 credits</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+</div>
+</div>
+<script>
+  function togglePass(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Ẩn';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Hiện';
+    }
+  }
+
+  function copySnippet(elementId, btn) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    const text = el.innerText || el.textContent;
+    navigator.clipboard.writeText(text.trim()).then(() => {
+      const originalText = btn.textContent;
+      btn.textContent = 'Đã chép!';
+      setTimeout(() => {
+        btn.textContent = originalText;
+      }, 1500);
+    });
+  }
+
+  // Active scrollspy for left sub-nav
+  const sections = document.querySelectorAll('section');
+  const navLinks = document.querySelectorAll('.sub-nav-link');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    const scrollPos = window.scrollY + 120;
+
+    sections.forEach((section) => {
+      if (scrollPos >= section.offsetTop) {
+        current = section.getAttribute('id');
+      }
+    });
+
+    navLinks.forEach((link) => {
+      if (link.getAttribute('data-target') === current) {
+        link.className = 'sub-nav-link inline-block font-body-strong text-body-strong text-ink border-b-2 border-ash transition-all';
+      } else {
+        link.className = 'sub-nav-link inline-block font-body-md text-body-md text-mute hover:text-ink transition-all';
+      }
+    });
+  });
+</script></div></main><footer class="w-full bg-canvas border-t border-hairline py-8"><div class="max-w-[960px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 font-body-sm text-body-sm text-mute"><p class="m-0 text-left">Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.</p><span class="select-none">© PALMSIGHT</span></div></footer></body></html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "on-secondary-fixed-variant": "#484646",
+        "surface-dark": "#201d1d",
+        "body": "#424245",
+        "on-secondary": "#ffffff",
+        "on-tertiary-fixed": "#001a41",
+        "secondary-container": "#e6e1e1",
+        "primary": "#050404",
+        "on-error-container": "#93000a",
+        "surface-dark-elevated": "#302c2c",
+        "error-container": "#ffdad6",
+        "hairline-strong": "#646262",
+        "surface-soft": "#f8f7f7",
+        "on-secondary-fixed": "#1c1b1b",
+        "on-background": "#1a1c1c",
+        "on-surface": "#1a1c1c",
+        "outline": "#7f7575",
+        "surface-container-highest": "#e3e2e2",
+        "warning": "#ff9f0a",
+        "success": "#30d158",
+        "surface-container-lowest": "#ffffff",
+        "hairline": "rgba(15,0,0,0.12)",
+        "on-primary-fixed-variant": "#4a4646",
+        "mute": "#646262",
+        "inverse-surface": "#2f3131",
+        "charcoal": "#302c2c",
+        "on-surface-variant": "#4d4545",
+        "on-tertiary-fixed-variant": "#004493",
+        "surface-card": "#f1eeee",
+        "ink-deep": "#0f0000",
+        "tertiary-container": "#001c45",
+        "on-tertiary": "#ffffff",
+        "on-primary-fixed": "#1e1b1b",
+        "tertiary": "#000310",
+        "surface": "#faf9f9",
+        "inverse-primary": "#ccc5c4",
+        "surface-container-high": "#e9e8e8",
+        "primary-fixed-dim": "#ccc5c4",
+        "accent": "#007aff",
+        "surface-container": "#eeeeee",
+        "surface-dim": "#dadada",
+        "outline-variant": "#d0c4c3",
+        "secondary": "#605e5e",
+        "tertiary-fixed-dim": "#adc6ff",
+        "surface-bright": "#faf9f9",
+        "on-tertiary-container": "#2a82ff",
+        "on-error": "#ffffff",
+        "on-primary-container": "#8a8484",
+        "secondary-fixed": "#e6e1e1",
+        "error": "#ba1a1a",
+        "ink": "#201d1d",
+        "on-dark-mute": "#9a9898",
+        "canvas": "#fdfcfc",
+        "primary-container": "#201d1d",
+        "on-dark": "#fdfcfc",
+        "background": "#faf9f9",
+        "danger": "#ff3b30",
+        "stone": "#6e6e73",
+        "secondary-fixed-dim": "#c9c6c5",
+        "inverse-on-surface": "#f1f0f0",
+        "ash": "#9a9898",
+        "on-primary": "#ffffff",
+        "primary-fixed": "#e8e1e0",
+        "surface-variant": "#e3e2e2",
+        "on-secondary-container": "#666464",
+        "tertiary-fixed": "#d8e2ff",
+        "surface-tint": "#625d5d",
+        "surface-container-low": "#f4f3f3"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.125rem",
+        "lg": "0.25rem",
+        "xl": "0.5rem",
+        "full": "0.75rem"
+      },
+      "spacing": {
+        "space-xs": "0.25rem",
+        "space-sm": "0.5rem",
+        "gutter-desktop": "1.5rem",
+        "margin": "1rem",
+        "space-xl": "2rem",
+        "margin-desktop": "3rem",
+        "gutter": "1rem",
+        "space-md": "1rem",
+        "margin-tablet": "2rem",
+        "space-lg": "1.5rem"
+      },
+      "fontFamily": {
+        "display-xl-mobile": ["JetBrains Mono"],
+        "body-md": ["\"JetBrains Mono, Berkeley Mono, monospace\""],
+        "display-xl": ["\"JetBrains Mono, Berkeley Mono, monospace\""],
+        "heading-sm": ["JetBrains Mono"],
+        "body-strong": ["\"JetBrains Mono, Berkeley Mono, monospace\""],
+        "heading-lg": ["JetBrains Mono"],
+        "code-sm": ["JetBrains Mono"],
+        "heading-md": ["\"JetBrains Mono, Berkeley Mono, monospace\""],
+        "caption-md": ["\"JetBrains Mono, Berkeley Mono, monospace\""],
+        "button-md": ["\"JetBrains Mono, Berkeley Mono, monospace\""],
+        "body-sm": ["JetBrains Mono"]
+      },
+      "fontSize": {
+        "display-xl-mobile": ["28px", {"lineHeight": "42px", "letterSpacing": "0px", "fontWeight": "700"}],
+        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+        "display-xl": ["38px", {"lineHeight": "1.5", "fontWeight": "700"}],
+        "heading-sm": ["14px", {"lineHeight": "21px", "letterSpacing": "0px", "fontWeight": "700"}],
+        "body-strong": ["16px", {"lineHeight": "1.5", "fontWeight": "500"}],
+        "heading-lg": ["24px", {"lineHeight": "36px", "letterSpacing": "0px", "fontWeight": "700"}],
+        "code-sm": ["12px", {"lineHeight": "18px", "letterSpacing": "0px", "fontWeight": "400"}],
+        "heading-md": ["16px", {"lineHeight": "1.5", "fontWeight": "700"}],
+        "caption-md": ["14px", {"lineHeight": "2", "fontWeight": "400"}],
+        "button-md": ["16px", {"lineHeight": "2", "fontWeight": "500"}],
+        "body-sm": ["14px", {"lineHeight": "21px", "letterSpacing": "0px", "fontWeight": "400"}]
+      }
+    }
+  }
+}</script></head><body class="bg-canvas font-body-md text-ink antialiased"><header class="fixed top-0 left-0 right-0 z-50 bg-canvas border-b border-hairline"><div class="h-14 max-w-[960px] mx-auto px-gutter flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><a aria-label="PALMSIGHT Logo" class="inline-flex flex-col justify-center select-none py-1 group" data-path="xem-boi" href="#"><pre class="font-code-sm text-code-sm text-ink leading-[4px] tracking-[1px] m-0 p-0 font-bold select-none">███ ███ █   █ █ ███ ███ ███ █ █ ███
+█ █ █ █ █   ███ █    █  █   █ █  █ 
+███ ███ █   ███ ███  █  █ █ ███  █ 
+█   █ █ █   █ █   █  █  █ █ █ █  █ 
+█   █ █ ███ █ █ ███ ███ ███ █ █  █ </pre></a><nav class="flex items-center gap-space-lg h-14" data-active-classes="text-ink border-b-2 border-ash pb-[18px] pt-[20px]"><a class="font-body-strong text-body-strong text-mute hover:text-ink transition-colors pb-[18px] pt-[20px]" data-path="xem-boi" href="#">Xem bói</a><a class="font-body-strong text-body-strong text-mute hover:text-ink transition-colors pb-[18px] pt-[20px]" data-path="lich-su" href="#">Lịch sử</a><a class="font-body-strong text-body-strong text-mute hover:text-ink transition-colors pb-[18px] pt-[20px]" data-path="tai-khoan" href="#">Tài khoản</a></nav></div><div class="flex items-center gap-space-md"><span class="bg-ink text-on-dark font-body-sm text-body-sm px-space-sm py-[2px] rounded-lg inline-flex items-center justify-center leading-none">3 credits</span><a class="font-body-strong text-body-strong text-ink underline hover:text-charcoal transition-colors" data-path="dang-xuat" href="#">Đăng xuất</a></div></div></header><main class="w-full pt-14 bg-canvas min-h-[calc(100vh-56px)]"><div class="max-w-[960px] mx-auto px-gutter"><div class="flex flex-col w-full">
+<div class="w-full pt-12 pb-16">
+<div class="flex flex-row justify-between w-[960px] mx-auto select-none">
+<!-- LEFT COLUMN: THIẾT LẬP (400px) -->
+<section class="w-[400px] shrink-0 flex flex-col justify-start">
+<!-- Block 1: Trường phái -->
+<div class="flex flex-col mb-8">
+<div class="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink m-0">1. Trường phái</h2>
+<span class="font-code-sm text-code-sm text-mute">SYS::OPT_01</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Row 1: Phương Tây -->
+<button class="w-full text-left p-3 rounded-lg border border-hairline bg-transparent hover:bg-surface-soft transition-colors focus:outline-none" type="button">
+<div class="font-heading-md text-heading-md text-ink leading-tight">( ) Chỉ tay phương Tây</div>
+<div class="font-body-sm text-body-sm text-mute mt-1 leading-tight">Dáng tay 4 nguyên tố, các đường chỉ chính và 7 gò</div>
+</button>
+<!-- Row 2: Phương Đông (SELECTED) -->
+<button class="w-full text-left p-3 rounded-lg border border-ink bg-canvas transition-colors focus:outline-none" type="button">
+<div class="font-heading-md text-heading-md text-ink leading-tight">(x) Chỉ tay phương Đông</div>
+<div class="font-body-sm text-body-sm text-mute mt-1 leading-tight">Dáng tay ngũ hành, Thiên – Nhân – Địa văn, cung bát quái</div>
+</button>
+<!-- Row 3: Ấn Độ -->
+<button class="w-full text-left p-3 rounded-lg border border-hairline bg-transparent hover:bg-surface-soft transition-colors focus:outline-none" type="button">
+<div class="font-heading-md text-heading-md text-ink leading-tight">( ) Chỉ tay Ấn Độ</div>
+<div class="font-body-sm text-body-sm text-mute mt-1 leading-tight">Gò theo 9 hành tinh, đường chính, dấu hiệu đặc biệt</div>
+</button>
+</div>
+</div>
+<!-- Block 2: Mục muốn bói -->
+<div class="flex flex-col mb-8">
+<div class="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink m-0">2. Mục muốn bói</h2>
+<span class="font-code-sm text-code-sm text-mute">SYS::OPT_02</span>
+</div>
+<!-- Bói toàn bộ (Active) -->
+<div class="font-heading-md text-heading-md text-ink py-1">
+            [x] Bói toàn bộ
+          </div>
+<!-- Nhóm 1: Đường chỉ -->
+<div class="font-body-sm text-body-sm text-mute mt-3 mb-2 font-medium">
+            Đường chỉ &amp; dấu hiệu (phương Đông)
+          </div>
+<div class="flex flex-col text-ash font-body-sm text-body-sm space-y-0.5 select-none">
+<div class="py-0.5">[x] Dáng tay ngũ hành</div>
+<div class="py-0.5">[x] Thiên văn</div>
+<div class="py-0.5">[x] Nhân văn</div>
+<div class="py-0.5">[x] Địa văn</div>
+<div class="py-0.5">[x] Cung bát quái</div>
+<div class="py-0.5">[x] Các ngón tay</div>
+</div>
+<!-- Nhóm 2: Khía cạnh cuộc sống -->
+<div class="font-body-sm text-body-sm text-mute mt-4 mb-2 font-medium">
+            Khía cạnh cuộc sống
+          </div>
+<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-ash font-body-sm text-body-sm select-none">
+<div class="py-0.5">[x] Tính cách</div>
+<div class="py-0.5">[x] Tài chính</div>
+<div class="py-0.5">[x] Tình cảm</div>
+<div class="py-0.5">[x] Sức khoẻ</div>
+<div class="py-0.5">[x] Sự nghiệp</div>
+<div class="py-0.5">[x] Gia đạo</div>
+</div>
+</div>
+<!-- Block 3: Tay -->
+<div class="flex flex-col mb-6">
+<div class="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
+<h2 class="font-heading-md text-heading-md text-ink m-0">3. Tay</h2>
+<span class="font-code-sm text-code-sm text-mute">SYS::OPT_03</span>
+</div>
+<div class="flex items-center gap-6 font-body-strong text-body-strong text-ink">
+<label class="cursor-pointer select-none">
+<input checked="" class="sr-only" name="hand" type="radio">
+<span>(x) Tay trái</span>
+</label>
+<label class="cursor-pointer select-none">
+<input class="sr-only" name="hand" type="radio">
+<span>( ) Tay phải</span>
+</label>
+</div>
+<div class="font-body-sm text-body-sm text-mute mt-2">
+            [i] Nam xem tay trái, nữ xem tay phải.
+          </div>
+</div>
+<!-- Footer / Cost meta -->
+<div class="mt-2 pt-4 border-t border-hairline">
+<p class="font-body-sm text-body-sm text-mute m-0 leading-normal">
+            [i] Giá 1 credit, dù chọn bao nhiêu mục
+          </p>
+</div>
+</section>
+<!-- 1px VERTICAL HAIRLINE DIVIDER -->
+<div aria-hidden="true" class="w-[1px] bg-hairline shrink-0 self-stretch min-h-full"></div>
+<!-- RIGHT COLUMN: CHỤP ẢNH (520px) -->
+<section class="w-[520px] shrink-0 pl-10 flex flex-col justify-start">
+<!-- Header -->
+<div class="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
+<div class="flex items-center gap-3">
+<h2 class="font-heading-md text-heading-md text-ink m-0">4. Chụp ảnh</h2>
+<span class="font-code-sm text-code-sm text-success inline-flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              CAMERA_READY
+            </span>
+</div>
+<span class="font-code-sm text-code-sm text-mute">INPUT::DEV_0</span>
+</div>
+<!-- Summary Selection -->
+<div class="font-body-sm text-body-sm text-mute mb-4 select-none">
+          Phương Đông · Tay trái · Toàn bộ
+        </div>
+<!-- Viewfinder Box (520px by 390px, 0px radius, flat #201d1d) -->
+<div class="relative w-[520px] h-[390px] bg-surface-dark overflow-hidden flex items-center justify-center select-none" id="viewfinder">
+<!-- ASCII Corner Brackets -->
+<div class="absolute top-4 left-4 font-code-sm text-xl text-on-dark leading-none pointer-events-none">┌</div>
+<div class="absolute top-4 right-4 font-code-sm text-xl text-on-dark leading-none pointer-events-none">┐</div>
+<div class="absolute bottom-4 left-4 font-code-sm text-xl text-on-dark leading-none pointer-events-none">└</div>
+<div class="absolute bottom-4 right-4 font-code-sm text-xl text-on-dark leading-none pointer-events-none">┘</div>
+<!-- Framing Guides (Terminal HUD elements) -->
+<div class="absolute top-4 inset-x-0 flex justify-center pointer-events-none">
+<span class="font-code-sm text-code-sm text-ash tracking-widest text-[10px]">SCAN AREA // 1080P</span>
+</div>
+<!-- Minimal Palm Silhouette Wireframe (180px x 240px) -->
+<svg class="w-[180px] h-[240px] pointer-events-none" fill="none" viewBox="0 0 180 240" xmlns="http://www.w3.org/2000/svg">
+<path d="M 46 175
+                     C 38 160 22 135 15 120
+                     C 10 110 14 100 24 104
+                     C 35 109 50 128 58 136
+                     C 57 115 54 62 55 45
+                     C 56 36 67 36 68 45
+                     C 70 60 72 100 73 108
+                     C 74 90 75 32 78 18
+                     C 80 8 91 8 92 18
+                     C 94 36 94 92 95 108
+                     C 98 90 102 44 106 32
+                     C 108 24 119 25 120 34
+                     C 122 55 120 102 120 118
+                     C 124 106 131 75 137 68
+                     C 142 62 152 66 150 76
+                     C 145 98 138 140 137 165
+                     C 135 195 126 230 118 238
+                     L 60 238
+                     C 52 230 48 200 46 175 Z" stroke="#9a9898" stroke-dasharray="4 4" stroke-width="1.2" vector-effect="non-scaling-stroke"></path>
+<!-- Auxiliary crosshairs -->
+<path d="M 85 155 L 95 155 M 90 150 L 90 160" stroke="#9a9898" stroke-width="1"></path>
+</svg>
+<!-- Telemetry overlay status bar -->
+<div class="absolute bottom-4 inset-x-4 flex justify-between items-center pointer-events-none">
+<span class="font-code-sm text-code-sm text-ash text-[10px]">FPS: 30.0</span>
+<span class="font-code-sm text-code-sm text-ash text-[10px]">ALIGN_CENTER</span>
+<span class="font-code-sm text-code-sm text-ash text-[10px]">ISO_AUTO</span>
+</div>
+</div>
+<!-- Hint under viewfinder -->
+<p class="font-body-md text-body-md text-body mt-4 mb-5 leading-relaxed">
+          Đủ sáng, xoè tay, lòng bàn tay hướng vào camera.
+        </p>
+<!-- CTA Buttons Side by Side -->
+<div class="flex items-center gap-4">
+<button class="h-9 px-5 bg-ink text-on-dark font-button-md text-button-md rounded hover:bg-charcoal transition-colors flex items-center justify-center active:scale-[0.99]" type="button">
+            Chụp ảnh
+          </button>
+<button class="h-9 px-5 bg-canvas text-ink border border-hairline-strong font-button-md text-button-md rounded hover:bg-surface-soft transition-colors flex items-center justify-center active:scale-[0.99]" type="button">
+            Chọn ảnh có sẵn
+          </button>
+</div>
+</section>
+</div>
+</div>
+</div></div></main><footer class="w-full bg-canvas border-t border-hairline py-space-lg"><div class="max-w-[960px] mx-auto px-gutter flex items-center justify-between text-mute font-body-sm text-body-sm"><p class="m-0">Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.</p><span class="font-body-strong text-body-strong text-ink">© PALMSIGHT</span></div></footer></body></html>

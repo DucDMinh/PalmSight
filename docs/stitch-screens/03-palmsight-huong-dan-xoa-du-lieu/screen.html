@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PalmSight - Hướng dẫn xoá dữ liệu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #fdfcfc;
+      color: #201d1d;
+      font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+      font-size: 16px;
+      line-height: 1.5;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 960px container */
+    .container {
+      width: 960px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    /* PUBLIC HEADER (56px) */
+    .public-header {
+      height: 56px;
+      background-color: #fdfcfc;
+      border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    /* Block-pixel PALMSIGHT wordmark (5 rows) */
+    .wordmark {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 2px;
+      user-select: none;
+      text-decoration: none;
+    }
+    .wordmark-row {
+      display: flex;
+      gap: 2px;
+    }
+    .pixel {
+      width: 3px;
+      height: 3px;
+    }
+    .pixel.on {
+      background-color: #201d1d;
+    }
+    .pixel.off {
+      background-color: transparent;
+    }
+
+    /* Header Nav items */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .login-link {
+      font-size: 16px;
+      font-weight: 500;
+      color: #201d1d;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .register-btn {
+      background-color: #201d1d;
+      color: #fdfcfc;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      height: 36px;
+      padding: 4px 20px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    .register-btn:active {
+      background-color: #0f0000;
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      flex: 1;
+      padding-top: 96px;
+      padding-bottom: 96px;
+    }
+    .content-col {
+      width: 640px;
+      text-align: left;
+    }
+
+    /* Typography */
+    h1.page-title {
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: #201d1d;
+      margin-bottom: 8px;
+    }
+    .meta-updated {
+      font-size: 14px;
+      font-weight: 400;
+      color: #646262;
+      margin-bottom: 32px;
+    }
+    .lead-body {
+      font-size: 16px;
+      font-weight: 400;
+      color: #424245;
+      line-height: 1.5;
+      margin-bottom: 48px;
+    }
+
+    /* SECTIONS & SECTION LABELS */
+    .section-block {
+      margin-bottom: 48px;
+    }
+    .section-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: #201d1d;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+      margin-bottom: 16px;
+    }
+    .section-body {
+      font-size: 16px;
+      font-weight: 400;
+      color: #424245;
+      line-height: 1.5;
+    }
+
+    /* LIST ROWS */
+    .list-row {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+      font-size: 16px;
+      font-weight: 400;
+      color: #424245;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .list-row:last-child {
+      border-bottom: none;
+    }
+    .marker-plus {
+      font-weight: 700;
+      color: #201d1d;
+      font-family: inherit;
+    }
+    .marker-minus {
+      font-weight: 700;
+      color: #201d1d;
+      font-family: inherit;
+    }
+
+    /* FOOTER (Same as landing page: 3 cells, ©2026 PalmSight, disclaimer) */
+    .public-footer {
+      border-top: 1px solid rgba(15, 0, 0, 0.12);
+      background-color: #fdfcfc;
+      padding: 32px 0;
+    }
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      color: #646262;
+    }
+    .footer-disclaimer {
+      color: #646262;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    .footer-link {
+      color: #646262;
+      text-decoration: underline;
+    }
+    .footer-copyright {
+      color: #646262;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PUBLIC HEADER -->
+  <header class="public-header">
+    <div class="container header-inner">
+      <!-- 5-row Block-pixel PALMSIGHT wordmark -->
+      <a href="#" class="wordmark" aria-label="PalmSight Logo">
+        <!-- Row 1: ███ ███ █   █ █ ███ ███ ███ █ █ ███ -->
+        <div class="wordmark-row">
+          <!-- P -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- A -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- L -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- M -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- S -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- I -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- G -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- H -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- T -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span>
+        </div>
+        <!-- Row 2: █ █ █ █ █   ███ █    █  █   █ █  █  -->
+        <div class="wordmark-row">
+          <!-- P -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- A -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- L -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- M -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- S -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- I -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- G -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- H -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- T -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+        </div>
+        <!-- Row 3: ███ ███ █   ███ ███  █  █ █ ███  █  -->
+        <div class="wordmark-row">
+          <!-- P -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- A -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- L -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- M -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- S -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- I -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- G -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- H -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- T -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+        </div>
+        <!-- Row 4: █   █ █ █   █ █   █  █  █ █ █ █  █  -->
+        <div class="wordmark-row">
+          <!-- P -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- A -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- L -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- M -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- S -->
+          <span class="pixel off"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- I -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- G -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- H -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- T -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+        </div>
+        <!-- Row 5: █   █ █ ███ █ █ ███ ███ ███ █ █  █  -->
+        <div class="wordmark-row">
+          <!-- P -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel off"></span><span class="pixel off"></span>
+          <!-- A -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- L -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- M -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- S -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- I -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- G -->
+          <span class="pixel on"></span><span class="pixel on"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- H -->
+          <span class="pixel on"></span><span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+          <!-- T -->
+          <span class="pixel off"></span><span class="pixel on"></span><span class="pixel off"></span>
+        </div>
+      </a>
+
+      <!-- Right actions -->
+      <div class="header-right">
+        <a href="#" class="login-link">Đăng nhập</a>
+        <a href="#" class="register-btn">Đăng ký</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT -->
+  <main class="main-content">
+    <div class="container">
+      <div class="content-col">
+        <!-- Title & Metadata -->
+        <h1 class="page-title">Xoá dữ liệu của bạn</h1>
+        <div class="meta-updated">Cập nhật: 15/10/2026</div>
+
+        <!-- Lead body -->
+        <p class="lead-body">Bạn có thể xoá tài khoản và toàn bộ dữ liệu bất cứ lúc nào.</p>
+
+        <!-- Section: Cách xoá -->
+        <div class="section-block">
+          <div class="section-label">Cách xoá</div>
+          <div class="list-row">
+            <span class="marker-plus">[+]</span>
+            <span>Đăng nhập PalmSight</span>
+          </div>
+          <div class="list-row">
+            <span class="marker-plus">[+]</span>
+            <span>Mở mục Tài khoản</span>
+          </div>
+          <div class="list-row">
+            <span class="marker-plus">[+]</span>
+            <span>Chọn Xoá tài khoản và xác nhận</span>
+          </div>
+        </div>
+
+        <!-- Section: Những gì bị xoá -->
+        <div class="section-block">
+          <div class="section-label">Những gì bị xoá</div>
+          <div class="list-row">
+            <span class="marker-minus">[-]</span>
+            <span>Ảnh lòng bàn tay</span>
+          </div>
+          <div class="list-row">
+            <span class="marker-minus">[-]</span>
+            <span>Kết quả bói</span>
+          </div>
+          <div class="list-row">
+            <span class="marker-minus">[-]</span>
+            <span>Tên, tên đăng nhập, email, ảnh đại diện</span>
+          </div>
+          <div class="list-row">
+            <span class="marker-minus">[-]</span>
+            <span>Mọi phiên đăng nhập</span>
+          </div>
+        </div>
+
+        <!-- Section: Những gì được giữ lại -->
+        <div class="section-block">
+          <div class="section-label">Những gì được giữ lại</div>
+          <p class="section-body">Mã tài khoản ẩn danh và sổ credits, không thể dùng để nhận diện bạn, chỉ để đối soát.</p>
+        </div>
+
+        <!-- Section: Ảnh lòng bàn tay -->
+        <div class="section-block">
+          <div class="section-label">Ảnh lòng bàn tay</div>
+          <p class="section-body">Ảnh được xoá thông tin vị trí, lưu tối đa 90 ngày hoặc đến khi bạn xoá.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="public-footer">
+    <div class="container footer-inner">
+      <div class="footer-disclaimer">Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.</div>
+      <div class="footer-links">
+        <a href="#" class="footer-link">Chính sách riêng tư</a>
+        <a href="#" class="footer-link">Điều khoản</a>
+        <a href="#" class="footer-link">Xoá dữ liệu</a>
+      </div>
+      <div class="footer-copyright">©2026 PalmSight</div>
+    </div>
+  </footer>
+
+</body>
+</html>

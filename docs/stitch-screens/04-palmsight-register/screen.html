@@ -1,0 +1,457 @@
+<!DOCTYPE html><html lang="vi"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PalmSight - Register</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #fdfcfc;
+      color: #424245;
+      font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+      font-size: 16px;
+      line-height: 1.5;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Links */
+    a {
+      color: #201d1d;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    /* Top Nav */
+    .header-nav {
+      height: 56px;
+      background-color: #fdfcfc;
+      border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .nav-inner {
+      width: 960px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Block-pixel wordmark */
+    .wordmark {
+      font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      line-height: 1.1;
+      font-weight: 700;
+      color: #201d1d;
+      white-space: pre;
+      user-select: none;
+      letter-spacing: 0;
+      display: inline-block;
+    }
+
+    .nav-right-link {
+      font-size: 16px;
+      font-weight: 500;
+      color: #201d1d;
+      text-decoration: underline;
+    }
+
+    /* Main Container */
+    .main-wrap {
+      flex: 1;
+      width: 960px;
+      margin: 96px auto 96px auto;
+      display: flex;
+      gap: 0;
+      align-items: flex-start;
+    }
+
+    /* Left Column */
+    .col-left {
+      width: 360px;
+      padding-right: 48px;
+    }
+
+    h1.display-title {
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #201d1d;
+      margin-bottom: 16px;
+    }
+
+    .left-body {
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: #424245;
+      margin-bottom: 32px;
+    }
+
+    .list-group {
+      border-top: 1px solid rgba(15, 0, 0, 0.12);
+    }
+
+    .list-row {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+      font-size: 16px;
+      line-height: 1.5;
+      color: #424245;
+    }
+
+    .list-marker {
+      font-weight: 700;
+      color: #201d1d;
+      margin-right: 8px;
+    }
+
+    /* Divider line between columns */
+    .col-divider {
+      width: 1px;
+      background-color: rgba(15, 0, 0, 0.12);
+      align-self: stretch;
+      min-height: 600px;
+    }
+
+    /* Right Column (Form) */
+    .col-right {
+      width: 480px;
+      padding-left: 48px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+      color: #201d1d;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .label-optional {
+      font-weight: 400;
+      color: #646262;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .text-input {
+      width: 100%;
+      height: 40px;
+      background-color: #f8f7f7;
+      border: 1px solid rgba(15, 0, 0, 0.12);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 400;
+      color: #201d1d;
+      outline: none;
+      line-height: 1.5;
+    }
+
+    .text-input::placeholder {
+      color: #9a9898;
+    }
+
+    .text-input:focus {
+      background-color: #fdfcfc;
+      border: 1px solid #201d1d;
+    }
+
+    .input-toggle-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      color: #201d1d;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .helper-caption {
+      font-size: 14px;
+      color: #646262;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+
+    .helper-caption .caption-tag {
+      font-weight: 500;
+      color: #646262;
+    }
+
+    /* Checkbox Row */
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      min-height: 44px;
+      padding: 8px 0;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #424245;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-bracket {
+      font-weight: 700;
+      color: #201d1d;
+      margin-right: 10px;
+      white-space: nowrap;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%;
+      height: 36px;
+      background-color: #201d1d;
+      color: #fdfcfc;
+      border: none;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 4px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-primary:active {
+      background-color: #0f0000;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      height: 36px;
+      background-color: #fdfcfc;
+      color: #201d1d;
+      border: 1px solid #646262;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      padding: 4px 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-secondary:active {
+      background-color: #f1eeee;
+    }
+
+    /* Divider "hoặc" */
+    .word-divider {
+      position: relative;
+      text-align: center;
+      margin: 24px 0;
+    }
+
+    .word-divider::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background-color: rgba(15, 0, 0, 0.12);
+      z-index: 1;
+    }
+
+    .word-divider span {
+      position: relative;
+      z-index: 2;
+      background-color: #fdfcfc;
+      padding: 0 16px;
+      font-size: 14px;
+      color: #646262;
+    }
+
+    .social-btn-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .social-btn-marker {
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    .bottom-caption-row {
+      margin-top: 24px;
+      font-size: 14px;
+      color: #646262;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .page-footer {
+      border-top: 1px solid rgba(15, 0, 0, 0.12);
+      padding: 32px 0;
+      width: 100%;
+    }
+
+    .footer-inner {
+      width: 960px;
+      margin: 0 auto;
+      font-size: 14px;
+      color: #646262;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <header class="header-nav">
+    <div class="nav-inner">
+      <div class="wordmark" aria-label="PALMSIGHT">███ ███ █   █ █ ███ ███ ███ █ █ ███
+█ █ █ █ █   ███ █    █  █   █ █  █
+███ ███ █   ███ ███  █  █ █ ███  █
+█   █ █ █   █ █   █  █  █ █ █ █  █
+█   █ █ ███ █ █ ███ ███ ███ █ █  █</div>
+      <a href="#login" class="nav-right-link">Đăng nhập</a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-wrap">
+    <!-- Left Column (360px) -->
+    <div class="col-left">
+      <h1 class="display-title">Tạo tài khoản</h1>
+      <p class="left-body">Xác thực email để nhận 3 credits.</p>
+      
+      <div class="list-group">
+        <div class="list-row">
+          <span class="list-marker">[+]</span>1 lần xem bói = 1 credit
+        </div>
+        <div class="list-row">
+          <span class="list-marker">[+]</span>Chọn phương Tây, phương Đông hoặc Ấn Độ
+        </div>
+        <div class="list-row">
+          <span class="list-marker">[+]</span>Xoá ảnh và dữ liệu bất cứ lúc nào
+        </div>
+      </div>
+    </div>
+
+    <!-- Vertical Hairline Divider -->
+    <div class="col-divider"></div>
+
+    <!-- Right Column (480px, Form) -->
+    <div class="col-right">
+      <form onsubmit="return false;">
+        
+        <!-- 1. Tên đăng nhập -->
+        <div class="form-group">
+          <label class="form-label">Tên đăng nhập</label>
+          <div class="input-wrapper">
+            <input type="text" class="text-input" placeholder="minhanh" autocomplete="username">
+          </div>
+          <div class="helper-caption"><span class="caption-tag">[i]</span> 3–20 ký tự: chữ thường không dấu, số và dấu gạch dưới.</div>
+        </div>
+
+        <!-- 2. Email -->
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <div class="input-wrapper">
+            <input type="email" class="text-input" placeholder="minhanh@example.com" autocomplete="email">
+          </div>
+          <div class="helper-caption"><span class="caption-tag">[i]</span> Chúng tôi gửi link xác thực tới email này.</div>
+        </div>
+
+        <!-- 3. Mật khẩu -->
+        <div class="form-group">
+          <label class="form-label">Mật khẩu</label>
+          <div class="input-wrapper">
+            <input type="password" class="text-input" value="••••••••" autocomplete="new-password">
+            <button type="button" class="input-toggle-btn">Hiện</button>
+          </div>
+          <div class="helper-caption"><span class="caption-tag">[i]</span> Tối thiểu 8 ký tự.</div>
+        </div>
+
+        <!-- 4. Mã giới thiệu -->
+        <div class="form-group">
+          <label class="form-label">Mã giới thiệu <span class="label-optional">(không bắt buộc)</span></label>
+          <div class="input-wrapper">
+            <input type="text" class="text-input" value="K7QX4MZP">
+          </div>
+          <div class="helper-caption"><span class="caption-tag">[i]</span> Mã từ liên kết mời. Bạn có thể sửa hoặc xoá.</div>
+        </div>
+
+        <!-- 5. Checkbox row -->
+        <div class="checkbox-row">
+          <span class="checkbox-bracket">[ ]</span>
+          <span>Tôi đồng ý với <a href="#terms">Điều khoản</a> và <a href="#privacy">Chính sách riêng tư</a>.</span>
+        </div>
+
+        <!-- Primary CTA Button (24px gap) -->
+        <div style="margin-top: 24px;">
+          <button type="submit" class="btn-primary">Tạo tài khoản</button>
+        </div>
+
+        <!-- Divider with word (24px gap) -->
+        <div class="word-divider">
+          <span>hoặc</span>
+        </div>
+
+        <!-- Secondary Buttons Stack -->
+        <div class="social-btn-stack">
+          <button type="button" class="btn-secondary">
+            <span class="social-btn-marker">[G]</span>  Đăng ký với Google
+          </button>
+          <button type="button" class="btn-secondary">
+            <span class="social-btn-marker">[f]</span>  Đăng ký với Facebook
+          </button>
+        </div>
+
+        <!-- Caption bottom -->
+        <div class="bottom-caption-row">
+          Đã có tài khoản? <a href="#login">Đăng nhập</a>
+        </div>
+
+      </form>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="page-footer">
+    <div class="footer-inner">
+      Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.
+    </div>
+  </footer>
+
+
+
+</body></html>
