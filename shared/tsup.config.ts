@@ -9,7 +9,7 @@ export default defineConfig({
   splitting: false,
   outExtension({ format }) {
     return {
-      js: format === 'cjs' ? '.cjs' : '.mjs',
+      js: format === 'cjs' ? '.js' : '.mjs',
     };
   },
 });

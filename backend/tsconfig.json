@@ -20,11 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "types": ["node"],
-    "baseUrl": ".",
-    "paths": {
-      "@palmsight/shared": ["../shared/src/index.ts"]
-    }
+    "types": ["node"]
   },
   "include": ["src", "scripts", "test"]
 }

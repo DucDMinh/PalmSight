@@ -3,25 +3,22 @@
   "version": "0.0.0",
   "private": true,
   "description": "PalmSight shared library: enums, constants, Yup schemas, and DTO types",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": {
-        "import": "./dist/index.d.mts",
-        "require": "./dist/index.d.cts",
-        "default": "./dist/index.d.ts"
-      },
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup && node -e \"require('fs').copyFileSync('dist/index.d.ts', 'dist/index.d.cts')\"",
+    "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
