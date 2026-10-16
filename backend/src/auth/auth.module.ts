@@ -21,6 +21,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { GoogleAuthVerifier } from './google-auth.verifier';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -44,7 +45,8 @@ import { GoogleAuthVerifier } from './google-auth.verifier';
     CreditsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRateLimitGuard, GoogleAuthVerifier],
-  exports: [AuthService],
+  providers: [AuthService, AuthRateLimitGuard, GoogleAuthVerifier, JwtAuthGuard],
+  // JwtModule + models are re-exported so modules using JwtAuthGuard can resolve its dependencies
+  exports: [AuthService, JwtAuthGuard, JwtModule, MongooseModule],
 })
 export class AuthModule {}

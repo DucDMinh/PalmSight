@@ -68,7 +68,7 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
       create: vi.fn(),
     };
     sessionModel = {
-      create: vi.fn(),
+      create: vi.fn().mockResolvedValue({ _id: 'session-id-1' }),
       deleteOne: vi.fn().mockResolvedValue({ acknowledged: true, deletedCount: 1 }),
     };
     referralModel = {

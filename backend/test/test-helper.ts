@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 
 import { ApiExceptionFilter } from '../src/common/filters/api-exception.filter';
 import { AuthModule } from '../src/auth/auth.module';
+import { UsersModule } from '../src/users/users.module';
 import { CreditsModule } from '../src/credits/credits.module';
 import { HealthModule } from '../src/health/health.module';
 import { MailService } from '../src/mail/mail.service';
@@ -74,6 +75,7 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
       HealthModule,
       CreditsModule,
       AuthModule,
+      UsersModule,
     ],
   })
     .overrideProvider(MailService)

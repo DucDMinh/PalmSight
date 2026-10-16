@@ -480,11 +480,20 @@ export class AuthService {
     const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
     const sessionExpiresAt = new Date(Date.now() + refreshTtlDays * 24 * 60 * 60 * 1000);
 
-    await this.sessionModel.create({ userId: user._id, refreshTokenHash, expiresAt: sessionExpiresAt });
+    const authSession = await this.sessionModel.create({
+      userId: user._id,
+      refreshTokenHash,
+      expiresAt: sessionExpiresAt,
+    });
 
     const jwtTtl = Number(this.configService.get('JWT_ACCESS_TTL_SECONDS', 900));
     const accessToken = this.jwtService.sign(
-      { sub: user._id.toString(), email: user.email, username: user.username },
+      {
+        sub: user._id.toString(),
+        sid: authSession._id.toString(),
+        email: user.email,
+        username: user.username,
+      },
       { expiresIn: jwtTtl },
     );
 
