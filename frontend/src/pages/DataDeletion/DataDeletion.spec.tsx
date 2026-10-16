@@ -24,7 +24,7 @@ describe("DataDeletion Page and Static Info Pages", () => {
     expect(screen.getByText("Cập nhật: 15/10/2026")).toBeInTheDocument();
 
     // Email procedure
-    expect(screen.getByText(/support@palmsight.app/i)).toBeInTheDocument();
+    expect(screen.getByText(/palmsight\.app@gmail\.com/i)).toBeInTheDocument();
     expect(
       screen.getByText(/Quy trình yêu cầu xoá \(Thủ công qua email\)/i)
     ).toBeInTheDocument();

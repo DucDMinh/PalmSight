@@ -57,6 +57,7 @@ export const useMeQuery = () => {
       }
     },
     initialData: synthesizedInitial,
+    enabled: Boolean(accessToken),
   });
 
   useEffect(() => {

@@ -49,6 +49,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
         if (errorObj.error && typeof errorObj.error === 'object') {
           return response.status(status).json(res);
         }
+        if (errorObj.status === 'error') {
+          return response.status(status).json(res);
+        }
       }
 
       const defaultCodes: Record<number, string> = {

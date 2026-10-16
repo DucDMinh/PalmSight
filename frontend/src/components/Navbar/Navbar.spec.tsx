@@ -7,6 +7,7 @@ import {
   useAuth,
 } from "@/providers/AuthenticationProvider";
 import authService from "@/services/authService";
+import httpService from "@/services/httpService";
 
 const AuthHelper = ({ shouldLogin }: { shouldLogin?: boolean }) => {
   const { setAuthSession } = useAuth();
@@ -35,6 +36,9 @@ const AuthHelper = ({ shouldLogin }: { shouldLogin?: boolean }) => {
 
 describe("Navbar Component", () => {
   beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    httpService.setInMemoryToken(null);
     vi.restoreAllMocks();
   });
 
@@ -131,5 +135,50 @@ describe("Navbar Component", () => {
     });
 
     expect(authService.postLogout).toHaveBeenCalled();
+  });
+
+  it("should render placeholder and not flash unauthenticated buttons when loading and !user", () => {
+    vi.spyOn(authService, "postRefresh").mockReturnValue(new Promise(() => {}));
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <AuthenticationProvider>
+          <Navbar />
+        </AuthenticationProvider>
+      </MemoryRouter>
+    );
+
+    // Unauthenticated button "Bắt đầu" should NOT be rendered while loading and no cached user
+    expect(
+      screen.queryByRole("link", { name: "Bắt đầu" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("should render authenticated navbar immediately when user is in storage during initial load", () => {
+    httpService.saveUserStorage({
+      id: "u-storage",
+      displayName: "Hydrated User",
+      username: "hydrated",
+      avatarUrl: null,
+      creditBalance: 7,
+      referralCode: "HYDRATE7",
+    });
+    vi.spyOn(authService, "postRefresh").mockReturnValue(new Promise(() => {}));
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <AuthenticationProvider>
+          <Navbar />
+        </AuthenticationProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole("link", { name: "Xem bói" })).toBeInTheDocument();
+    expect(screen.getByTestId("credit-balance-badge")).toHaveTextContent(
+      "[7 CREDITS]"
+    );
+    expect(
+      screen.getByRole("button", { name: "User menu" })
+    ).toBeInTheDocument();
   });
 });

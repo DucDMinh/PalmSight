@@ -1,0 +1,509 @@
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from "@nestjs/common";
+import { InjectModel, InjectConnection } from "@nestjs/mongoose";
+import { Model, Connection, Types, FilterQuery } from "mongoose";
+import {
+  ReadingSchool,
+  HandOrientation,
+  ReadingStatus,
+  normalizeReadingTopics,
+  createReadingRequestSchema,
+  ReadingListResponseDto,
+  ReadingDto,
+  PaginationQueryDto,
+} from "@palmsight/shared";
+import { Reading, ReadingDocument } from "../schemas/reading.schema";
+import { User, UserDocument } from "../schemas/user.schema";
+import { CreditLedgerService } from "../credits/credit-ledger.service";
+import { ImageProcessorService } from "./image-processor.service";
+import { AiService } from "../ai/ai.service";
+
+const UUID_V4_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const STUCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
+const resolveObjectId = (val: any): Types.ObjectId => {
+  if (val instanceof Types.ObjectId) return val;
+  if (typeof val === 'string') return new Types.ObjectId(val);
+  if (val && typeof val === 'object' && val._id) return new Types.ObjectId(val._id);
+  return new Types.ObjectId(String(val));
+};
+
+@Injectable()
+export class ReadingsService {
+  constructor(
+    @InjectModel(Reading.name)
+    private readonly readingModel: Model<ReadingDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
+    @InjectConnection()
+    private readonly connection: Connection,
+    private readonly creditLedgerService: CreditLedgerService,
+    private readonly imageProcessorService: ImageProcessorService,
+    private readonly aiService: AiService
+  ) {}
+
+  async createReading(
+    userId: any,
+    idempotencyKey: string | undefined,
+    body: any,
+    file?: Express.Multer.File
+  ): Promise<{
+    reading: Record<string, unknown>;
+    creditBalance: number;
+    idempotentReplayed: boolean;
+  }> {
+    // 1. Validate Idempotency-Key header
+    if (!idempotencyKey) {
+      throw new BadRequestException({
+        code: "IDEMPOTENCY_KEY_REQUIRED",
+        message: "Thiếu header Idempotency-Key.",
+      });
+    }
+
+    if (!UUID_V4_REGEX.test(idempotencyKey)) {
+      throw new BadRequestException({
+        code: "VALIDATION_ERROR",
+        message: "Header Idempotency-Key không đúng định dạng UUID v4.",
+        details: {
+          fields: [
+            { field: "Idempotency-Key", message: "Phải là UUID v4 hợp lệ" },
+          ],
+        },
+      });
+    }
+
+    const userObjId = resolveObjectId(userId);
+
+    // 2. Check for existing reading with same (userId, idempotencyKey)
+    const existing = await this.readingModel.findOne({
+      userId: userObjId,
+      idempotencyKey,
+    });
+
+    if (existing) {
+      if (existing.deletedAt) {
+        throw new NotFoundException({
+          code: "NOT_FOUND",
+          message: "Lần xem bói này đã bị xoá.",
+        });
+      }
+
+      if (existing.status === ReadingStatus.PROCESSING) {
+        throw new ConflictException({
+          code: "READING_IN_PROGRESS",
+          message: "Lần xem bói trước vẫn đang xử lý.",
+          details: { readingId: existing._id.toString() },
+        });
+      }
+
+      const user = await this.userModel.findById(userObjId).lean();
+      const currentBalance = user?.creditBalance ?? 0;
+
+      if (existing.status === ReadingStatus.FAILED) {
+        throw new HttpException(
+          {
+            code: "AI_UNAVAILABLE",
+            message: "Hệ thống bận, đã hoàn 1 credit. Thử lại sau ít phút.",
+            details: {
+              readingId: existing._id.toString(),
+              refunded: true,
+              creditBalance: currentBalance,
+            },
+          },
+          HttpStatus.SERVICE_UNAVAILABLE
+        );
+      }
+
+      return {
+        reading: this.formatReading(existing),
+        creditBalance: currentBalance,
+        idempotentReplayed: true,
+      };
+    }
+
+    // 3. Validate body fields
+    let validatedInput: any;
+    try {
+      validatedInput = await createReadingRequestSchema.validate(body, {
+        abortEarly: false,
+        stripUnknown: false,
+      });
+    } catch (err: any) {
+      const fields = (err.inner || []).map((e: any) => ({
+        field: e.path,
+        message: e.message,
+      }));
+      throw new BadRequestException({
+        code: "VALIDATION_ERROR",
+        message: "Dữ liệu yêu cầu không hợp lệ.",
+        details: {
+          fields:
+            fields.length > 0
+              ? fields
+              : [{ field: "root", message: err.message }],
+        },
+      });
+    }
+
+    // 4. Validate and preprocess image in-memory (RAM only, ADR-0010)
+    const processedImage = await this.imageProcessorService.validateAndProcess(
+      file
+    );
+
+    // 5. Normalize topics
+    const normalizedTopics = normalizeReadingTopics(
+      validatedInput.school,
+      validatedInput.topics
+    );
+
+    // 6. Deduct 1 credit & create reading in PROCESSING status in 1 transaction
+    const readingId = new Types.ObjectId();
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    try {
+      await this.creditLedgerService.spendForReading(
+        userObjId,
+        readingId,
+        session
+      );
+
+      await this.readingModel.create(
+        [
+          {
+            _id: readingId,
+            userId: userObjId,
+            idempotencyKey,
+            school: validatedInput.school,
+            topics: normalizedTopics,
+            hand: validatedInput.hand,
+            status: ReadingStatus.PROCESSING,
+            createdAt: new Date(),
+          },
+        ],
+        { session }
+      );
+
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      await session.endSession();
+    }
+
+    // 7. Call AI Vision service
+    const start = Date.now();
+    try {
+      const { result, provider, model } = await this.aiService.readPalm(
+        processedImage.base64,
+        {
+          school: validatedInput.school as ReadingSchool,
+          topics: normalizedTopics,
+          hand: validatedInput.hand as HandOrientation,
+        }
+      );
+      const latencyMs = Date.now() - start;
+
+      // Handle REJECTED case (image is not a palm or too blurry)
+      if (result.isPalm === false) {
+        const refundSession = await this.connection.startSession();
+        refundSession.startTransaction();
+        try {
+          await this.creditLedgerService.refundReading(
+            userObjId,
+            readingId,
+            refundSession
+          );
+          await this.readingModel.updateOne(
+            { _id: readingId },
+            {
+              status: ReadingStatus.REJECTED,
+              rejectReason:
+                result.rejectReason ||
+                "Không nhìn rõ lòng bàn tay. Hãy chụp lại nơi đủ sáng.",
+              aiProvider: provider,
+              aiModel: model,
+              latencyMs,
+              completedAt: new Date(),
+            },
+            { session: refundSession }
+          );
+          await refundSession.commitTransaction();
+        } catch (refundErr) {
+          await refundSession.abortTransaction();
+          throw refundErr;
+        } finally {
+          await refundSession.endSession();
+        }
+
+        const user = await this.userModel.findById(userObjId).lean();
+        const updated = await this.readingModel.findById(readingId).lean();
+        return {
+          reading: this.formatReading(updated!),
+          creditBalance: user?.creditBalance ?? 0,
+          idempotentReplayed: false,
+        };
+      }
+
+      // Handle DONE case
+      await this.readingModel.updateOne(
+        { _id: readingId },
+        {
+          status: ReadingStatus.DONE,
+          result,
+          aiProvider: provider,
+          aiModel: model,
+          latencyMs,
+          completedAt: new Date(),
+        }
+      );
+
+      const user = await this.userModel.findById(userObjId).lean();
+      const updated = await this.readingModel.findById(readingId).lean();
+      return {
+        reading: this.formatReading(updated!),
+        creditBalance: user?.creditBalance ?? 0,
+        idempotentReplayed: false,
+      };
+    } catch (aiErr: any) {
+      // Handle FAILED case: refund credit and throw 503 AI_UNAVAILABLE
+      const latencyMs = Date.now() - start;
+      const refundSession = await this.connection.startSession();
+      refundSession.startTransaction();
+      let currentBalance = 0;
+
+      try {
+        const tx = await this.creditLedgerService.refundReading(
+          userObjId,
+          readingId,
+          refundSession
+        );
+        currentBalance = tx.balanceAfter;
+        await this.readingModel.updateOne(
+          { _id: readingId },
+          {
+            status: ReadingStatus.FAILED,
+            errorCode: "AI_UNAVAILABLE",
+            latencyMs,
+            completedAt: new Date(),
+          },
+          { session: refundSession }
+        );
+        await refundSession.commitTransaction();
+      } catch {
+        await refundSession.abortTransaction();
+      } finally {
+        await refundSession.endSession();
+      }
+
+      throw new HttpException(
+        {
+          code: "AI_UNAVAILABLE",
+          message: "Hệ thống bận, đã hoàn 1 credit. Thử lại sau ít phút.",
+          details: {
+            readingId: readingId.toString(),
+            refunded: true,
+            creditBalance: currentBalance,
+          },
+        },
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+  }
+
+  async getReadings(
+    userId: any,
+    query?: PaginationQueryDto
+  ): Promise<ReadingListResponseDto> {
+    const userObjId = resolveObjectId(userId);
+    await this.cleanupStuckReadings(userObjId);
+
+    const filter: FilterQuery<ReadingDocument> = {
+      userId: userObjId,
+      deletedAt: null,
+    };
+
+    if (query?.cursor) {
+      if (!Types.ObjectId.isValid(query.cursor)) {
+        throw new BadRequestException({
+          code: "VALIDATION_ERROR",
+          message: "Cursor phân trang không hợp lệ.",
+          details: {
+            fields: [
+              { field: "cursor", message: "Cursor phải là ObjectId hợp lệ" },
+            ],
+          },
+        });
+      }
+      filter._id = { $lt: new Types.ObjectId(query.cursor) };
+    }
+
+    const limit = Math.min(Math.max(Number(query?.limit) || 20, 1), 50);
+
+    const docs = await this.readingModel
+      .find(filter)
+      .sort({ _id: -1 })
+      .limit(limit + 1)
+      .lean()
+      .exec();
+
+    const hasMore = docs.length > limit;
+    const items = hasMore ? docs.slice(0, limit) : docs;
+    const nextCursor = hasMore ? items[items.length - 1]._id.toString() : null;
+
+    return {
+      items: items.map((doc: any) => ({
+        id: doc._id.toString(),
+        status: doc.status,
+        school: doc.school,
+        topics: doc.topics,
+        hand: doc.hand,
+        summary:
+          doc.status === ReadingStatus.DONE
+            ? doc.result?.summary ?? null
+            : null,
+        createdAt: doc.createdAt.toISOString(),
+      })),
+      nextCursor,
+    };
+  }
+
+  async getReadingById(userId: any, id: string): Promise<ReadingDto> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException({
+        code: "NOT_FOUND",
+        message: "Lần xem bói không tồn tại hoặc đã bị xoá.",
+      });
+    }
+
+    const userObjId = resolveObjectId(userId);
+    await this.cleanupStuckReadings(userObjId);
+
+    const doc = await this.readingModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        userId: userObjId,
+        deletedAt: null,
+      })
+      .lean();
+
+    if (!doc) {
+      throw new NotFoundException({
+        code: "NOT_FOUND",
+        message: "Lần xem bói không tồn tại hoặc đã bị xoá.",
+      });
+    }
+
+    return {
+      id: doc._id.toString(),
+      status: doc.status,
+      school: doc.school,
+      topics: doc.topics,
+      hand: doc.hand,
+      result: (doc.result as any) ?? null,
+      rejectReason: doc.rejectReason ?? null,
+      createdAt: doc.createdAt.toISOString(),
+      completedAt: doc.completedAt?.toISOString() ?? null,
+    };
+  }
+
+  async deleteReading(userId: any, id: string): Promise<void> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new NotFoundException({
+        code: "NOT_FOUND",
+        message: "Lần xem bói không tồn tại hoặc đã bị xoá.",
+      });
+    }
+
+    const userObjId = resolveObjectId(userId);
+    const readingObjId = new Types.ObjectId(id);
+
+    const doc = await this.readingModel.findOne({
+      _id: readingObjId,
+      userId: userObjId,
+      deletedAt: null,
+    });
+
+    if (!doc) {
+      throw new NotFoundException({
+        code: "NOT_FOUND",
+        message: "Lần xem bói không tồn tại hoặc đã bị xoá.",
+      });
+    }
+
+    if (doc.status === ReadingStatus.PROCESSING) {
+      throw new ConflictException({
+        code: "READING_IN_PROGRESS",
+        message: "Không thể xoá khi đang xử lý bói toán.",
+      });
+    }
+
+    await this.readingModel.updateOne(
+      { _id: readingObjId },
+      {
+        result: null,
+        deletedAt: new Date(),
+      }
+    );
+  }
+
+  private async cleanupStuckReadings(userId: Types.ObjectId): Promise<void> {
+    const stuckCutoff = new Date(Date.now() - STUCK_TIMEOUT_MS);
+    const stuckList = await this.readingModel
+      .find({
+        userId,
+        status: ReadingStatus.PROCESSING,
+        createdAt: { $lt: stuckCutoff },
+        deletedAt: null,
+      })
+      .exec();
+
+    for (const stuck of stuckList) {
+      const session = await this.connection.startSession();
+      session.startTransaction();
+      try {
+        await this.creditLedgerService.refundReading(
+          userId,
+          stuck._id,
+          session
+        );
+        await this.readingModel.updateOne(
+          { _id: stuck._id },
+          {
+            status: ReadingStatus.FAILED,
+            errorCode: "TIMEOUT",
+            completedAt: new Date(),
+          },
+          { session }
+        );
+        await session.commitTransaction();
+      } catch {
+        await session.abortTransaction();
+      } finally {
+        await session.endSession();
+      }
+    }
+  }
+
+  private formatReading(doc: any): Record<string, unknown> {
+    return {
+      id: doc._id.toString(),
+      status: doc.status,
+      school: doc.school,
+      topics: doc.topics,
+      hand: doc.hand,
+      result: doc.result ?? null,
+      rejectReason: doc.rejectReason ?? undefined,
+      createdAt: doc.createdAt?.toISOString?.() ?? doc.createdAt,
+      completedAt: doc.completedAt?.toISOString?.() ?? doc.completedAt,
+    };
+  }
+}

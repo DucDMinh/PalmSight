@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { UserSummaryDto } from "@palmsight/shared";
 import type { AuthUser } from "@/providers/AuthenticationProvider";
+import httpService from "@/services/httpService";
 
 export interface AuthState {
   accessToken: string | null;
@@ -15,7 +16,10 @@ export interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
-  user: null,
+  user:
+    typeof window !== "undefined"
+      ? (httpService.getUserStorage() as AuthUser | null)
+      : null,
   setAuthSession: ({ accessToken, user }) =>
     set({ accessToken, user: user as AuthUser }),
   clearAuthSession: () => set({ accessToken: null, user: null }),

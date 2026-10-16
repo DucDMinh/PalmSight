@@ -120,16 +120,28 @@ export const enrichUserWithJwt = (
 
 export const AuthenticationProvider = ({
   children,
-  initialAccessToken = null,
+  initialAccessToken,
   initialUser = null,
   skipInitialRefresh = false,
 }: AuthenticationProviderProps) => {
+  const resolvedInitialToken =
+    initialAccessToken !== undefined
+      ? initialAccessToken
+      : initialUser && skipInitialRefresh
+        ? "test-jwt-token"
+        : null;
+
   //! State: in-memory token (no localStorage storage for access tokens per ADR-0008)
-  const [accessToken, setAccessToken] = useState<string | null>(initialAccessToken);
-  const [user, setUser] = useState<AuthUser | null>(() =>
-    enrichUserWithJwt(initialUser, initialAccessToken)
-  );
-  const [loading, setLoading] = useState(!initialAccessToken && !skipInitialRefresh);
+  const [accessToken, setAccessToken] = useState<string | null>(resolvedInitialToken);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const inMemoryEnriched = enrichUserWithJwt(initialUser, resolvedInitialToken);
+    if (inMemoryEnriched) return inMemoryEnriched;
+    if (skipInitialRefresh) return null;
+    return typeof window !== "undefined"
+      ? (httpService.getUserStorage() as AuthUser | null)
+      : null;
+  });
+  const [loading, setLoading] = useState(!resolvedInitialToken && !skipInitialRefresh);
 
   // Sync token to httpService on change
   useEffect(() => {
@@ -142,6 +154,7 @@ export const AuthenticationProvider = ({
       const enrichedUser =
         enrichUserWithJwt(session.user, session.accessToken) ||
         (session.user as AuthUser);
+      httpService.saveUserStorage(enrichedUser);
       setAccessToken(session.accessToken);
       httpService.setInMemoryToken(session.accessToken);
       setUser(enrichedUser);
@@ -155,7 +168,12 @@ export const AuthenticationProvider = ({
 
   //! Function: update user profile in state
   const updateUser = useCallback((updatedFields: Partial<AuthUser>) => {
-    setUser((prev) => (prev ? { ...prev, ...updatedFields } : null));
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedFields };
+      httpService.saveUserStorage(updated);
+      return updated;
+    });
     useAuthStore.getState().updateUser(updatedFields);
   }, []);
 
@@ -170,6 +188,7 @@ export const AuthenticationProvider = ({
           const enrichedUser =
             enrichUserWithJwt(response.user, response.accessToken) ||
             (response.user as AuthUser);
+          httpService.saveUserStorage(enrichedUser);
           setUser(enrichedUser);
           useAuthStore.getState().setAuthSession({
             accessToken: response.accessToken,
@@ -178,10 +197,14 @@ export const AuthenticationProvider = ({
         }
         return true;
       }
+      httpService.clearStorage();
       return false;
     } catch {
       setAccessToken(null);
       httpService.setInMemoryToken(null);
+      httpService.clearStorage();
+      setUser(null);
+      useAuthStore.getState().clearAuthSession();
       return false;
     }
   }, []);
@@ -205,16 +228,29 @@ export const AuthenticationProvider = ({
             const enrichedUser =
               enrichUserWithJwt(response.user, response.accessToken) ||
               (response.user as AuthUser);
+            httpService.saveUserStorage(enrichedUser);
             setUser(enrichedUser);
             useAuthStore.getState().setAuthSession({
               accessToken: response.accessToken,
               user: enrichedUser,
             });
           }
+        } else {
+          setAccessToken(null);
+          httpService.setInMemoryToken(null);
+          httpService.clearStorage();
+          setUser(null);
+          useAuthStore.getState().clearAuthSession();
         }
       })
       .catch(() => {
-        // Unauthenticated session, no active cookie
+        if (isMounted) {
+          setAccessToken(null);
+          httpService.setInMemoryToken(null);
+          httpService.clearStorage();
+          setUser(null);
+          useAuthStore.getState().clearAuthSession();
+        }
       })
       .finally(() => {
         if (isMounted) {
@@ -270,7 +306,7 @@ export const AuthenticationProvider = ({
   const value = useMemo<AuthenticationContextI>(() => {
     return {
       loading,
-      isLogged: Boolean(user && accessToken),
+      isLogged: Boolean(user && (accessToken || loading)),
       accessToken,
       user,
       logout,

@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import BaseUrl from "@/consts/baseUrl";
-import { READING_SCHOOLS, ImageQuality } from "@palmsight/shared";
+import {
+  READING_SCHOOLS,
+  ImageQuality,
+  getTopicLabel,
+} from "@palmsight/shared";
 import ReadingHeader from "./components/ReadingHeader";
 import SectionBlock from "./components/SectionBlock";
 import AspectsBlock from "./components/AspectsBlock";
@@ -67,6 +71,11 @@ export const ReadingDetail: React.FC = () => {
   const schoolConfig = READING_SCHOOLS[reading.school];
   const schoolName = schoolConfig?.name ?? reading.school;
   const isPoorQuality = result?.imageQuality === ImageQuality.POOR;
+  const totalSections = schoolConfig?.sections?.length ?? 0;
+  const isAll =
+    !reading.topics ||
+    reading.topics.length === 0 ||
+    reading.topics.length >= totalSections + 6;
 
   return (
     <main className="w-full bg-canvas min-h-[calc(100vh-56px)] py-12 text-ink font-body-md">
@@ -93,6 +102,24 @@ export const ReadingDetail: React.FC = () => {
                 data-testid="poor-quality-warning"
               >
                 [!] Ảnh hơi mờ, kết quả có thể chưa chính xác.
+              </div>
+            )}
+
+            {/* Selected topics banner */}
+            {!isAll && reading.topics && reading.topics.length > 0 && (
+              <div
+                className="mt-4 py-2.5 px-3 mb-6 bg-surface-card border border-hairline rounded font-mono text-xs flex flex-wrap items-center gap-2"
+                data-testid="selected-topics-banner"
+              >
+                <span className="text-mute font-medium">Mục đã chọn:</span>
+                {reading.topics.map((key) => (
+                  <span
+                    key={key}
+                    className="px-2 py-0.5 bg-canvas border border-hairline rounded text-ink font-sans text-xs font-medium"
+                  >
+                    {getTopicLabel(key, reading.school)}
+                  </span>
+                ))}
               </div>
             )}
 

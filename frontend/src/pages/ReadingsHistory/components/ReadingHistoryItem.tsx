@@ -6,6 +6,7 @@ import {
   ReadingSchool,
   HandOrientation,
   READING_SCHOOLS,
+  getTopicLabel,
 } from "@palmsight/shared";
 import { format } from "date-fns";
 
@@ -115,6 +116,11 @@ export const ReadingHistoryItem: React.FC<ReadingHistoryItemProps> = ({ item }) 
         <span className="font-body-strong text-body-strong text-ink font-medium block">
           {schoolName} · {handLabel} · {topicsBadge}
         </span>
+        {!isAll && item.topics && item.topics.length > 0 && (
+          <span className="text-xs text-mute block mt-0.5 font-sans line-clamp-1">
+            {item.topics.map((t) => getTopicLabel(t, item.school)).join(", ")}
+          </span>
+        )}
       </td>
 
       {/* Tóm tắt */}

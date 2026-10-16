@@ -1,13 +1,46 @@
 import { NestFactory } from '@nestjs/core';
-import { ForbiddenException, Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 
-// Passed to the CORS callback so a foreign origin gets the API's 403 instead of a generic 500
-const originNotAllowed = () =>
-  new ForbiddenException({ code: 'ORIGIN_NOT_ALLOWED', message: 'Yêu cầu không được phép từ nguồn này.' });
+const DEV_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:4000',
+];
+
+export function createCorsOriginValidator(nodeEnv: string, publicBaseUrl: string) {
+  const normalizedPublic = publicBaseUrl.replace(/\/+$/, '');
+
+  return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (nodeEnv === 'production') {
+      if (normalizedPublic === '*' || !normalizedPublic) {
+        return callback(new Error('CORS wildcard * is strictly forbidden in production'));
+      }
+      if (origin.replace(/\/+$/, '') === normalizedPublic) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+
+    if (
+      DEV_ORIGINS.includes(origin) ||
+      origin.replace(/\/+$/, '') === normalizedPublic ||
+      /^https?:\/\/([a-zA-Z0-9-]+\.)*ngrok-free\.app(?::\d+)?$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  };
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,40 +49,36 @@ async function bootstrap() {
 
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
   const publicBaseUrl = configService.get<string>('PUBLIC_BASE_URL', 'http://localhost:5173');
-  const port = Number(configService.get<number | string>('API_PORT', 4000));
+  const port = Number(
+    configService.get<number | string>('PORT') ||
+    configService.get<number | string>('API_PORT', 4000),
+  );
 
-  const devOrigins = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:4000',
-  ];
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          fontSrc: ["'self'", 'https:', 'data:'],
+          formAction: ["'self'"],
+          frameAncestors: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'"],
+          scriptSrcAttr: ["'none'"],
+          styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+          upgradeInsecureRequests: [],
+        },
+      },
+      xFrameOptions: { action: 'sameorigin' },
+      xContentTypeOptions: true,
+    }),
+  );
 
   app.enableCors({
     credentials: true,
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (nodeEnv === 'production') {
-        if (origin === publicBaseUrl) {
-          return callback(null, true);
-        }
-        return callback(originNotAllowed());
-      }
-
-      // In development/test
-      if (
-        devOrigins.includes(origin) ||
-        origin === publicBaseUrl ||
-        /^https?:\/\/([a-zA-Z0-9-]+\.)*ngrok-free\.app(?::\d+)?$/.test(origin)
-      ) {
-        return callback(null, true);
-      }
-
-      return callback(originNotAllowed());
-    },
+    origin: createCorsOriginValidator(nodeEnv, publicBaseUrl),
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Authorization',
@@ -69,6 +98,13 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: false,
+    }),
+  );
   app.useGlobalFilters(new ApiExceptionFilter());
   app.setGlobalPrefix('api/v1');
   app.enableShutdownHooks();
@@ -77,4 +113,6 @@ async function bootstrap() {
   logger.log(`PalmSight API is running on port ${port} in ${nodeEnv} mode`);
 }
 
-void bootstrap();
+if (!process.env.VITEST) {
+  void bootstrap();
+}

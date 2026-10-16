@@ -21,7 +21,7 @@ export const DataDeletionContent = () => {
           <span className="font-bold text-ink shrink-0">[+]</span>
           <span>
             Gửi email từ chính địa chỉ email của tài khoản tới:{" "}
-            <strong className="text-ink">support@palmsight.app</strong>.
+            <strong className="text-ink">palmsight.app@gmail.com</strong>.
           </span>
         </div>
         <div className="py-2.5 border-b border-hairline text-base text-body flex items-baseline gap-2.5">
