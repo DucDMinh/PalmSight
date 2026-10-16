@@ -1,10 +1,25 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import { changePasswordSchema } from "@palmsight/shared";
 import type {
   MeResponseDto,
   CreditTransactionListResponseDto,
+  ChangePasswordRequestDto,
 } from "@palmsight/shared";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import type { AuthenticatedRequest } from "../auth/guards/jwt-auth.guard";
+import { UserRateLimit, UserRateLimitGuard } from "../auth/guards/user-rate-limit.guard";
 import { CurrentUser } from "../auth/current-user.decorator";
+import { PasswordService } from "../auth/password.service";
 import { UserDocument } from "../schemas/user.schema";
 import { UsersService } from "./users.service";
 import { CreditLedgerService } from "../credits/credit-ledger.service";
@@ -14,7 +29,8 @@ import { CreditLedgerService } from "../credits/credit-ledger.service";
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly creditLedgerService: CreditLedgerService
+    private readonly creditLedgerService: CreditLedgerService,
+    private readonly passwordService: PasswordService
   ) {}
 
   @Get()
@@ -32,5 +48,17 @@ export class UsersController {
       cursor,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
+  }
+
+  @Put("password")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(UserRateLimitGuard)
+  @UserRateLimit({ limit: 5, windowMs: 60 * 60 * 1000 })
+  async changePassword(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: ChangePasswordRequestDto
+  ): Promise<void> {
+    const validated = await changePasswordSchema.validate(body, { abortEarly: false });
+    await this.passwordService.changePassword(req.user, req.sessionId, validated);
   }
 }

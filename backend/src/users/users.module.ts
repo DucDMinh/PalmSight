@@ -5,6 +5,7 @@ import { CreditsModule } from "../credits/credits.module";
 import { Referral, ReferralSchema } from "../schemas/referral.schema";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
+import { UserRateLimitGuard } from "../auth/guards/user-rate-limit.guard";
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { UsersService } from "./users.service";
     ]),
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, UserRateLimitGuard],
 })
 export class UsersModule {}
