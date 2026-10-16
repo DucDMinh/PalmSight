@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import PrivateRoute from '@/components/PrivateRoute';
 import { AuthenticationProvider, useAuth } from './AuthenticationProvider';
 import httpService from '@/services/httpService';
 import authService from '@/services/authService';
@@ -205,11 +207,15 @@ describe('AuthenticationProvider (In-Memory Token)', () => {
     it('should immediately hydrate user from storage and keep isLogged true while refresh is pending', async () => {
       httpService.saveUserStorage(cachedUser);
 
-      let resolveRefresh: (value: any) => void = () => {};
-      const refreshPromise = new Promise((resolve) => {
-        resolveRefresh = resolve;
-      });
-      vi.spyOn(authService, 'postRefresh').mockReturnValue(refreshPromise as any);
+      let resolveRefresh: (token: string) => void = () => {};
+      vi.spyOn(httpService, 'refreshAccessToken').mockReturnValue(
+        new Promise((resolve) => {
+          resolveRefresh = resolve;
+        })
+      );
+      vi.spyOn(httpService, 'get').mockResolvedValue({
+        data: { ...cachedUser, creditBalance: 12 },
+      } as any);
 
       const HydrationConsumer = () => {
         const { isLogged, loading, user, accessToken } = useAuth();
@@ -237,10 +243,7 @@ describe('AuthenticationProvider (In-Memory Token)', () => {
 
       // Resolve refresh successfully
       await act(async () => {
-        resolveRefresh({
-          accessToken: 'fresh-token',
-          user: { ...cachedUser, creditBalance: 12 },
-        });
+        resolveRefresh('fresh-token');
       });
 
       expect(screen.getByTestId('loading').textContent).toBe('false');
@@ -253,10 +256,11 @@ describe('AuthenticationProvider (In-Memory Token)', () => {
       httpService.saveUserStorage(cachedUser);
 
       let rejectRefresh: (reason?: any) => void = () => {};
-      const refreshPromise = new Promise((_, reject) => {
-        rejectRefresh = reject;
-      });
-      vi.spyOn(authService, 'postRefresh').mockReturnValue(refreshPromise as any);
+      vi.spyOn(httpService, 'refreshAccessToken').mockReturnValue(
+        new Promise((_, reject) => {
+          rejectRefresh = reject;
+        })
+      );
 
       const HydrationConsumer = () => {
         const { isLogged, loading, user } = useAuth();
@@ -289,6 +293,129 @@ describe('AuthenticationProvider (In-Memory Token)', () => {
       expect(screen.getByTestId('is-logged').textContent).toBe('false');
       expect(screen.getByTestId('user-name').textContent).toBe('null');
       expect(httpService.getUserStorage()).toBeNull();
+    });
+  });
+
+  describe('session restore on load', () => {
+    const me = {
+      id: '6710a1b2c3d4e5f6a7b8c9d0',
+      displayName: 'Khôi Phục',
+      username: null,
+      email: 'restore@example.com',
+      avatarUrl: null,
+      creditBalance: 7,
+      referralCode: 'K7QX4MZP',
+      referralLink: 'http://localhost:5173/r/K7QX4MZP',
+      hasPassword: false,
+      providers: ['GOOGLE'],
+      referral: { canEnterCode: true, enteredCode: null },
+    };
+
+    const LoadingProbe = () => {
+      const { loading } = useAuth();
+      return <div data-testid="loading">{String(loading)}</div>;
+    };
+
+    it('logs in from the refresh cookie and loads the profile from GET /me', async () => {
+      const refresh = vi.spyOn(httpService, 'refreshAccessToken').mockResolvedValue('restored-token');
+      const get = vi.spyOn(httpService, 'get').mockResolvedValue({ data: me } as any);
+
+      render(
+        <AuthenticationProvider>
+          <TestConsumer />
+          <LoadingProbe />
+        </AuthenticationProvider>
+      );
+
+      await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(get).toHaveBeenCalledWith('/api/v1/me');
+      expect(screen.getByTestId('is-logged').textContent).toBe('true');
+      expect(screen.getByTestId('user-name').textContent).toBe('Khôi Phục');
+      expect(screen.getByTestId('user-credits').textContent).toBe('7');
+      expect(screen.getByTestId('access-token').textContent).toBe('restored-token');
+    });
+
+    it('stays logged out when there is no valid refresh cookie', async () => {
+      vi.spyOn(httpService, 'refreshAccessToken').mockRejectedValue(new Error('401'));
+      const get = vi.spyOn(httpService, 'get');
+
+      render(
+        <AuthenticationProvider>
+          <TestConsumer />
+          <LoadingProbe />
+        </AuthenticationProvider>
+      );
+
+      await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
+      expect(get).not.toHaveBeenCalled();
+      expect(screen.getByTestId('is-logged').textContent).toBe('false');
+    });
+
+    it('clears the session when httpService reports it expired', async () => {
+      render(
+        <AuthenticationProvider skipInitialRefresh>
+          <TestConsumer />
+        </AuthenticationProvider>
+      );
+      await act(async () => {
+        screen.getByText('Set Session').click();
+      });
+      expect(screen.getByTestId('is-logged').textContent).toBe('true');
+
+      // Simulate a 401 UNAUTHENTICATED seen by the response interceptor
+      const handlers = (httpService as unknown as { handlers: { onSessionExpired?: () => void } }).handlers;
+      await act(async () => {
+        handlers.onSessionExpired?.();
+      });
+
+      expect(screen.getByTestId('is-logged').textContent).toBe('false');
+      expect(httpService.getInMemoryToken()).toBeNull();
+    });
+  });
+
+  describe('PrivateRoute', () => {
+    const renderProtected = () =>
+      render(
+        <AuthenticationProvider>
+          <MemoryRouter initialEntries={['/account']}>
+            <Routes>
+              <Route path="/login" element={<div>login page</div>} />
+              <Route
+                path="/account"
+                element={
+                  <PrivateRoute>
+                    <div>account page</div>
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </AuthenticationProvider>
+      );
+
+    it('waits for the session restore instead of redirecting to /login', async () => {
+      let finishRefresh!: (token: string) => void;
+      vi.spyOn(httpService, 'refreshAccessToken').mockReturnValue(
+        new Promise((resolve) => {
+          finishRefresh = resolve;
+        })
+      );
+      vi.spyOn(httpService, 'get').mockResolvedValue({ data: { id: 'u1', displayName: 'A' } } as any);
+
+      renderProtected();
+      expect(screen.getByRole('status')).toBeInTheDocument();
+      expect(screen.queryByText('login page')).toBeNull();
+
+      await act(async () => finishRefresh('restored-token'));
+      expect(await screen.findByText('account page')).toBeInTheDocument();
+    });
+
+    it('redirects to /login once the restore fails', async () => {
+      vi.spyOn(httpService, 'refreshAccessToken').mockRejectedValue(new Error('401'));
+
+      renderProtected();
+      expect(await screen.findByText('login page')).toBeInTheDocument();
     });
   });
 });
