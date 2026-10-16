@@ -40,3 +40,12 @@ Object.defineProperty(globalThis, 'sessionStorage', {
   value: window.sessionStorage,
   writable: true,
 });
+
+if (typeof URL.createObjectURL === 'undefined') {
+  URL.createObjectURL = () => 'blob:mock-url';
+}
+
+if (typeof URL.revokeObjectURL === 'undefined') {
+  URL.revokeObjectURL = () => {};
+}
+

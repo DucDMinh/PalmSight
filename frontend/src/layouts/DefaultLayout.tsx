@@ -1,18 +1,19 @@
-import Footer from "@/components/Footer";
+import { Outlet } from "react-router-dom";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 interface DefaultLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
-const DefaultLayout = (props: DefaultLayoutProps) => {
+const DefaultLayout = ({ children }: DefaultLayoutProps) => {
   return (
-    <div className="component:DefaultLayout flex min-h-[100vh] flex-col">
-      <div className="layout-wrapper flex flex-1 flex-col w-full p-3 max-w-5xl mx-auto">
-        <Navbar />
-        <main className="flex flex-1 w-full">{props.children}</main>
-        <Footer />
-      </div>
+    <div className="component:DefaultLayout min-h-screen bg-canvas text-ink font-mono flex flex-col selection:bg-surface-card">
+      <Navbar />
+      <main className="flex-1 w-full flex flex-col">
+        {children ?? <Outlet />}
+      </main>
+      <Footer />
     </div>
   );
 };

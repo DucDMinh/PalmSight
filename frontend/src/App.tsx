@@ -13,7 +13,6 @@ import {
 } from "@tanstack/react-query";
 
 import Page404 from "@/pages/Page404";
-
 import { ToastContainer } from "react-toastify";
 import { ErrorBoundary } from "react-error-boundary";
 import PrivateRoute from "@/components/PrivateRoute";
@@ -28,9 +27,19 @@ import RegisterPage from "./pages/Register";
 import CheckEmailPage from "./pages/CheckEmail";
 import VerifyEmailPage from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import DataDeletion, { Terms, Privacy } from "./pages/DataDeletion";
 import DefaultLayout from "./layouts/DefaultLayout";
 import Homepage from "./pages/Homepage";
 import ChangePassword from "./pages/ChangePassword";
+import ReferralEnter from "./pages/ReferralEnter";
+import ReferralRedirect from "./pages/ReferralEnter/ReferralRedirect";
+import Account from "./pages/Account";
+import Wallet from "./pages/Wallet";
+import Referral from "./pages/Referral";
+import Scan from "./pages/Scan";
+import ReadingDetail from "./pages/ReadingDetail";
+import ReadingsHistory from "./pages/ReadingsHistory";
 
 const ErrorFallback = ({ error, resetErrorBoundary }: any) => {
   return (
@@ -64,36 +73,78 @@ const App = () => {
     return (
       <Router>
         <Routes>
-          <Route path={BaseUrl.Login} element={<Login />} />
-          <Route path={BaseUrl.Register} element={<RegisterPage />} />
-          <Route path={BaseUrl.CheckEmail} element={<CheckEmailPage />} />
-          <Route path={BaseUrl.VerifyEmail} element={<VerifyEmailPage />} />
-          <Route path={BaseUrl.ForgotPassword} element={<ForgotPassword />} />
-          <Route
-            path={BaseUrl.Homepage}
-            element={
-              <Suspense
-                fallback={
-                  <div className="p-2">
-                    <Loading />
-                  </div>
-                }
-              >
-                <ErrorBoundary FallbackComponent={ErrorFallback}>
-                  <PrivateRoute>
-                    <DefaultLayout>
-                      <Outlet />
-                    </DefaultLayout>
-                  </PrivateRoute>
-                </ErrorBoundary>
-              </Suspense>
-            }
-          >
-            <Route index element={<Homepage />} />
-            <Route path={BaseUrl.ChangePassword} element={<ChangePassword />} />
-          </Route>
+          <Route element={<DefaultLayout />}>
+            {/* Public screens */}
+            <Route path={BaseUrl.Homepage} element={<Homepage />} />
+            <Route path={BaseUrl.Login} element={<Login />} />
+            <Route path={BaseUrl.Register} element={<RegisterPage />} />
+            <Route path={BaseUrl.CheckEmail} element={<CheckEmailPage />} />
+            <Route path={BaseUrl.VerifyEmail} element={<VerifyEmailPage />} />
+            <Route path={BaseUrl.ForgotPassword} element={<ForgotPassword />} />
+            <Route path={BaseUrl.ResetPassword} element={<ResetPassword />} />
+            <Route path={BaseUrl.DataDeletion} element={<DataDeletion />} />
+            <Route path={BaseUrl.Terms} element={<Terms />} />
+            <Route path={BaseUrl.Privacy} element={<Privacy />} />
+            <Route
+              path={BaseUrl.ReferralRedirect}
+              element={<ReferralRedirect />}
+            />
 
-          <Route path="*" element={<Page404 />} />
+            {/* Protected screens */}
+            <Route
+              element={
+                <Suspense
+                  fallback={
+                    <div className="p-2">
+                      <Loading />
+                    </div>
+                  }
+                >
+                  <ErrorBoundary FallbackComponent={ErrorFallback}>
+                    <PrivateRoute>
+                      <Outlet />
+                    </PrivateRoute>
+                  </ErrorBoundary>
+                </Suspense>
+              }
+            >
+              <Route
+                path={BaseUrl.ReferralEnter}
+                element={<ReferralEnter />}
+              />
+              <Route
+                path={BaseUrl.Account}
+                element={<Account />}
+              />
+              <Route
+                path={BaseUrl.Wallet}
+                element={<Wallet />}
+              />
+              <Route
+                path={BaseUrl.Referral}
+                element={<Referral />}
+              />
+              <Route
+                path={BaseUrl.Scan}
+                element={<Scan />}
+              />
+              <Route
+                path={BaseUrl.Readings}
+                element={<ReadingsHistory />}
+              />
+              <Route
+                path={BaseUrl.ReadingDetail}
+                element={<ReadingDetail />}
+              />
+              <Route
+                path={BaseUrl.ChangePassword}
+                element={<ChangePassword />}
+              />
+            </Route>
+
+            {/* 404 */}
+            <Route path="*" element={<Page404 />} />
+          </Route>
         </Routes>
       </Router>
     );

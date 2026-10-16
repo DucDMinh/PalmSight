@@ -1,7 +1,4 @@
-import AuthFooter from "@/components/AuthFooter";
+import Footer from "@/components/Footer";
 
-export const RegisterFooter = () => {
-  return <AuthFooter />;
-};
-
+export const RegisterFooter = Footer;
 export default RegisterFooter;

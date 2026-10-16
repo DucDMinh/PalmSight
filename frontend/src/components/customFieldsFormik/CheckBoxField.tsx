@@ -55,17 +55,20 @@ const TerminalCheckbox = ({
           aria-invalid={Boolean(msgError)}
           aria-describedby={msgError ? currentErrorId : undefined}
         />
-        <span className="font-bold text-ink select-none" aria-hidden="true">
-          {value ? "[x]" : "[ ]"}
+        <span
+          className="font-bold text-ink select-none shrink-0 whitespace-nowrap font-mono inline-block"
+          aria-hidden="true"
+        >
+          {value ? "[x]" : "[\u00A0]"}
         </span>
-        <span>{label}</span>
+        <span className="leading-normal flex-1">{label}</span>
       </label>
       {msgError && (
         <p
           id={currentErrorId}
           className="text-sm text-terminal-danger mt-1.5 flex items-center gap-1"
         >
-          <span className="font-bold">[!]</span>
+          <span className="font-bold shrink-0 font-mono">[!]</span>
           <span>{msgError}</span>
         </p>
       )}
