@@ -20,8 +20,10 @@ export interface TestAppInstance {
   replSet: MongoMemoryReplSet;
   connection: mongoose.Connection;
   sentEmails: Array<{ to: string; displayName: string; rawToken: string }>;
+  sentResetEmails: Array<{ to: string; displayName: string; rawToken: string }>;
   mailServiceMock: {
     sendVerificationEmail: (to: string, displayName: string, rawToken: string) => Promise<void>;
+    sendPasswordResetEmail: (to: string, displayName: string, rawToken: string) => Promise<void>;
   };
 }
 
@@ -36,9 +38,13 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
   const mongoUri = replSet.getUri();
 
   const sentEmails: Array<{ to: string; displayName: string; rawToken: string }> = [];
+  const sentResetEmails: Array<{ to: string; displayName: string; rawToken: string }> = [];
   const mailServiceMock = {
     sendVerificationEmail: async (to: string, displayName: string, rawToken: string) => {
       sentEmails.push({ to, displayName, rawToken });
+    },
+    sendPasswordResetEmail: async (to: string, displayName: string, rawToken: string) => {
+      sentResetEmails.push({ to, displayName, rawToken });
     },
     renderVerificationEmailTemplate: (_params: any) => 'mock-html',
   };
@@ -120,6 +126,7 @@ export async function createTestApp(options: TestAppOptions = {}): Promise<TestA
     replSet,
     connection,
     sentEmails,
+    sentResetEmails,
     mailServiceMock,
   };
 }
