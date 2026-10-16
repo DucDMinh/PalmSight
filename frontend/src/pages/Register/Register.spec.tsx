@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RegisterPage from './index';
 import authService from '@/services/authService';
 import { Toaster } from '@/components/ui/toaster';
+import * as toastHelper from '@/helpers/toast';
 
 const mockedNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -193,6 +194,7 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
   });
 
   it('should display inline error and toaster when server responds with 409 EMAIL_TAKEN (TC-034)', async () => {
+    const showErrorSpy = vi.spyOn(toastHelper, 'showError');
     vi.spyOn(authService, 'postRegister').mockRejectedValue({
       response: {
         status: 409,
@@ -227,6 +229,7 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
 
     await waitFor(() => {
+      expect(showErrorSpy).toHaveBeenCalledWith('Email này đã được sử dụng.');
       expect(screen.getByTestId('error-email')).toHaveTextContent(
         'Email này đã được sử dụng.'
       );
@@ -236,6 +239,7 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
   });
 
   it('should display toaster error when email exists via social login (Google/Facebook)', async () => {
+    const showErrorSpy = vi.spyOn(toastHelper, 'showError');
     const oauthErrorMessage =
       'Email này đã được liên kết với tài khoản Google hoặc Facebook. Vui lòng đăng nhập.';
     vi.spyOn(authService, 'postRegister').mockRejectedValue({
@@ -272,6 +276,7 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
 
     await waitFor(() => {
+      expect(showErrorSpy).toHaveBeenCalledWith(oauthErrorMessage);
       expect(screen.getByTestId('error-email')).toHaveTextContent(oauthErrorMessage);
       const errorElements = screen.getAllByText(oauthErrorMessage);
       expect(errorElements.length).toBeGreaterThanOrEqual(2);
@@ -319,7 +324,8 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
     });
   });
 
-  it('should display alert banner when server responds with 429 RATE_LIMITED', async () => {
+  it('should display alert banner and toaster when server responds with 429 RATE_LIMITED', async () => {
+    const showErrorSpy = vi.spyOn(toastHelper, 'showError');
     vi.spyOn(authService, 'postRegister').mockRejectedValue({
       response: {
         status: 429,
@@ -354,8 +360,56 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
     fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
 
     await waitFor(() => {
+      expect(showErrorSpy).toHaveBeenCalledWith(
+        'Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút.'
+      );
       expect(screen.getByRole('alert')).toHaveTextContent(
         'Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút.'
+      );
+    });
+  });
+
+  it('should call showError and display alert banner when server responds with 500 error', async () => {
+    const showErrorSpy = vi.spyOn(toastHelper, 'showError');
+    vi.spyOn(authService, 'postRegister').mockRejectedValue({
+      response: {
+        status: 500,
+        data: {
+          error: {
+            code: 'INTERNAL_ERROR',
+            message: 'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.',
+          },
+        },
+      },
+    });
+
+    renderComponent();
+
+    fireEvent.change(screen.getByLabelText('Tên hiển thị'), {
+      target: { value: 'Trần Văn B' },
+    });
+    fireEvent.change(screen.getByLabelText('Tên đăng nhập'), {
+      target: { value: 'tranvanb' },
+    });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'tranvanb@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), {
+      target: { value: 'BaoMat_987654' },
+    });
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), {
+      target: { value: 'BaoMat_987654' },
+    });
+    fireEvent.click(screen.getByLabelText(/Tôi đồng ý với/));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+
+    await waitFor(() => {
+      expect(showErrorSpy).toHaveBeenCalledWith(
+        'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.'
+      );
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.'
       );
     });
   });

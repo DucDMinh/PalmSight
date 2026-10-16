@@ -46,9 +46,9 @@ export const extractErrorMessage = (error: any): string => {
 export const showSuccess = (
   msg: any,
   options?: { title?: string; action?: ToastActionElement }
-) => {
+): void => {
   const description = typeof msg === "string" ? msg : msg != null ? String(msg) : "";
-  return toast({
+  toast({
     title: options?.title,
     description,
     action: options?.action,
@@ -58,9 +58,9 @@ export const showSuccess = (
 export const showError = (
   error: any,
   options?: { title?: string; action?: ToastActionElement }
-) => {
+): void => {
   const extractedMessage = extractErrorMessage(error);
-  return toast({
+  toast({
     variant: "destructive",
     title: options?.title,
     description: extractedMessage,

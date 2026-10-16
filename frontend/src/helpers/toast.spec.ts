@@ -3,15 +3,8 @@ import * as useToastModule from "@/components/ui/use-toast";
 import { showSuccess, showError, extractErrorMessage } from "./toast";
 
 describe("toast helper (PalmSight UI Toast integration)", () => {
-  let toastSpy: ReturnType<typeof vi.spyOn>;
-
   beforeEach(() => {
     vi.restoreAllMocks();
-    toastSpy = vi.spyOn(useToastModule, "toast").mockImplementation(() => ({
-      id: "test-id",
-      dismiss: vi.fn(),
-      update: vi.fn(),
-    }));
   });
 
   describe("extractErrorMessage", () => {
@@ -80,6 +73,12 @@ describe("toast helper (PalmSight UI Toast integration)", () => {
 
   describe("showSuccess", () => {
     it("should call toast with description and undefined title when not provided", () => {
+      const toastSpy = vi.spyOn(useToastModule, "toast").mockReturnValue({
+        id: "test-id",
+        dismiss: vi.fn(),
+        update: vi.fn(),
+      });
+
       showSuccess("Thao tác thành công");
       expect(toastSpy).toHaveBeenCalledWith({
         title: undefined,
@@ -89,6 +88,12 @@ describe("toast helper (PalmSight UI Toast integration)", () => {
     });
 
     it("should call toast with title and description when options.title is provided", () => {
+      const toastSpy = vi.spyOn(useToastModule, "toast").mockReturnValue({
+        id: "test-id",
+        dismiss: vi.fn(),
+        update: vi.fn(),
+      });
+
       showSuccess("Thao tác thành công", { title: "Thông báo" });
       expect(toastSpy).toHaveBeenCalledWith({
         title: "Thông báo",
@@ -98,6 +103,12 @@ describe("toast helper (PalmSight UI Toast integration)", () => {
     });
 
     it("should convert non-string message to string", () => {
+      const toastSpy = vi.spyOn(useToastModule, "toast").mockReturnValue({
+        id: "test-id",
+        dismiss: vi.fn(),
+        update: vi.fn(),
+      });
+
       showSuccess(12345);
       expect(toastSpy).toHaveBeenCalledWith({
         title: undefined,
@@ -109,6 +120,12 @@ describe("toast helper (PalmSight UI Toast integration)", () => {
 
   describe("showError", () => {
     it("should call destructive toast with extracted error message", () => {
+      const toastSpy = vi.spyOn(useToastModule, "toast").mockReturnValue({
+        id: "test-id",
+        dismiss: vi.fn(),
+        update: vi.fn(),
+      });
+
       showError("Tài khoản không tồn tại");
       expect(toastSpy).toHaveBeenCalledWith({
         variant: "destructive",
@@ -119,6 +136,12 @@ describe("toast helper (PalmSight UI Toast integration)", () => {
     });
 
     it("should call destructive toast with extracted API response error message and title", () => {
+      const toastSpy = vi.spyOn(useToastModule, "toast").mockReturnValue({
+        id: "test-id",
+        dismiss: vi.fn(),
+        update: vi.fn(),
+      });
+
       const apiErr = {
         response: {
           data: {
