@@ -48,9 +48,11 @@ describe("LoginPage", () => {
     expect(screen.getByRole("heading", { name: "Đăng nhập" })).toBeInTheDocument();
     expect(screen.getByLabelText(/Email hoặc username/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Mật khẩu/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Đăng nhập/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Đăng nhập$/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Quên mật khẩu?" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Tạo tài khoản mới" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Đăng nhập bằng Google/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Đăng nhập bằng Facebook/ })).toBeInTheDocument();
   });
 
   it("should submit login form successfully and navigate to destination", async () => {
@@ -77,7 +79,7 @@ describe("LoginPage", () => {
       target: { value: "Password123" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Đăng nhập/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Đăng nhập$/ }));
 
     await waitFor(() => {
       expect(authService.postLogin).toHaveBeenCalledWith({

@@ -1,16 +1,17 @@
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Formik, Form, FormikHelpers } from "formik";
 import { loginSchema } from "@palmsight/shared";
-import CommonIcons from "@/components/commonIcons";
 import FormikField from "@/components/customFieldsFormik/FormikField";
 import InputField from "@/components/customFieldsFormik/InputField";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import SocialLoginButtons from "@/components/SocialLoginButtons";
 import { useToast } from "@/components/ui/use-toast";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import useLoginMutation from "../hooks/useLoginMutation";
 import type { LoginFormValues } from "../types";
+
+const inputClassName =
+  "w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
@@ -57,74 +58,83 @@ export const LoginForm = () => {
   };
 
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={loginSchema}
-      onSubmit={onSubmit}
-    >
-      {({ isSubmitting }) => (
-        <Form className="w-full max-w-md">
-          <div className="mb-8 flex justify-center text-3xl font-bold text-primary font-mono">
-            PalmSight
-          </div>
-          <Card className="shadow-md">
-            <CardHeader className="pb-5">
-              <h1 className="text-2xl font-semibold tracking-tight">Đăng nhập</h1>
-              <p className="text-sm text-muted-foreground">
-                Nhập email hoặc tên đăng nhập để tiếp tục
-              </p>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              {isResetSuccess && (
-                <div
-                  role="status"
-                  className="p-3 bg-surface-card border border-terminal-success rounded text-sm text-ink flex items-center gap-2"
-                >
-                  <span className="font-bold text-terminal-success">[✓]</span>
-                  <span>Đã đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.</span>
-                </div>
-              )}
+    <section className="w-full max-w-sm">
+      <h1 className="text-[28px] md:text-[32px] font-bold text-ink leading-tight tracking-normal">
+        Đăng nhập
+      </h1>
+      <p className="text-sm text-body mt-1 mb-6">
+        Dùng email hoặc tên đăng nhập của bạn.
+      </p>
 
-              <FormikField
-                component={InputField}
-                name="login"
-                label="Email hoặc username"
-                placeholder="minhanh@example.com"
-                required
-              />
+      {isResetSuccess && (
+        <div
+          role="status"
+          className="mb-5 p-3 bg-surface-card border border-terminal-success rounded text-sm text-ink flex items-start gap-2"
+        >
+          <span className="font-bold text-terminal-success">[✓]</span>
+          <span>Đã đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.</span>
+        </div>
+      )}
 
+      <Formik
+        initialValues={initialValues}
+        validationSchema={loginSchema}
+        onSubmit={onSubmit}
+      >
+        {({ isSubmitting }) => (
+          <Form noValidate className="flex flex-col gap-4">
+            <FormikField
+              component={InputField}
+              name="login"
+              label="Email hoặc username"
+              autoComplete="username"
+              placeholder="minhanh@example.com"
+              showTerminalIcons
+              disabled={isSubmitting}
+              className={inputClassName}
+            />
+
+            <div className="relative">
               <FormikField
                 component={InputField}
                 name="password"
                 type="password"
                 label="Mật khẩu"
+                autoComplete="current-password"
                 placeholder="••••••••"
-                required
+                passwordToggleStyle="text"
+                showTerminalIcons
+                disabled={isSubmitting}
+                className={inputClassName}
               />
+              <Link
+                to={BaseUrl.ForgotPassword}
+                className="absolute right-0 top-0 text-sm text-mute underline hover:text-ink"
+              >
+                Quên mật khẩu?
+              </Link>
+            </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <Link
-                  to={BaseUrl.ForgotPassword}
-                  className="is-link text-muted-foreground hover:text-foreground"
-                >
-                  Quên mật khẩu?
-                </Link>
-                <Link
-                  to={BaseUrl.Register}
-                  className="is-link text-muted-foreground hover:text-foreground"
-                >
-                  Tạo tài khoản mới
-                </Link>
-              </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="mt-1 w-full h-9 bg-ink text-canvas rounded font-medium text-base px-5 flex items-center justify-center cursor-pointer transition-colors hover:bg-ink-deep active:bg-ink-deep disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "[...] Đang đăng nhập..." : "Đăng nhập"}
+            </button>
+          </Form>
+        )}
+      </Formik>
 
-              <Button type="submit" isLoading={isSubmitting}>
-                <CommonIcons.LogIn className="icon mr-2" /> Đăng nhập
-              </Button>
-            </CardContent>
-          </Card>
-        </Form>
-      )}
-    </Formik>
+      <SocialLoginButtons />
+
+      <p className="mt-5 text-sm text-mute">
+        Chưa có tài khoản?{" "}
+        <Link to={BaseUrl.Register} className="text-ink underline hover:text-charcoal">
+          Tạo tài khoản mới
+        </Link>
+      </p>
+    </section>
   );
 };
 

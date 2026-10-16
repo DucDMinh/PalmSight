@@ -44,8 +44,7 @@ export class AuthController {
   @UseGuards(AuthRateLimitGuard)
   async resendVerification(
     @Body() body: ResendVerificationRequestDto,
-    @Req() req: Request & { skipEmailDispatch?: boolean },
-    @Res({ passthrough: true }) res: Response,
+    @Req() req: Request & { skipEmailDispatch?: boolean }
   ): Promise<void> {
     if (!body?.email || typeof body.email !== 'string') {
       throw new BadRequestException({
@@ -61,7 +60,6 @@ export class AuthController {
       await this.authService.resendVerification(body);
     }
 
-    res.status(HttpStatus.ACCEPTED);
   }
 
   @Post('verify-email')
