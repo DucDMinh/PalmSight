@@ -15,7 +15,7 @@ export interface AuthenticatedRequest extends Request {
   sessionId: string;
 }
 
-const unauthenticated = () =>
+export const unauthenticated = () =>
   new UnauthorizedException({
     code: 'UNAUTHENTICATED',
     message: 'Bạn cần đăng nhập để tiếp tục.',

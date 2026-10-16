@@ -20,6 +20,7 @@ import {
   ResendVerificationRequestDto,
   LoginRequestDto,
   AuthResponseDto,
+  RefreshTokenResponseDto,
   CreditTransactionType,
   ReferralStatus,
   CREDIT_AMOUNTS,
@@ -35,6 +36,7 @@ import { DeletedIdentity, DeletedIdentityDocument } from '../schemas/deleted-ide
 import { MailService } from '../mail/mail.service';
 import { CreditLedgerService } from '../credits/credit-ledger.service';
 import type { GoogleProfile } from './google-auth.verifier';
+import { unauthenticated } from './guards/jwt-auth.guard';
 
 const REFERRAL_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
@@ -360,10 +362,48 @@ export class AuthService {
     return this.createAuthSession(user, isNewUser);
   }
 
+  async refresh(
+    rawRefreshToken?: string,
+  ): Promise<{ tokens: RefreshTokenResponseDto; rawRefreshToken: string }> {
+    if (!rawRefreshToken) throw unauthenticated();
+    const refreshTokenHash = this.hashToken(rawRefreshToken);
+    const now = new Date();
+
+    // Claim atomically: of two concurrent refreshes with the same token only one can succeed
+    const claimed = await this.sessionModel.findOneAndUpdate(
+      { refreshTokenHash, revokedAt: null, expiresAt: { $gt: now } },
+      { $set: { revokedAt: now } },
+    );
+
+    if (!claimed) {
+      // Only rotation sets revokedAt (logout deletes the session), so a revoked match is a rotated token
+      // being replayed: treat it as leaked and end every session of that user
+      const rotated = await this.sessionModel.findOne({ refreshTokenHash, revokedAt: { $ne: null } });
+      if (rotated) await this.sessionModel.deleteMany({ userId: rotated.userId });
+      throw unauthenticated();
+    }
+
+    const user = await this.userModel.findOne({ _id: claimed.userId, deletedAt: null });
+    if (!user) {
+      await this.sessionModel.deleteOne({ _id: claimed._id });
+      throw unauthenticated();
+    }
+
+    const { accessToken, expiresIn, rawRefreshToken: newRawRefreshToken } = await this.issueTokens(user);
+    return { tokens: { accessToken, expiresIn }, rawRefreshToken: newRawRefreshToken };
+  }
+
+  async logout(rawRefreshToken?: string): Promise<void> {
+    await this.revokeSession(rawRefreshToken);
+  }
+
   private async revokeSession(rawRefreshToken?: string): Promise<void> {
     if (!rawRefreshToken) return;
-    const hash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
-    await this.sessionModel.deleteOne({ refreshTokenHash: hash });
+    await this.sessionModel.deleteOne({ refreshTokenHash: this.hashToken(rawRefreshToken) });
+  }
+
+  private hashToken(rawToken: string): string {
+    return crypto.createHash('sha256').update(rawToken).digest('hex');
   }
 
   private async createUserWithBonus(
@@ -475,8 +515,32 @@ export class AuthService {
     user: UserDocument,
     isNewUser: boolean,
   ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
+    const { accessToken, expiresIn, rawRefreshToken } = await this.issueTokens(user);
+
+    return {
+      authResponse: {
+        accessToken,
+        expiresIn,
+        isNewUser,
+        user: {
+          id: user._id.toString(),
+          displayName: user.displayName,
+          username: user.username ?? null,
+          avatarUrl: user.avatarUrl ?? null,
+          creditBalance: user.creditBalance,
+          referralCode: user.referralCode,
+        },
+      },
+      rawRefreshToken,
+    };
+  }
+
+  // New session + access token carrying its ID (sid) + raw refresh token for the cookie
+  private async issueTokens(
+    user: UserDocument,
+  ): Promise<{ accessToken: string; expiresIn: number; rawRefreshToken: string }> {
     const rawRefreshToken = crypto.randomBytes(32).toString('base64url');
-    const refreshTokenHash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+    const refreshTokenHash = this.hashToken(rawRefreshToken);
     const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
     const sessionExpiresAt = new Date(Date.now() + refreshTtlDays * 24 * 60 * 60 * 1000);
 
@@ -497,22 +561,7 @@ export class AuthService {
       { expiresIn: jwtTtl },
     );
 
-    return {
-      authResponse: {
-        accessToken,
-        expiresIn: jwtTtl,
-        isNewUser,
-        user: {
-          id: user._id.toString(),
-          displayName: user.displayName,
-          username: user.username ?? null,
-          avatarUrl: user.avatarUrl ?? null,
-          creditBalance: user.creditBalance,
-          referralCode: user.referralCode,
-        },
-      },
-      rawRefreshToken,
-    };
+    return { accessToken, expiresIn: jwtTtl, rawRefreshToken };
   }
 
   private handleDuplicateKey(err: any): void {
