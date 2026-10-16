@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import RegisterPage from './index';
 import authService from '@/services/authService';
+import { Toaster } from '@/components/ui/toaster';
 
 const mockedNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -34,6 +35,7 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={['/register']}>
           <RegisterPage />
+          <Toaster />
         </MemoryRouter>
       </QueryClientProvider>
     );
@@ -190,7 +192,7 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
     });
   });
 
-  it('should display inline error when server responds with 409 EMAIL_TAKEN (TC-034)', async () => {
+  it('should display inline error and toaster when server responds with 409 EMAIL_TAKEN (TC-034)', async () => {
     vi.spyOn(authService, 'postRegister').mockRejectedValue({
       response: {
         status: 409,
@@ -228,6 +230,51 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
       expect(screen.getByTestId('error-email')).toHaveTextContent(
         'Email này đã được sử dụng.'
       );
+      const errorElements = screen.getAllByText('Email này đã được sử dụng.');
+      expect(errorElements.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it('should display toaster error when email exists via social login (Google/Facebook)', async () => {
+    const oauthErrorMessage =
+      'Email này đã được liên kết với tài khoản Google hoặc Facebook. Vui lòng đăng nhập.';
+    vi.spyOn(authService, 'postRegister').mockRejectedValue({
+      response: {
+        status: 409,
+        data: {
+          error: {
+            code: 'EMAIL_TAKEN',
+            message: oauthErrorMessage,
+          },
+        },
+      },
+    });
+
+    renderComponent();
+
+    fireEvent.change(screen.getByLabelText('Tên hiển thị'), {
+      target: { value: 'Trần Văn B' },
+    });
+    fireEvent.change(screen.getByLabelText('Tên đăng nhập'), {
+      target: { value: 'tranvanb' },
+    });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'socialuser@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), {
+      target: { value: 'BaoMat_987654' },
+    });
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), {
+      target: { value: 'BaoMat_987654' },
+    });
+    fireEvent.click(screen.getByLabelText(/Tôi đồng ý với/));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-email')).toHaveTextContent(oauthErrorMessage);
+      const errorElements = screen.getAllByText(oauthErrorMessage);
+      expect(errorElements.length).toBeGreaterThanOrEqual(2);
     });
   });
 

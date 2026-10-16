@@ -22,7 +22,28 @@ describe('Auth Conflicts: EMAIL_TAKEN and USERNAME_TAKEN (TC-012, TC-013)', () =
       updatedAt: new Date(),
     });
 
-    // 2. Seed pending_registrations for username conflict
+    // 2. Seed existing OAuth user without passwordHash
+    await usersCollection.insertOne({
+      displayName: 'OAuth User',
+      username: 'oauth_user',
+      email: 'oauth@example.com',
+      passwordHash: null,
+      identities: [
+        {
+          provider: 'google',
+          providerUserId: 'google-oauth-sub-12345',
+          email: 'oauth@example.com',
+          linkedAt: new Date(),
+        },
+      ],
+      referralCode: 'OAUTH001',
+      creditBalance: 3,
+      referralBlocked: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    // 3. Seed pending_registrations for username conflict
     const pendingCollection = testApp.connection.collection('pending_registrations');
     await pendingCollection.insertOne({
       displayName: 'Pending Holder',
@@ -63,6 +84,35 @@ describe('Auth Conflicts: EMAIL_TAKEN and USERNAME_TAKEN (TC-012, TC-013)', () =
     const pending = await testApp.connection
       .collection('pending_registrations')
       .findOne({ username: 'new_unique_name' });
+    expect(pending).toBeNull();
+  });
+
+  it('TC-012b: should return 409 Conflict with EMAIL_TAKEN when registering with existing OAuth user without passwordHash', async () => {
+    const payload = {
+      displayName: 'OAuth Duplicate Email Attempt',
+      username: 'unique_oauth_user',
+      email: 'oauth@example.com',
+      password: 'new_password_123',
+    };
+
+    const res = await fetch(`${testApp.baseUrl}/api/v1/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    expect(res.status).toBe(409);
+    const data = (await res.json()) as any;
+    expect(data.error).toBeDefined();
+    expect(data.error.code).toBe('EMAIL_TAKEN');
+    expect(data.error.message).toBe(
+      'Email này đã được liên kết với tài khoản Google hoặc Facebook. Vui lòng đăng nhập.',
+    );
+
+    // Ensure no pending registration was created for this username
+    const pending = await testApp.connection
+      .collection('pending_registrations')
+      .findOne({ username: 'unique_oauth_user' });
     expect(pending).toBeNull();
   });
 
