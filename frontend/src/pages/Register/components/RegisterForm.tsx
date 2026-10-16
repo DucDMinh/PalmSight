@@ -4,7 +4,7 @@ import { Formik, Form, FormikHelpers } from "formik";
 import * as yup from "yup";
 import { registerFormSchema } from "@palmsight/shared";
 import { getCookie } from "@/helpers/cookie";
-import { useToast } from "@/components/ui/use-toast";
+import { showError } from "@/helpers/toast";
 import BaseUrl from "@/consts/baseUrl";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterSocialActions from "./RegisterSocialActions";
@@ -22,8 +22,7 @@ export const registerValidationSchema = registerFormSchema.shape({
 const handleSubmissionError = (
   err: any,
   setErrors: (errors: Record<string, string>) => void,
-  setGeneralError: (msg: string | null) => void,
-  toast: ReturnType<typeof useToast>["toast"]
+  setGeneralError: (msg: string | null) => void
 ) => {
   const response = err?.response;
   const status = response?.status;
@@ -33,14 +32,13 @@ const handleSubmissionError = (
     if (apiError.code === "EMAIL_TAKEN") {
       const errorMessage = apiError.message || "Email này đã được sử dụng.";
       setErrors({ email: errorMessage });
-      toast({
-        variant: "destructive",
-        description: errorMessage,
-      });
+      showError(errorMessage);
     } else if (apiError.code === "USERNAME_TAKEN") {
       setErrors({ username: apiError.message || "Tên người dùng đã được sử dụng." });
     } else {
-      setGeneralError(apiError.message || "Thông tin đăng ký bị xung đột.");
+      const message = apiError.message || "Thông tin đăng ký bị xung đột.";
+      setGeneralError(message);
+      showError(message);
     }
   } else if (status === 400 && apiError.details?.fields) {
     const serverErrors: Record<string, string> = {};
@@ -49,11 +47,14 @@ const handleSubmissionError = (
     });
     setErrors(serverErrors);
   } else if (status === 429) {
-    setGeneralError(
-      apiError.message || "Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút."
-    );
+    const message =
+      apiError.message || "Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút.";
+    setGeneralError(message);
+    showError(message);
   } else {
-    setGeneralError(apiError.message || "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.");
+    const message = apiError.message || "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.";
+    setGeneralError(message);
+    showError(message);
   }
 };
 
@@ -61,7 +62,6 @@ export const RegisterForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [generalError, setGeneralError] = useState<string | null>(null);
-  const { toast } = useToast();
   const registerMutation = useRegisterMutation();
 
   const initialReferralCode = useMemo(() => {
@@ -102,7 +102,7 @@ export const RegisterForm = () => {
         { state: { email: result.email || values.email } }
       );
     } catch (err: any) {
-      handleSubmissionError(err, setErrors, setGeneralError, toast);
+      handleSubmissionError(err, setErrors, setGeneralError);
     } finally {
       setSubmitting(false);
     }
