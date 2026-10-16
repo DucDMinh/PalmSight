@@ -4,7 +4,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://palmsight-api.onrender.com/api/v1/:path*"
+      "destination": "https://palmsight-backend.onrender.com/api/v1/:path*"
     },
     {
       "source": "/(.*)",
