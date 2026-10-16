@@ -191,4 +191,104 @@ describe('AuthenticationProvider (In-Memory Token)', () => {
       expect(screen.getByTestId('user-email').textContent).toBe('initial.jwt@example.com');
     });
   });
+
+  describe('Optimistic hydration & silent refresh', () => {
+    const cachedUser = {
+      id: '6710a1b2c3d4e5f6a7b8c9d0',
+      displayName: 'Cached User',
+      username: 'cacheduser',
+      avatarUrl: null,
+      creditBalance: 10,
+      referralCode: 'CACHE123',
+    };
+
+    it('should immediately hydrate user from storage and keep isLogged true while refresh is pending', async () => {
+      httpService.saveUserStorage(cachedUser);
+
+      let resolveRefresh: (value: any) => void = () => {};
+      const refreshPromise = new Promise((resolve) => {
+        resolveRefresh = resolve;
+      });
+      vi.spyOn(authService, 'postRefresh').mockReturnValue(refreshPromise as any);
+
+      const HydrationConsumer = () => {
+        const { isLogged, loading, user, accessToken } = useAuth();
+        return (
+          <div>
+            <div data-testid="is-logged">{String(isLogged)}</div>
+            <div data-testid="loading">{String(loading)}</div>
+            <div data-testid="user-name">{user?.displayName || 'null'}</div>
+            <div data-testid="access-token">{accessToken || 'null'}</div>
+          </div>
+        );
+      };
+
+      render(
+        <AuthenticationProvider>
+          <HydrationConsumer />
+        </AuthenticationProvider>
+      );
+
+      // Immediately hydrated before refresh promise resolves
+      expect(screen.getByTestId('loading').textContent).toBe('true');
+      expect(screen.getByTestId('is-logged').textContent).toBe('true');
+      expect(screen.getByTestId('user-name').textContent).toBe('Cached User');
+      expect(screen.getByTestId('access-token').textContent).toBe('null');
+
+      // Resolve refresh successfully
+      await act(async () => {
+        resolveRefresh({
+          accessToken: 'fresh-token',
+          user: { ...cachedUser, creditBalance: 12 },
+        });
+      });
+
+      expect(screen.getByTestId('loading').textContent).toBe('false');
+      expect(screen.getByTestId('is-logged').textContent).toBe('true');
+      expect(screen.getByTestId('access-token').textContent).toBe('fresh-token');
+      expect(httpService.getUserStorage()?.creditBalance).toBe(12);
+    });
+
+    it('should clear user, storage, and set isLogged to false when silent refresh fails', async () => {
+      httpService.saveUserStorage(cachedUser);
+
+      let rejectRefresh: (reason?: any) => void = () => {};
+      const refreshPromise = new Promise((_, reject) => {
+        rejectRefresh = reject;
+      });
+      vi.spyOn(authService, 'postRefresh').mockReturnValue(refreshPromise as any);
+
+      const HydrationConsumer = () => {
+        const { isLogged, loading, user } = useAuth();
+        return (
+          <div>
+            <div data-testid="is-logged">{String(isLogged)}</div>
+            <div data-testid="loading">{String(loading)}</div>
+            <div data-testid="user-name">{user?.displayName || 'null'}</div>
+          </div>
+        );
+      };
+
+      render(
+        <AuthenticationProvider>
+          <HydrationConsumer />
+        </AuthenticationProvider>
+      );
+
+      // Initially optimistic
+      expect(screen.getByTestId('loading').textContent).toBe('true');
+      expect(screen.getByTestId('is-logged').textContent).toBe('true');
+      expect(screen.getByTestId('user-name').textContent).toBe('Cached User');
+
+      // Reject refresh (e.g. 401 Unauthorized / expired cookie)
+      await act(async () => {
+        rejectRefresh(new Error('Unauthorized'));
+      });
+
+      expect(screen.getByTestId('loading').textContent).toBe('false');
+      expect(screen.getByTestId('is-logged').textContent).toBe('false');
+      expect(screen.getByTestId('user-name').textContent).toBe('null');
+      expect(httpService.getUserStorage()).toBeNull();
+    });
+  });
 });

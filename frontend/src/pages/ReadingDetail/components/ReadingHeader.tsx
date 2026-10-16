@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BaseUrl from "@/consts/baseUrl";
-import { ReadingDto, READING_SCHOOLS, HandOrientation } from "@palmsight/shared";
+import {
+  ReadingDto,
+  READING_SCHOOLS,
+  HandOrientation,
+  getTopicLabel,
+} from "@palmsight/shared";
 import { format } from "date-fns";
 
 interface ReadingHeaderProps {
@@ -39,6 +44,13 @@ export const ReadingHeader: React.FC<ReadingHeaderProps> = ({
     const textPieces: string[] = [
       `PALMSIGHT - ${schoolConfig?.name ?? reading.school}`,
       `${handLabel} · ${formattedDate}`,
+      `Mục xem: ${
+        isAll
+          ? "Toàn bộ"
+          : (reading.topics || [])
+              .map((t) => getTopicLabel(t, reading.school))
+              .join(", ")
+      }`,
       "",
     ];
 
@@ -127,6 +139,21 @@ export const ReadingHeader: React.FC<ReadingHeaderProps> = ({
             {topicsBadge}
           </span>
         </div>
+        {!isAll && reading.topics && reading.topics.length > 0 && (
+          <div
+            className="mt-2.5 flex flex-wrap gap-1"
+            data-testid="reading-selected-topics"
+          >
+            {reading.topics.map((t) => (
+              <span
+                key={t}
+                className="text-xs px-2 py-0.5 bg-surface-card border border-hairline rounded font-mono text-ink"
+              >
+                [{getTopicLabel(t, reading.school)}]
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}

@@ -1,0 +1,321 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { AuthenticationProvider } from "@/providers/AuthenticationProvider";
+import { ReadingSchool, HandOrientation } from "@palmsight/shared";
+import { CaptureStep } from "./CaptureStep";
+
+describe("CaptureStep Component", () => {
+  const mockUser = {
+    id: "user-123",
+    displayName: "Test User",
+    username: "testuser",
+    avatarUrl: null,
+    referralCode: "ABCDEF12",
+    creditBalance: 3,
+    referral: {
+      canEnterCode: true,
+      enteredCode: null,
+    },
+  };
+
+  const defaultProps = {
+    school: ReadingSchool.EASTERN,
+    hand: HandOrientation.LEFT,
+    isAllTopics: true,
+    selectedCount: 10,
+    imageFile: null,
+    imagePreviewUrl: null,
+    aiConsent: false,
+    onConsentChange: vi.fn(),
+    onImageChange: vi.fn(),
+    onSubmit: vi.fn(),
+    onRetry: vi.fn(),
+    status: "IDLE" as const,
+  };
+
+  let originalMediaDevices: PropertyDescriptor | undefined;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    originalMediaDevices = Object.getOwnPropertyDescriptor(
+      navigator,
+      "mediaDevices"
+    );
+    HTMLVideoElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    if (originalMediaDevices) {
+      Object.defineProperty(navigator, "mediaDevices", originalMediaDevices);
+    } else {
+      delete (navigator as any).mediaDevices;
+    }
+  });
+
+  const renderComponent = (propsOverride = {}, userOverride = {}) => {
+    return render(
+      <MemoryRouter>
+        <AuthenticationProvider
+          skipInitialRefresh
+          initialUser={{ ...mockUser, ...userOverride }}
+        >
+          <CaptureStep {...defaultProps} {...propsOverride} />
+        </AuthenticationProvider>
+      </MemoryRouter>
+    );
+  };
+
+  const createMockStream = () => {
+    const track = {
+      stop: vi.fn(),
+    };
+    return {
+      getTracks: vi.fn().mockReturnValue([track]),
+      _track: track,
+    } as unknown as MediaStream & { _track: typeof track };
+  };
+
+  it("should render viewfinder elements, ASCII brackets, wireframe, and AC 1 prompt text", () => {
+    renderComponent();
+
+    // Corner brackets & Framing guide
+    expect(screen.getByTestId("viewfinder")).toBeInTheDocument();
+    expect(screen.getByText("┌")).toBeInTheDocument();
+    expect(screen.getByText("┐")).toBeInTheDocument();
+    expect(screen.getByText("└")).toBeInTheDocument();
+    expect(screen.getByText("┘")).toBeInTheDocument();
+    expect(screen.getByText("SCAN AREA // 1080P")).toBeInTheDocument();
+
+    // Palm wireframe
+    expect(screen.getByTestId("palm-wireframe")).toBeInTheDocument();
+
+    // Telemetry bar
+    expect(screen.getByText("FPS: 30.0")).toBeInTheDocument();
+    expect(screen.getByText("ALIGN_CENTER")).toBeInTheDocument();
+    expect(screen.getByText("ISO_AUTO")).toBeInTheDocument();
+
+    // Exact prompt text under viewfinder matching AC 1
+    expect(
+      screen.getByText("Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera.")
+    ).toBeInTheDocument();
+
+    // Fallback file input attributes matching AC 2
+    const fileInput = screen.getByTestId("file-input");
+    expect(fileInput).toHaveAttribute("type", "file");
+    expect(fileInput).toHaveAttribute("accept", "image/*");
+    expect(fileInput).toHaveAttribute("capture", "environment");
+
+    // Video is always mounted in the DOM, but hidden when camera is inactive
+    const video = screen.getByTestId("camera-video");
+    expect(video).toBeInTheDocument();
+    expect(video).toHaveClass("hidden");
+  });
+
+  it("should start camera with environment constraints and attach stream to video element", async () => {
+    const mockStream = createMockStream();
+    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    const openCamBtn = screen.getByTestId("open-camera-button");
+    fireEvent.click(openCamBtn);
+
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalledWith({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      expect(screen.getByText("CAMERA_ACTIVE")).toBeInTheDocument();
+    });
+
+    const video = screen.getByTestId("camera-video") as HTMLVideoElement;
+    expect(video).not.toHaveClass("hidden");
+    expect(video.srcObject).toBe(mockStream);
+    expect(screen.getByTestId("shutter-button")).toBeInTheDocument();
+  });
+
+  it("should fallback to generic camera constraint when environment camera constraint fails", async () => {
+    const mockStream = createMockStream();
+    const mockGetUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("OverconstrainedError"))
+      .mockResolvedValueOnce(mockStream);
+
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalledTimes(2);
+      expect(mockGetUserMedia).toHaveBeenNthCalledWith(1, {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      });
+      expect(mockGetUserMedia).toHaveBeenNthCalledWith(2, { video: true });
+      expect(screen.getByText("CAMERA_ACTIVE")).toBeInTheDocument();
+    });
+
+    const video = screen.getByTestId("camera-video") as HTMLVideoElement;
+    expect(video.srcObject).toBe(mockStream);
+  });
+
+  it("should show error when camera permission is denied or access fails", async () => {
+    const mockGetUserMedia = vi
+      .fn()
+      .mockRejectedValue(new Error("NotAllowedError: Permission denied"));
+
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-error")).toHaveTextContent(
+        "Không thể truy cập camera. Vui lòng cấp quyền hoặc chọn ảnh có sẵn."
+      );
+    });
+  });
+
+  it("should show error when browser does not support getUserMedia", async () => {
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: {},
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-error")).toHaveTextContent(
+        "Trình duyệt không hỗ trợ camera. Vui lòng chọn ảnh có sẵn."
+      );
+    });
+  });
+
+  it("should stop stream and hide video when closing camera", async () => {
+    const mockStream = createMockStream();
+    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByText("CAMERA_ACTIVE")).toBeInTheDocument();
+    });
+
+    const video = screen.getByTestId("camera-video") as HTMLVideoElement;
+    expect(video.srcObject).toBe(mockStream);
+
+    const closeBtn = screen.getByText("Đóng camera");
+    fireEvent.click(closeBtn);
+
+    expect(mockStream._track.stop).toHaveBeenCalled();
+    expect(video.srcObject).toBeNull();
+    expect(video).toHaveClass("hidden");
+    expect(screen.getByText("READY")).toBeInTheDocument();
+  });
+
+  it("should capture photo from canvas when shutter button is clicked", async () => {
+    const mockStream = createMockStream();
+    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    const onImageChange = vi.fn();
+
+    // Mock HTMLCanvasElement
+    const drawImageSpy = vi.fn();
+    const toBlobSpy = vi.fn((callback: (blob: Blob | null) => void) => {
+      callback(new Blob(["mock-image-data"], { type: "image/jpeg" }));
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: drawImageSpy,
+    } as any);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(toBlobSpy);
+
+    renderComponent({ onImageChange });
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("shutter-button")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("shutter-button"));
+
+    await waitFor(() => {
+      expect(drawImageSpy).toHaveBeenCalled();
+      expect(toBlobSpy).toHaveBeenCalled();
+      expect(onImageChange).toHaveBeenCalledWith(
+        expect.any(File),
+        expect.any(String)
+      );
+      expect(mockStream._track.stop).toHaveBeenCalled();
+    });
+  });
+
+  it("should allow uploading file via file input and reset image via retake button", () => {
+    const onImageChange = vi.fn();
+    const { rerender } = renderComponent({ onImageChange });
+
+    const file = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
+    const fileInput = screen.getByTestId("file-input");
+
+    fireEvent.change(fileInput, { target: { files: [file] } });
+    expect(onImageChange).toHaveBeenCalledWith(file, expect.any(String));
+
+    // Re-render with preview
+    rerender(
+      <MemoryRouter>
+        <AuthenticationProvider skipInitialRefresh initialUser={mockUser}>
+          <CaptureStep
+            {...defaultProps}
+            imageFile={file}
+            imagePreviewUrl="blob:mock-url"
+            onImageChange={onImageChange}
+          />
+        </AuthenticationProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByTestId("image-preview")).toBeInTheDocument();
+    expect(screen.getByTestId("retake-button")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("retake-button"));
+    expect(onImageChange).toHaveBeenCalledWith(null, null);
+  });
+});

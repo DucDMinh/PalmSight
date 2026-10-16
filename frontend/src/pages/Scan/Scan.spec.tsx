@@ -119,6 +119,22 @@ describe("Scan Page (/scan)", () => {
     );
   });
 
+  it("should render camera viewfinder, prompt text matching AC 1, and fallback file input", () => {
+    renderScan();
+
+    expect(
+      screen.getByText("Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera.")
+    ).toBeInTheDocument();
+
+    const fileInput = screen.getByTestId("file-input");
+    expect(fileInput).toHaveAttribute("accept", "image/*");
+    expect(fileInput).toHaveAttribute("capture", "environment");
+
+    const video = screen.getByTestId("camera-video");
+    expect(video).toBeInTheDocument();
+    expect(video).toHaveClass("hidden");
+  });
+
   it("should show banner and disable submission if user credit is 0", () => {
     renderScan({ creditBalance: 0 });
 

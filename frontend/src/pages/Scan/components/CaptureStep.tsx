@@ -4,6 +4,7 @@ import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import { ReadingSchool, HandOrientation, READING_SCHOOLS } from "@palmsight/shared";
 import { ScanStatus } from "../types";
+import { cn } from "@/lib/utils";
 
 interface CaptureStepProps {
   school: ReadingSchool;
@@ -62,6 +63,13 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play()?.catch?.(() => {});
+    }
+  }, [isCameraActive]);
+
   const startCamera = async () => {
     setCameraError(null);
     try {
@@ -69,16 +77,28 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         setCameraError("Trình duyệt không hỗ trợ camera. Vui lòng chọn ảnh có sẵn.");
         return;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        });
+      } catch {
+        // Fallback for laptops/desktops without environment camera constraint support
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+
       streamRef.current = stream;
+      setIsCameraActive(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.play()?.catch?.(() => {});
       }
-      setIsCameraActive(true);
-    } catch (err: any) {
+    } catch {
       setCameraError("Không thể truy cập camera. Vui lòng cấp quyền hoặc chọn ảnh có sẵn.");
       setIsCameraActive(false);
     }
@@ -88,6 +108,9 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
   };
@@ -187,16 +210,17 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         </div>
 
         {/* Live Video */}
-        {isCameraActive && (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="absolute inset-0 w-full h-full object-cover"
-            data-testid="camera-video"
-          />
-        )}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={cn(
+            "absolute inset-0 w-full h-full object-cover",
+            !isCameraActive && "hidden"
+          )}
+          data-testid="camera-video"
+        />
 
         {/* Image Preview */}
         {imagePreviewUrl && (
@@ -266,7 +290,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
 
       {/* Hint under viewfinder */}
       <p className="font-body-md text-body-md text-body mt-4 mb-4 leading-relaxed">
-        Đủ sáng, xoè tay, lòng bàn tay hướng vào camera.
+        Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera.
       </p>
 
       {cameraError && (
@@ -279,7 +303,8 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={handleFileSelect}
         data-testid="file-input"

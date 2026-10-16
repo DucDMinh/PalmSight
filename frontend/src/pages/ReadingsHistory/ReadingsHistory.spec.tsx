@@ -120,6 +120,7 @@ describe("ReadingsHistory Page (/readings)", () => {
       expect(screen.getByText("RECORD_LOG :: 05_ENTRIES")).toBeInTheDocument();
       // Items rendered
       expect(screen.getByText(/Phương Đông · Tay trái · 3 mục/)).toBeInTheDocument();
+      expect(screen.getByText("Dáng tay ngũ hành, Thiên văn, Nhân văn")).toBeInTheDocument();
       expect(screen.getByText(/Phương Tây · Tay phải · Toàn bộ/)).toBeInTheDocument();
 
       // Summaries

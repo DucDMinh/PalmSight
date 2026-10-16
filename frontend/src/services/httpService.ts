@@ -1,4 +1,3 @@
-import { UserInfo } from "../interfaces/user";
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 
 export const TOKEN_KEY = "token";
@@ -108,13 +107,19 @@ class Services {
     localStorage.removeItem(USER_KEY);
   }
 
-  saveUserStorage(user: UserInfo) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  saveUserStorage(user: any) {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
   }
 
   getUserStorage() {
-    if (localStorage.getItem(USER_KEY)) {
-      return JSON.parse(localStorage?.getItem(USER_KEY) || "") as UserInfo;
+    if (typeof localStorage !== "undefined" && localStorage.getItem(USER_KEY)) {
+      try {
+        return JSON.parse(localStorage.getItem(USER_KEY) || "");
+      } catch {
+        return null;
+      }
     }
 
     return null;

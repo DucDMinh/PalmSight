@@ -108,8 +108,8 @@ describe("ReadingDetail Page (/readings/:id)", () => {
       ).toBeInTheDocument();
 
       // Sections
-      expect(screen.getByText("Dáng tay ngũ hành")).toBeInTheDocument();
-      expect(screen.getByText("Thiên văn")).toBeInTheDocument();
+      expect(screen.getAllByText("Dáng tay ngũ hành").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Thiên văn").length).toBeGreaterThan(0);
       expect(
         screen.getByText("Lòng bàn tay vuông, ngón ngắn và chắc.")
       ).toBeInTheDocument();
@@ -179,7 +179,38 @@ describe("ReadingDetail Page (/readings/:id)", () => {
 
     await waitFor(() => {
       expect(writeTextMock).toHaveBeenCalled();
+      const sharedText = writeTextMock.mock.calls[0][0];
+      expect(sharedText).toContain("Mục xem: Dáng tay ngũ hành, Thiên văn");
       expect(screen.getByText("Đã sao chép văn bản")).toBeInTheDocument();
+    });
+  });
+
+  it("should render selected topics tags and banner when user selected specific topics", async () => {
+    const topicsReading: ReadingDto = {
+      ...mockReading,
+      topics: ["personality", "career"],
+      result: {
+        ...(mockReading.result as NonNullable<typeof mockReading.result>),
+        topics: ["personality", "career"],
+        sections: [],
+        aspects: {
+          personality: "Rất điềm tĩnh",
+          career: "Tiến triển tốt",
+        },
+      },
+    };
+    renderComponent(topicsReading);
+
+    await waitFor(() => {
+      const banner = screen.getByTestId("selected-topics-banner");
+      expect(banner).toBeInTheDocument();
+      expect(banner).toHaveTextContent("Tính cách");
+      expect(banner).toHaveTextContent("Sự nghiệp");
+
+      const headerTags = screen.getByTestId("reading-selected-topics");
+      expect(headerTags).toBeInTheDocument();
+      expect(headerTags).toHaveTextContent("[Tính cách]");
+      expect(headerTags).toHaveTextContent("[Sự nghiệp]");
     });
   });
 

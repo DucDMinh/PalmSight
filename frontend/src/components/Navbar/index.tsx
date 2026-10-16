@@ -19,8 +19,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ rightAction }: NavbarProps) {
-  const { isLogged, user, logout } = useAuth();
-  console.log(user);
+  const { isLogged, user, logout, loading } = useAuth();
   const location = useLocation();
   const [openPopover, setPopover] = useState(false);
 
@@ -186,6 +185,8 @@ export default function Navbar({ rightAction }: NavbarProps) {
                   </PopoverContent>
                 </Popover>
               </>
+            ) : loading && !user ? (
+              <div className="h-8 w-16" aria-hidden="true" />
             ) : isLoginPage ? (
               <Link
                 to={BaseUrl.Register}
