@@ -10,14 +10,22 @@ import {
 import httpService from "@/services/httpService";
 import authService from "@/services/authService";
 import useAuthStore from "@/stores/useAuthStore";
-import type { UserSummaryDto } from "@palmsight/shared";
+import type {
+  UserSummaryDto,
+  UserReferralInfoDto,
+  AuthProvider,
+} from "@palmsight/shared";
 
 export type AuthUser = UserSummaryDto & {
-  email?: string;
+  email?: string | null;
   firstname?: string;
   lastname?: string;
   roles?: string[];
   isFirstTimeLogin?: boolean;
+  hasPassword?: boolean;
+  providers?: AuthProvider[];
+  referral?: UserReferralInfoDto;
+  referralLink?: string;
 };
 
 export interface AuthenticationContextI {
@@ -53,6 +61,62 @@ interface AuthenticationProviderProps {
   skipInitialRefresh?: boolean;
 }
 
+/**
+ * Safely parse payload from a JWT token in browser / Node environment.
+ * Does not verify signature (signature is verified by backend).
+ */
+export function parseJwt<T = Record<string, any>>(token: string): T | null {
+  try {
+    if (!token || typeof token !== "string") return null;
+    const parts = token.split(".");
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "="
+    );
+    const decodedStr =
+      typeof atob === "function"
+        ? atob(padded)
+        : typeof Buffer !== "undefined"
+          ? Buffer.from(padded, "base64").toString("binary")
+          : "";
+    if (!decodedStr) return null;
+    try {
+      const jsonPayload = decodeURIComponent(
+        decodedStr
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join("")
+      );
+      return JSON.parse(jsonPayload) as T;
+    } catch {
+      return JSON.parse(decodedStr) as T;
+    }
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enriches user object with email extracted from JWT token if user has no email.
+ */
+export const enrichUserWithJwt = (
+  user: AuthUser | UserSummaryDto | null,
+  token: string | null
+): AuthUser | null => {
+  if (!user) return null;
+  const enriched: AuthUser = { ...user };
+  if (!enriched.email && token) {
+    const decoded = parseJwt<{ email?: string }>(token);
+    if (decoded?.email) {
+      enriched.email = decoded.email;
+    }
+  }
+  return enriched;
+};
+
 export const AuthenticationProvider = ({
   children,
   initialAccessToken = null,
@@ -61,7 +125,9 @@ export const AuthenticationProvider = ({
 }: AuthenticationProviderProps) => {
   //! State: in-memory token (no localStorage storage for access tokens per ADR-0008)
   const [accessToken, setAccessToken] = useState<string | null>(initialAccessToken);
-  const [user, setUser] = useState<AuthUser | null>(initialUser);
+  const [user, setUser] = useState<AuthUser | null>(() =>
+    enrichUserWithJwt(initialUser, initialAccessToken)
+  );
   const [loading, setLoading] = useState(!initialAccessToken && !skipInitialRefresh);
 
   // Sync token to httpService on change
@@ -72,10 +138,16 @@ export const AuthenticationProvider = ({
   //! Function: set authenticated session
   const setAuthSession = useCallback(
     (session: { accessToken: string; user: AuthUser | UserSummaryDto }) => {
+      const enrichedUser =
+        enrichUserWithJwt(session.user, session.accessToken) ||
+        (session.user as AuthUser);
       setAccessToken(session.accessToken);
       httpService.setInMemoryToken(session.accessToken);
-      setUser(session.user as AuthUser);
-      useAuthStore.getState().setAuthSession(session);
+      setUser(enrichedUser);
+      useAuthStore.getState().setAuthSession({
+        accessToken: session.accessToken,
+        user: enrichedUser,
+      });
     },
     []
   );
@@ -94,7 +166,14 @@ export const AuthenticationProvider = ({
         setAccessToken(response.accessToken);
         httpService.setInMemoryToken(response.accessToken);
         if ('user' in response && response.user) {
-          setUser(response.user as AuthUser);
+          const enrichedUser =
+            enrichUserWithJwt(response.user, response.accessToken) ||
+            (response.user as AuthUser);
+          setUser(enrichedUser);
+          useAuthStore.getState().setAuthSession({
+            accessToken: response.accessToken,
+            user: enrichedUser,
+          });
         }
         return true;
       }
@@ -122,7 +201,14 @@ export const AuthenticationProvider = ({
           setAccessToken(response.accessToken);
           httpService.setInMemoryToken(response.accessToken);
           if ('user' in response && response.user) {
-            setUser(response.user as AuthUser);
+            const enrichedUser =
+              enrichUserWithJwt(response.user, response.accessToken) ||
+              (response.user as AuthUser);
+            setUser(enrichedUser);
+            useAuthStore.getState().setAuthSession({
+              accessToken: response.accessToken,
+              user: enrichedUser,
+            });
           }
         }
       })

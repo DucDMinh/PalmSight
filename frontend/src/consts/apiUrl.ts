@@ -16,3 +16,7 @@ export const AUTH_REFRESH_URL = `${API_V1_URL}/auth/refresh`;
 export const AUTH_LOGOUT_URL = `${API_V1_URL}/auth/logout`;
 export const ME_PASSWORD_URL = `${API_V1_URL}/me/password`;
 export const ME_REFERRAL_URL = `${API_V1_URL}/me/referral`;
+export const ME_URL = `${API_V1_URL}/me`;
+export const ME_REFERRALS_URL = `${API_V1_URL}/me/referrals`;
+export const ME_CREDIT_TRANSACTIONS_URL = `${API_V1_URL}/me/credit-transactions`;
+export const READINGS_URL = `${API_V1_URL}/readings`;

@@ -1,4 +1,4 @@
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Formik, Form, FormikHelpers } from "formik";
 import { loginSchema } from "@palmsight/shared";
 import CommonIcons from "@/components/commonIcons";
@@ -14,9 +14,11 @@ import type { LoginFormValues } from "../types";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { setAuthSession } = useAuth();
   const loginMutation = useLoginMutation();
+  const isResetSuccess = searchParams.get("reset") === "1";
 
   const initialValues: LoginFormValues = {
     login: "",
@@ -38,7 +40,7 @@ export const LoginForm = () => {
         user: data.user,
       });
 
-      const destination = data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Homepage;
+      const destination = data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Scan;
       navigate(destination);
     } catch (error: any) {
       const message =
@@ -73,6 +75,16 @@ export const LoginForm = () => {
               </p>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
+              {isResetSuccess && (
+                <div
+                  role="status"
+                  className="p-3 bg-surface-card border border-terminal-success rounded text-sm text-ink flex items-center gap-2"
+                >
+                  <span className="font-bold text-terminal-success">[✓]</span>
+                  <span>Đã đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.</span>
+                </div>
+              )}
+
               <FormikField
                 component={InputField}
                 name="login"

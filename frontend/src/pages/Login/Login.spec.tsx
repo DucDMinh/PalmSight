@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LoginPage from "./index";
 import authService from "@/services/authService";
 import { AuthenticationProvider } from "@/providers/AuthenticationProvider";
+import BaseUrl from "@/consts/baseUrl";
 
 const mockedNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -83,7 +84,7 @@ describe("LoginPage", () => {
         login: "userone",
         password: "Password123",
       });
-      expect(mockedNavigate).toHaveBeenCalledWith("/");
+      expect(mockedNavigate).toHaveBeenCalledWith(BaseUrl.Scan);
     });
   });
 });

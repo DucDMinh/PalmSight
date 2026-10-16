@@ -103,4 +103,92 @@ describe('AuthenticationProvider (In-Memory Token)', () => {
     expect(screen.getByTestId('user-name').textContent).toBe('null');
     expect(httpService.getInMemoryToken()).toBeNull();
   });
+
+  describe('parseJwt & email extraction', () => {
+    const makeMockJwt = (payload: Record<string, any>) => {
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+      const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+      return `${header}.${body}.mock-signature`;
+    };
+
+    it('should safely extract email from JWT payload when setting auth session without email', async () => {
+      const validJwt = makeMockJwt({
+        sub: '6710a1b2c3d4e5f6a7b8c9d0',
+        email: 'palmsight.user@example.com',
+        username: 'nguyenvana',
+      });
+
+      const EmailConsumer = () => {
+        const { user, setAuthSession } = useAuth();
+        return (
+          <div>
+            <div data-testid="user-email">{user?.email || 'no-email'}</div>
+            <button
+              onClick={() =>
+                setAuthSession({
+                  accessToken: validJwt,
+                  user: {
+                    id: '6710a1b2c3d4e5f6a7b8c9d0',
+                    displayName: 'Nguyễn Văn A',
+                    username: 'nguyenvana',
+                    avatarUrl: null,
+                    creditBalance: 3,
+                    referralCode: 'K7QX4MZP',
+                  },
+                })
+              }
+            >
+              Login With JWT
+            </button>
+          </div>
+        );
+      };
+
+      render(
+        <AuthenticationProvider skipInitialRefresh>
+          <EmailConsumer />
+        </AuthenticationProvider>
+      );
+
+      expect(screen.getByTestId('user-email').textContent).toBe('no-email');
+
+      await act(async () => {
+        screen.getByText('Login With JWT').click();
+      });
+
+      expect(screen.getByTestId('user-email').textContent).toBe('palmsight.user@example.com');
+    });
+
+    it('should initialize user with email extracted from initialAccessToken', () => {
+      const validJwt = makeMockJwt({
+        sub: '6710a1b2c3d4e5f6a7b8c9d0',
+        email: 'initial.jwt@example.com',
+        username: 'initialuser',
+      });
+
+      const EmailConsumer = () => {
+        const { user } = useAuth();
+        return <div data-testid="user-email">{user?.email || 'no-email'}</div>;
+      };
+
+      render(
+        <AuthenticationProvider
+          skipInitialRefresh
+          initialAccessToken={validJwt}
+          initialUser={{
+            id: '6710a1b2c3d4e5f6a7b8c9d0',
+            displayName: 'Initial User',
+            username: 'initialuser',
+            avatarUrl: null,
+            creditBalance: 1,
+            referralCode: 'INIT1234',
+          }}
+        >
+          <EmailConsumer />
+        </AuthenticationProvider>
+      );
+
+      expect(screen.getByTestId('user-email').textContent).toBe('initial.jwt@example.com');
+    });
+  });
 });

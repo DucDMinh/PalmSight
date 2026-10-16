@@ -69,6 +69,7 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
     };
     sessionModel = {
       create: vi.fn(),
+      deleteOne: vi.fn().mockResolvedValue({ acknowledged: true, deletedCount: 1 }),
     };
     referralModel = {
       countDocuments: vi.fn(),
@@ -253,6 +254,131 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
 
       expect(mockSession.abortTransaction).toHaveBeenCalled();
       expect(mockSession.endSession).toHaveBeenCalled();
+    });
+  });
+
+  describe('login unit logic (US-AUTH-002)', () => {
+    it('should login successfully and return authResponse and rawRefreshToken', async () => {
+      const passwordHash = await authService.hashPassword('Secret_123');
+      const mockUser: any = {
+        _id: '507f1f77bcf86cd799439011',
+        displayName: 'Test User',
+        username: 'testuser',
+        email: 'test@example.com',
+        passwordHash,
+        creditBalance: 3,
+        referralCode: 'AB3K7XYZ',
+        deletedAt: null,
+      };
+
+      userModel.findOne.mockResolvedValue(mockUser);
+
+      const result = await authService.login({
+        login: 'test@example.com',
+        password: 'Secret_123',
+      });
+
+      expect(result.authResponse).toBeDefined();
+      expect(result.authResponse.accessToken).toBeDefined();
+      expect(result.authResponse.isNewUser).toBe(false);
+      expect(result.authResponse.user.username).toBe('testuser');
+      expect(result.rawRefreshToken).toBeDefined();
+      expect(sessionModel.create).toHaveBeenCalled();
+    });
+
+    it('should revoke old session when currentRefreshToken is provided', async () => {
+      const passwordHash = await authService.hashPassword('Secret_123');
+      const mockUser: any = {
+        _id: '507f1f77bcf86cd799439011',
+        displayName: 'Test User',
+        username: 'testuser',
+        email: 'test@example.com',
+        passwordHash,
+        creditBalance: 3,
+        referralCode: 'AB3K7XYZ',
+        deletedAt: null,
+      };
+
+      userModel.findOne.mockResolvedValue(mockUser);
+
+      const oldRt = 'old_token_to_delete';
+      const expectedOldHash = crypto.createHash('sha256').update(oldRt).digest('hex');
+
+      await authService.login(
+        { login: 'testuser', password: 'Secret_123' },
+        oldRt,
+      );
+
+      expect(sessionModel.deleteOne).toHaveBeenCalledWith({ refreshTokenHash: expectedOldHash });
+    });
+
+    it('should throw EMAIL_NOT_VERIFIED when user does not exist but pending registration matches password', async () => {
+      const pendingHash = await authService.hashPassword('Pending_123');
+      userModel.findOne.mockResolvedValue(null);
+      pendingModel.findOne.mockResolvedValue({
+        email: 'pending@example.com',
+        username: 'pending_user',
+        passwordHash: pendingHash,
+      });
+
+      await expect(
+        authService.login({
+          login: 'pending@example.com',
+          password: 'Pending_123',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'EMAIL_NOT_VERIFIED',
+          message: 'Tài khoản chưa được xác minh email.',
+          details: { email: 'pending@example.com' },
+        },
+      });
+    });
+
+    it('should throw INVALID_CREDENTIALS when deletedAt is not null', async () => {
+      const passwordHash = await authService.hashPassword('Secret_123');
+      const mockDeletedUser: any = {
+        _id: '507f1f77bcf86cd799439011',
+        email: 'deleted@example.com',
+        passwordHash,
+        deletedAt: new Date(),
+      };
+      userModel.findOne.mockResolvedValue(mockDeletedUser);
+
+      await expect(
+        authService.login({
+          login: 'deleted@example.com',
+          password: 'Secret_123',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'INVALID_CREDENTIALS',
+          message: 'Thông tin đăng nhập không chính xác.',
+        },
+      });
+    });
+
+    it('should throw RATE_LIMITED after 5 failed consecutive attempts', async () => {
+      userModel.findOne.mockResolvedValue(null);
+      pendingModel.findOne.mockResolvedValue(null);
+
+      const loginDto = { login: 'brute@example.com', password: 'bad_password' };
+      const ip = '192.168.1.99';
+
+      for (let i = 0; i < 5; i++) {
+        await expect(authService.login(loginDto, undefined, ip)).rejects.toMatchObject({
+          response: {
+            code: 'INVALID_CREDENTIALS',
+          },
+        });
+      }
+
+      await expect(authService.login(loginDto, undefined, ip)).rejects.toMatchObject({
+        response: {
+          code: 'RATE_LIMITED',
+          message: 'Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút.',
+        },
+      });
     });
   });
 });

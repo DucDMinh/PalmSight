@@ -1,94 +1,203 @@
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { useState } from "react";
-import { useAuth } from "@/providers/AuthenticationProvider";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import BaseUrl from "@/consts/baseUrl";
-import ThemeToggle from "../ThemeToggle";
+import { useAuth } from "@/providers/AuthenticationProvider";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export default function Navbar() {
-  const { logout, user } = useAuth();
+const ASCII_WORDMARK = `███ ███ █   █ █ ███ ███ ███ █ █ ███
+█ █ █ █ █   ███ █    █  █   █ █  █
+███ ███ █   ███ ███  █  █ █ ███  █
+█   █ █ █   █ █   █  █  █ █ █ █  █
+█   █ █ ███ █ █ ███ ███ ███ █ █  █`;
+
+interface NavbarProps {
+  rightAction?: "login" | "user" | "none";
+}
+
+export default function Navbar({ rightAction }: NavbarProps) {
+  const { isLogged, user, logout } = useAuth();
+  const location = useLocation();
   const [openPopover, setPopover] = useState(false);
 
-  const displayName =
-    user?.displayName ||
-    (user?.firstname && user?.lastname
-      ? `${user.firstname} ${user.lastname}`
-      : user?.username || "Người dùng");
-  const displayEmail = user?.email || "";
-  const initial = displayName.charAt(0).toUpperCase() || "P";
+  const isLoginPage = location.pathname === BaseUrl.Login;
 
   return (
-    <nav className="flex w-full items-center justify-between p-2 md:justify-end">
-      <div className="flex items-center gap-2 md:hidden">
-        <span className="font-bold text-lg text-primary">PalmSight</span>
-      </div>
+    <header className="sticky top-0 left-0 right-0 z-50 min-h-[72px] py-3.5 sm:py-4 bg-canvas border-b border-hairline flex items-center w-full font-mono text-ink">
+      <div className="w-full max-w-[92%] 2xl:max-w-[1536px] mx-auto px-4 sm:px-6 flex items-center justify-between">
+        {/* Left: Wordmark & Navigation */}
+        <div className="flex items-center gap-4 sm:gap-8">
+          <Link
+            to={BaseUrl.Homepage}
+            aria-label="PALMSIGHT Home"
+            className="flex items-center select-none group py-0.5"
+          >
+            <pre
+              className="text-[7px] sm:text-[9px] md:text-[10px] leading-[1.05] font-bold text-ink font-mono whitespace-pre select-none tracking-normal"
+              aria-label="PALMSIGHT"
+            >
+              {ASCII_WORDMARK}
+            </pre>
+          </Link>
 
-      <div className="flex items-center gap-3">
-        <ThemeToggle />
-
-        <Popover open={openPopover} onOpenChange={setPopover}>
-          <PopoverTrigger asChild>
-            <div className="navbar__avatar flex items-center gap-2 rounded-md hover:cursor-pointer">
-              <Avatar>
-                <AvatarImage src="" />
-                <AvatarFallback>{initial}</AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block text-left">
-                <p className="mb-1 text-sm font-medium leading-none">
-                  {displayName}
-                </p>
-                {displayEmail && (
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {displayEmail}
-                  </p>
-                )}
-              </div>
-            </div>
-          </PopoverTrigger>
-          <PopoverContent className="mr-2 mt-2 flex max-w-[200px] flex-col p-2">
-            {[
-              {
-                label: "Đổi mật khẩu",
-                href: BaseUrl.ChangePassword,
-                function: () => {
-                  setPopover(false);
-                },
-              },
-              {
-                label: "Đăng xuất",
-                function: () => {
-                  setPopover(false);
-                  logout();
-                },
-              },
-            ].map((f) => {
-              if (f.href) {
-                return (
-                  <Link
-                    to={f.href}
-                    className="navbar__each__menu is-hover p-1 px-2 text-sm"
-                    key={f.label}
-                    onClick={f.function}
-                  >
-                    {f.label}
-                  </Link>
-                );
-              }
-
-              return (
-                <p
-                  onClick={f.function}
-                  className="navbar__each__menu is-hover p-1 px-2 text-sm cursor-pointer"
-                  key={f.label}
+          {isLogged ? (
+            <nav className="hidden sm:flex items-center gap-4 md:gap-6 text-sm">
+              <Link
+                to={BaseUrl.Scan}
+                className={`py-1.5 inline-flex items-center transition-colors border-b-2 ${
+                  location.pathname === BaseUrl.Scan
+                    ? "text-ink border-ash font-bold"
+                    : "text-mute hover:text-ink border-transparent"
+                }`}
+              >
+                Xem bói
+              </Link>
+              <Link
+                to={BaseUrl.Readings}
+                className={`py-1.5 inline-flex items-center transition-colors border-b-2 ${
+                  location.pathname === BaseUrl.Readings ||
+                  location.pathname.startsWith("/readings")
+                    ? "text-ink border-ash font-bold"
+                    : "text-mute hover:text-ink border-transparent"
+                }`}
+              >
+                Lịch sử
+              </Link>
+              <Link
+                to={BaseUrl.Account}
+                className={`py-1.5 inline-flex items-center transition-colors border-b-2 ${
+                  location.pathname === BaseUrl.Account ||
+                  location.pathname === BaseUrl.ChangePassword
+                    ? "text-ink border-ash font-bold"
+                    : "text-mute hover:text-ink border-transparent"
+                }`}
+              >
+                Tài khoản
+              </Link>
+            </nav>
+          ) : (
+            location.pathname === BaseUrl.Homepage && (
+              <nav className="hidden sm:flex items-center gap-6 text-[16px] font-[500] text-[#201d1d]">
+                <a
+                  href="#cach-hoat-dong"
+                  className="hover:underline text-[#201d1d] no-underline py-1 transition-colors"
                 >
-                  {f.label}
-                </p>
-              );
-            })}
-          </PopoverContent>
-        </Popover>
+                  Cách hoạt động
+                </a>
+                <a
+                  href="#truong-phai"
+                  className="hover:underline text-[#201d1d] no-underline py-1 transition-colors"
+                >
+                  Trường phái
+                </a>
+                <a
+                  href="#hoi-dap"
+                  className="hover:underline text-[#201d1d] no-underline py-1 transition-colors"
+                >
+                  Hỏi đáp
+                </a>
+              </nav>
+            )
+          )}
+        </div>
+
+        {/* Right Section */}
+        {rightAction !== "none" && (
+          <div className="flex items-center gap-3">
+            {isLogged ? (
+              <>
+                <Link
+                  to={BaseUrl.Wallet}
+                  data-testid="credit-balance-badge"
+                  className="text-xs font-mono font-bold px-2 py-0.5 rounded border border-hairline bg-surface-card text-ink hover:opacity-80 transition-opacity"
+                >
+                  [{user?.creditBalance ?? 0} CREDITS]
+                </Link>
+
+                <Popover open={openPopover} onOpenChange={setPopover}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="User menu"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-ink text-canvas flex items-center justify-center font-mono text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer select-none"
+                    >
+                      {(user?.displayName || user?.username || "P")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    align="end"
+                    className="w-48 p-1 bg-canvas border border-hairline shadow-md text-ink font-mono text-sm rounded-none"
+                  >
+                    <div className="px-3 py-2 border-b border-hairline text-xs text-mute truncate">
+                      {user?.displayName || user?.username || "Người dùng"}
+                    </div>
+                    <Link
+                      to={BaseUrl.Account}
+                      onClick={() => setPopover(false)}
+                      className="flex items-center w-full px-3 py-2 text-sm hover:bg-surface-card transition-colors text-ink"
+                    >
+                      Tài khoản
+                    </Link>
+                    <Link
+                      to={BaseUrl.Wallet}
+                      onClick={() => setPopover(false)}
+                      className="flex items-center w-full px-3 py-2 text-sm hover:bg-surface-card transition-colors text-ink"
+                    >
+                      Ví credits
+                    </Link>
+                    <Link
+                      to={BaseUrl.Referral}
+                      onClick={() => setPopover(false)}
+                      className="flex items-center w-full px-3 py-2 text-sm hover:bg-surface-card transition-colors text-ink"
+                    >
+                      Giới thiệu bạn bè
+                    </Link>
+                    <Link
+                      to={BaseUrl.ChangePassword}
+                      onClick={() => setPopover(false)}
+                      className="flex items-center w-full px-3 py-2 text-sm hover:bg-surface-card transition-colors text-ink"
+                    >
+                      Đổi mật khẩu
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPopover(false);
+                        logout();
+                      }}
+                      className="flex items-center w-full px-3 py-2 text-left text-sm hover:bg-surface-card transition-colors text-ink cursor-pointer"
+                    >
+                      Đăng xuất
+                    </button>
+                  </PopoverContent>
+                </Popover>
+              </>
+            ) : isLoginPage ? (
+              <Link
+                to={BaseUrl.Register}
+                className="text-base font-medium text-ink underline underline-offset-4 hover:text-charcoal transition-colors"
+              >
+                Đăng ký
+              </Link>
+            ) : location.pathname === BaseUrl.Homepage ? (
+              <Link
+                to={BaseUrl.Login}
+                className="btn-primary"
+              >
+                Bắt đầu
+              </Link>
+            ) : (
+              <Link
+                to={BaseUrl.Login}
+                className="text-base font-medium text-ink underline underline-offset-4 hover:text-charcoal transition-colors"
+              >
+                Đăng nhập
+              </Link>
+            )}
+          </div>
+        )}
       </div>
-    </nav>
+    </header>
   );
 }

@@ -6,8 +6,18 @@ const BaseUrl = {
   VerifyEmail: "/verify-email",
   ReferralEnter: "/referral/enter",
   Scan: "/scan",
+  Readings: "/readings",
+  ReadingDetail: "/readings/:id",
   ForgotPassword: "/forgot-password",
+  ResetPassword: "/reset-password",
+  Account: "/account",
+  Wallet: "/wallet",
+  Referral: "/referral",
+  ReferralRedirect: "/r/:code",
   ChangePassword: "/change-password",
+  DataDeletion: "/data-deletion",
+  Terms: "/terms",
+  Privacy: "/privacy",
   Logout: "/logout",
 };
 

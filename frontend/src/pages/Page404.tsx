@@ -1,28 +1,21 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import BaseUrl from "@/consts/baseUrl";
 
 const Page404 = () => {
-  //! State
-
-  //! Function
-
-  //! Render
   return (
-    <div className="flex h-[100vh] w-[100vw] items-center justify-center">
-      <div className="m-auto flex h-full w-full flex-col items-center justify-center gap-2">
-        <h1 className="text-[7rem] font-bold leading-tight">404</h1>
-        <span className="font-medium">Oops! Page Not Found!</span>
-        <p className="text-center text-muted-foreground">
-          It seems like the page you're looking for <br />
-          does not exist or might have been removed.
-        </p>
-        <div className="mt-6 flex gap-4">
-          <a href="/">
-            <button className="[&_svg]:size-4 inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0">
-              Back to Home
-            </button>
-          </a>
-        </div>
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center p-4 text-center font-mono text-ink">
+      <h1 className="text-6xl sm:text-7xl font-bold leading-tight mb-2">404</h1>
+      <span className="font-bold text-lg mb-2">Oops! Không tìm thấy trang</span>
+      <p className="text-center text-mute max-w-md text-sm mb-6">
+        Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.
+      </p>
+      <Link
+        to={BaseUrl.Homepage}
+        className="inline-flex h-9 items-center justify-center rounded border border-hairline bg-surface-dark px-4 py-2 text-sm font-medium text-on-dark transition-opacity hover:opacity-90"
+      >
+        Về trang chủ
+      </Link>
     </div>
   );
 };
