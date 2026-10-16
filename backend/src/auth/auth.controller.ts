@@ -24,8 +24,13 @@ import {
   GoogleAuthRequestDto,
   googleAuthSchema,
   RefreshTokenResponseDto,
+  ForgotPasswordRequestDto,
+  ResetPasswordRequestDto,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '@palmsight/shared';
 import { AuthService } from './auth.service';
+import { PasswordService } from './password.service';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { OriginGuard } from './guards/origin.guard';
 import { GoogleAuthVerifier } from './google-auth.verifier';
@@ -34,6 +39,7 @@ import { GoogleAuthVerifier } from './google-auth.verifier';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly passwordService: PasswordService,
     private readonly configService: ConfigService,
     private readonly googleAuthVerifier: GoogleAuthVerifier,
   ) {}
@@ -117,6 +123,27 @@ export class AuthController {
 
     this.setRefreshCookie(res, rawRefreshToken);
     return authResponse;
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @UseGuards(AuthRateLimitGuard)
+  async forgotPassword(
+    @Body() body: ForgotPasswordRequestDto,
+    @Req() req: Request & { skipEmailDispatch?: boolean },
+  ): Promise<void> {
+    const validated = await forgotPasswordSchema.validate(body, { abortEarly: false });
+    if (!req.skipEmailDispatch) {
+      await this.passwordService.forgotPassword(validated);
+    }
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AuthRateLimitGuard)
+  async resetPassword(@Body() body: ResetPasswordRequestDto): Promise<void> {
+    const validated = await resetPasswordSchema.validate(body, { abortEarly: false });
+    await this.passwordService.resetPassword(validated);
   }
 
   @Post('google')

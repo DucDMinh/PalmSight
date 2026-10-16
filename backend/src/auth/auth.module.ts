@@ -14,6 +14,7 @@ import {
   DeletedIdentity,
   DeletedIdentitySchema,
 } from '../schemas/deleted-identity.schema';
+import { PasswordReset, PasswordResetSchema } from '../schemas/password-reset.schema';
 
 import { MailModule } from '../mail/mail.module';
 import { CreditsModule } from '../credits/credits.module';
@@ -22,6 +23,7 @@ import { AuthController } from './auth.controller';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { GoogleAuthVerifier } from './google-auth.verifier';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { PasswordService } from './password.service';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
       { name: Session.name, schema: SessionSchema },
       { name: Referral.name, schema: ReferralSchema },
       { name: DeletedIdentity.name, schema: DeletedIdentitySchema },
+      { name: PasswordReset.name, schema: PasswordResetSchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],
@@ -45,8 +48,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     CreditsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRateLimitGuard, GoogleAuthVerifier, JwtAuthGuard],
+  providers: [AuthService, PasswordService, AuthRateLimitGuard, GoogleAuthVerifier, JwtAuthGuard],
   // JwtModule + models are re-exported so modules using JwtAuthGuard can resolve its dependencies
-  exports: [AuthService, JwtAuthGuard, JwtModule, MongooseModule],
+  exports: [AuthService, PasswordService, JwtAuthGuard, JwtModule, MongooseModule],
 })
 export class AuthModule {}

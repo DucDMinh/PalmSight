@@ -2,6 +2,7 @@ import { Injectable, Logger, BadGatewayException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { renderVerifyEmailHtml, VerifyEmailTemplateParams } from './templates/verify-email.html';
+import { renderResetPasswordHtml } from './templates/reset-password.html';
 
 @Injectable()
 export class MailService {
@@ -52,6 +53,26 @@ export class MailService {
         code: 'EMAIL_SEND_FAILED',
         message: 'Không thể gửi email xác thực. Vui lòng kiểm tra lại dịch vụ gửi thư hoặc thử lại sau.',
       });
+    }
+  }
+
+  async sendPasswordResetEmail(to: string, displayName: string, rawToken: string): Promise<void> {
+    const baseUrl = this.configService.get<string>('PUBLIC_BASE_URL', 'http://localhost:5173');
+    const from = this.configService.get<string>('MAIL_FROM', 'PalmSight <no-reply@palmsight.local>');
+    const ttlMinutes = Number(this.configService.get('PASSWORD_RESET_TTL_MINUTES', 60));
+    const resetUrl = `${baseUrl.replace(/\/+$/, '')}/reset-password?token=${encodeURIComponent(rawToken)}`;
+
+    try {
+      await this.transporter.sendMail({
+        from,
+        to,
+        subject: '[PalmSight] Đặt lại mật khẩu',
+        html: renderResetPasswordHtml({ displayName, resetUrl, ttlMinutes }),
+      });
+      this.logger.log(`Password reset email sent to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${to}: ${(error as Error).message}`);
+      throw error;
     }
   }
 }

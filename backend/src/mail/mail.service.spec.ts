@@ -104,4 +104,34 @@ describe('MailService (TC-007)', () => {
       });
     });
   });
+
+  describe('sendPasswordResetEmail', () => {
+    it('sends the reset link with the 1-hour notice and an escaped display name', async () => {
+      const sendMailMock = vi.fn().mockResolvedValue({ messageId: 'msg-456' });
+      (mailService as unknown as { transporter: { sendMail: typeof sendMailMock } }).transporter = {
+        sendMail: sendMailMock,
+      };
+
+      await mailService.sendPasswordResetEmail('vana@example.com', '<b>Văn A</b>', 'RESET/TOKEN+1');
+
+      const callArgs = sendMailMock.mock.calls[0][0];
+      expect(callArgs.to).toBe('vana@example.com');
+      expect(callArgs.subject).toBe('[PalmSight] Đặt lại mật khẩu');
+      expect(callArgs.html).toContain('href="https://palmsight.app/reset-password?token=RESET%2FTOKEN%2B1"');
+      expect(callArgs.html).toContain('Chào &lt;b&gt;Văn A&lt;/b&gt;,');
+      expect(callArgs.html).toContain('1 giờ và chỉ dùng được một lần');
+      expect(callArgs.html).toContain('Nếu bạn không yêu cầu, hãy bỏ qua email này.');
+    });
+
+    it('rethrows when the transporter fails so the caller can log it', async () => {
+      const sendMailMock = vi.fn().mockRejectedValue(new Error('Connection refused'));
+      (mailService as unknown as { transporter: { sendMail: typeof sendMailMock } }).transporter = {
+        sendMail: sendMailMock,
+      };
+
+      await expect(
+        mailService.sendPasswordResetEmail('vana@example.com', 'Văn A', 'TOKEN'),
+      ).rejects.toThrow('Connection refused');
+    });
+  });
 });

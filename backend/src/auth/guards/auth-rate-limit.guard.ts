@@ -66,7 +66,7 @@ export class AuthRateLimitGuard implements CanActivate {
       );
     }
 
-    // 2. Check Email rate limit (3 emails/hour) for register or resend-verification
+    // 2. Check Email rate limit (3 emails/hour) for register, resend-verification or forgot-password
     const email = req.body?.email ? String(req.body.email).trim().toLowerCase() : null;
     if (email) {
       const emailRecord = this.emailRequests.get(email) || { timestamps: [] };
@@ -81,7 +81,7 @@ export class AuthRateLimitGuard implements CanActivate {
             },
             HttpStatus.TOO_MANY_REQUESTS,
           );
-        } else if (req.path.includes('/resend-verification')) {
+        } else if (req.path.includes('/resend-verification') || req.path.includes('/forgot-password')) {
           // Anti-enumeration / silent bypass: set flag to skip email dispatch, but allow 202
           (req as unknown as { skipEmailDispatch?: boolean }).skipEmailDispatch = true;
           return true;
