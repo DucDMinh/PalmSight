@@ -20,15 +20,19 @@ import {
   AuthResponseDto,
   registerSchema,
   loginSchema,
+  GoogleAuthRequestDto,
+  googleAuthSchema,
 } from '@palmsight/shared';
 import { AuthService } from './auth.service';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
+import { GoogleAuthVerifier } from './google-auth.verifier';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly googleAuthVerifier: GoogleAuthVerifier,
   ) {}
 
   @Post('register')
@@ -82,17 +86,7 @@ export class AuthController {
       body.token.trim(),
     );
 
-    const isProd = this.configService.get('NODE_ENV') === 'production';
-    const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
-
-    res.cookie('rt', rawRefreshToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/api/v1/auth',
-      maxAge: refreshTtlDays * 24 * 60 * 60 * 1000,
-    });
-
+    this.setRefreshCookie(res, rawRefreshToken);
     return authResponse;
   }
 
@@ -118,6 +112,31 @@ export class AuthController {
       clientIp,
     );
 
+    this.setRefreshCookie(res, rawRefreshToken);
+    return authResponse;
+  }
+
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthRateLimitGuard)
+  async google(
+    @Body() body: GoogleAuthRequestDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    const { idToken } = await googleAuthSchema.validate(body, { abortEarly: false });
+    const profile = await this.googleAuthVerifier.verify(idToken);
+
+    const { authResponse, rawRefreshToken } = await this.authService.googleLogin(
+      profile,
+      req.cookies?.rt,
+    );
+
+    this.setRefreshCookie(res, rawRefreshToken);
+    return authResponse;
+  }
+
+  private setRefreshCookie(res: Response, rawRefreshToken: string): void {
     const isProd = this.configService.get('NODE_ENV') === 'production';
     const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
 
@@ -128,7 +147,5 @@ export class AuthController {
       path: '/api/v1/auth',
       maxAge: refreshTtlDays * 24 * 60 * 60 * 1000,
     });
-
-    return authResponse;
   }
 }

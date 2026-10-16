@@ -11,6 +11,7 @@ import { AuthModule } from '../src/auth/auth.module';
 import { CreditsModule } from '../src/credits/credits.module';
 import { HealthModule } from '../src/health/health.module';
 import { MailService } from '../src/mail/mail.service';
+import { GoogleAuthVerifier } from '../src/auth/google-auth.verifier';
 
 export interface TestAppInstance {
   app: INestApplication;
@@ -23,7 +24,11 @@ export interface TestAppInstance {
   };
 }
 
-export async function createTestApp(): Promise<TestAppInstance> {
+export interface TestAppOptions {
+  googleVerifier?: Pick<GoogleAuthVerifier, 'verify'>;
+}
+
+export async function createTestApp(options: TestAppOptions = {}): Promise<TestAppInstance> {
   const replSet = await MongoMemoryReplSet.create({
     replSet: { count: 1, storageEngine: 'wiredTiger' },
   });
@@ -37,7 +42,7 @@ export async function createTestApp(): Promise<TestAppInstance> {
     renderVerificationEmailTemplate: (_params: any) => 'mock-html',
   };
 
-  const moduleRef: TestingModule = await Test.createTestingModule({
+  let moduleBuilder = Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
         isGlobal: true,
@@ -54,6 +59,7 @@ export async function createTestApp(): Promise<TestAppInstance> {
             REFEREE_REWARD_CREDITS: 1,
             REFERRAL_DAILY_CAP: 10,
             PUBLIC_BASE_URL: 'http://localhost:5173',
+            GOOGLE_CLIENT_ID: 'test-google-client-id.apps.googleusercontent.com',
             NODE_ENV: 'test',
           }),
         ],
@@ -71,8 +77,13 @@ export async function createTestApp(): Promise<TestAppInstance> {
     ],
   })
     .overrideProvider(MailService)
-    .useValue(mailServiceMock)
-    .compile();
+    .useValue(mailServiceMock);
+
+  if (options.googleVerifier) {
+    moduleBuilder = moduleBuilder.overrideProvider(GoogleAuthVerifier).useValue(options.googleVerifier);
+  }
+
+  const moduleRef: TestingModule = await moduleBuilder.compile();
 
   const app = moduleRef.createNestApplication();
   app.use(cookieParser());

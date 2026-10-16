@@ -10,6 +10,7 @@ export const AUTH_REGISTER_URL = `${API_V1_URL}/auth/register`;
 export const AUTH_RESEND_VERIFICATION_URL = `${API_V1_URL}/auth/resend-verification`;
 export const AUTH_VERIFY_EMAIL_URL = `${API_V1_URL}/auth/verify-email`;
 export const AUTH_LOGIN_URL = `${API_V1_URL}/auth/login`;
+export const AUTH_GOOGLE_URL = `${API_V1_URL}/auth/google`;
 export const AUTH_FORGOT_PASSWORD_URL = `${API_V1_URL}/auth/forgot-password`;
 export const AUTH_RESET_PASSWORD_URL = `${API_V1_URL}/auth/reset-password`;
 export const AUTH_REFRESH_URL = `${API_V1_URL}/auth/refresh`;
