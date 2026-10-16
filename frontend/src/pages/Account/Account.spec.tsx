@@ -53,11 +53,12 @@ describe("Account Page", () => {
     },
   };
 
-  const renderComponent = (userOverride = {}) => {
+  // Resolves once GET /me has answered and the sections are on screen
+  const renderComponent = async (userOverride = {}) => {
     const user = { ...mockUserBase, ...userOverride };
     vi.spyOn(httpService, "get").mockResolvedValue({ data: user } as any);
 
-    return render(
+    const view = render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={["/account"]}>
           <AuthenticationProvider skipInitialRefresh initialUser={user}>
@@ -66,11 +67,13 @@ describe("Account Page", () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
+    await screen.findByTestId("account-id-display");
+    return view;
   };
 
   describe("Sub-menu navigation & anchors", () => {
     it("should render 5 internal anchor links with correct href attributes", async () => {
-      renderComponent();
+      await renderComponent();
 
       const navHoSo = screen.getByTestId("sub-nav-ho-so");
       const navBaoMat = screen.getByTestId("sub-nav-bao-mat");
@@ -89,7 +92,7 @@ describe("Account Page", () => {
     });
 
     it("should smoothly scroll into view and switch active state on clicking a sub-menu item", async () => {
-      renderComponent();
+      await renderComponent();
 
       const navNhapMa = screen.getByTestId("sub-nav-nhap-ma");
       fireEvent.click(navNhapMa);
@@ -108,7 +111,7 @@ describe("Account Page", () => {
 
   describe("Hồ sơ Section (#ho-so)", () => {
     it("should render profile info, username, email, and providers", async () => {
-      renderComponent();
+      await renderComponent();
 
       await waitFor(() => {
         expect(screen.getByText("Nguyễn Văn A")).toBeInTheDocument();
@@ -122,7 +125,7 @@ describe("Account Page", () => {
     });
 
     it("should display Account ID (MongoDB hex 24 chars) with copy button", async () => {
-      renderComponent();
+      await renderComponent();
 
       const idDisplay = screen.getByTestId("account-id-display");
       expect(idDisplay).toHaveTextContent("6710a1b2c3d4e5f6a7b8c9d0");
@@ -137,7 +140,7 @@ describe("Account Page", () => {
     });
 
     it("should have link to /data-deletion and NO in-app self-delete button per ADR-0009", async () => {
-      renderComponent();
+      await renderComponent();
 
       const dataDeletionLinks = screen.getAllByRole("link", {
         name: /xoá dữ liệu/i,
@@ -153,7 +156,7 @@ describe("Account Page", () => {
     it("should call logout when clicking 'Đăng xuất'", async () => {
       const logoutSpy = vi.spyOn(authService, "postLogout").mockResolvedValue();
 
-      renderComponent();
+      await renderComponent();
 
       const logoutBtn = screen.getByRole("button", { name: "Đăng xuất" });
       fireEvent.click(logoutBtn);
@@ -164,23 +167,55 @@ describe("Account Page", () => {
 
   describe("Bảo mật Section (#bao-mat)", () => {
     it("should display 'Đổi mật khẩu' button linking to /change-password when hasPassword is true", async () => {
-      renderComponent({ hasPassword: true });
+      await renderComponent({ hasPassword: true });
 
       const changePwLink = screen.getByRole("link", { name: "Đổi mật khẩu" });
       expect(changePwLink).toHaveAttribute("href", "/change-password");
     });
 
-    it("should display 'Đặt mật khẩu' button linking to /forgot-password when hasPassword is false", async () => {
-      renderComponent({ hasPassword: false });
+    it("should email a set-password link to a user without password when clicking 'Đặt mật khẩu'", async () => {
+      const forgotSpy = vi.spyOn(authService, "postForgotPassword").mockResolvedValue(undefined);
+      await renderComponent({ hasPassword: false, email: "google.only@example.com" });
 
-      const setPwLink = screen.getByRole("link", { name: "Đặt mật khẩu" });
-      expect(setPwLink).toHaveAttribute("href", "/forgot-password");
+      expect(screen.queryByRole("link", { name: "Đổi mật khẩu" })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Đặt mật khẩu" }));
+
+      await waitFor(() => {
+        expect(forgotSpy).toHaveBeenCalledWith({ email: "google.only@example.com" });
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "Đã gửi link đặt mật khẩu tới google.only@example.com"
+        );
+      });
+      expect(screen.queryByRole("button", { name: "Đặt mật khẩu" })).not.toBeInTheDocument();
+    });
+
+    it("should show the server message when sending the set-password link fails", async () => {
+      vi.spyOn(authService, "postForgotPassword").mockRejectedValue({
+        response: {
+          status: 429,
+          data: { error: { code: "RATE_LIMITED", message: "Bạn đã gửi quá số lần cho phép." } },
+        },
+      });
+      await renderComponent({ hasPassword: false });
+
+      fireEvent.click(screen.getByRole("button", { name: "Đặt mật khẩu" }));
+
+      expect(await screen.findByText("Bạn đã gửi quá số lần cho phép.")).toBeInTheDocument();
+    });
+
+    it("should explain that a password cannot be set when the account has no email", async () => {
+      await renderComponent({ hasPassword: false, email: null, providers: [AuthProvider.FACEBOOK] });
+
+      expect(screen.queryByRole("button", { name: "Đặt mật khẩu" })).not.toBeInTheDocument();
+      expect(
+        screen.getByText("Tài khoản chưa có email nên chưa thể đặt mật khẩu.")
+      ).toBeInTheDocument();
     });
   });
 
   describe("Nhập mã giới thiệu Section (#nhap-ma)", () => {
     it("should render enter referral form when canEnterCode is true", async () => {
-      renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
+      await renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
 
       expect(screen.getByTestId("enter-referral-form")).toBeInTheDocument();
       expect(
@@ -202,7 +237,7 @@ describe("Account Page", () => {
         },
       } as any);
 
-      renderComponent({
+      await renderComponent({
         creditBalance: 4,
         referral: { canEnterCode: true, enteredCode: null },
       });
@@ -247,7 +282,7 @@ describe("Account Page", () => {
         },
       });
 
-      renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
+      await renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
 
       const input = screen.getByPlaceholderText("K7QX4MZP");
       await user.type(input, "K7QX4MZP");
@@ -275,7 +310,7 @@ describe("Account Page", () => {
         },
       });
 
-      renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
+      await renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
 
       const input = screen.getByPlaceholderText("K7QX4MZP");
       await user.type(input, "ZZZZZZZZ");
@@ -303,7 +338,7 @@ describe("Account Page", () => {
         },
       });
 
-      renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
+      await renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
 
       const input = screen.getByPlaceholderText("K7QX4MZP");
       await user.type(input, "K7QX4MZP");
@@ -331,7 +366,7 @@ describe("Account Page", () => {
         },
       });
 
-      renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
+      await renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
 
       const input = screen.getByPlaceholderText("K7QX4MZP");
       await user.type(input, "K7QX4MZP");
@@ -359,7 +394,7 @@ describe("Account Page", () => {
         },
       });
 
-      renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
+      await renderComponent({ referral: { canEnterCode: true, enteredCode: null } });
 
       const input = screen.getByPlaceholderText("K7QX4MZP");
       await user.type(input, "K7QX4MZP");
@@ -375,7 +410,7 @@ describe("Account Page", () => {
     });
 
     it("should display entered code banner when referral.enteredCode already exists", async () => {
-      renderComponent({
+      await renderComponent({
         referral: { canEnterCode: false, enteredCode: "K7QX4MZP" },
       });
 
@@ -388,7 +423,7 @@ describe("Account Page", () => {
     });
 
     it("should display not eligible notice when canEnterCode is false and no enteredCode", async () => {
-      renderComponent({
+      await renderComponent({
         referral: { canEnterCode: false, enteredCode: null },
       });
 
@@ -403,7 +438,7 @@ describe("Account Page", () => {
 
   describe("Ví credits Section (#vi-credits)", () => {
     it("should display credit balance, expiration note, and link to /wallet", async () => {
-      renderComponent({ creditBalance: 7 });
+      await renderComponent({ creditBalance: 7 });
 
       const creditsDisplay = screen.getByTestId("account-credits-display");
       expect(creditsDisplay).toHaveTextContent("7 credits");
@@ -421,7 +456,7 @@ describe("Account Page", () => {
 
   describe("Giới thiệu Section (#gioi-thieu)", () => {
     it("should display referral code with copy button, share link, and sample message", async () => {
-      renderComponent({ referralCode: "K7QX4MZP" });
+      await renderComponent({ referralCode: "K7QX4MZP" });
 
       const codeDisplay = screen.getByTestId("referral-code-display");
       expect(codeDisplay).toHaveTextContent("K7QX4MZP");
@@ -459,74 +494,73 @@ describe("Account Page", () => {
     });
   });
 
-  describe("Fallback MeResponseDto synthesis (GET /api/v1/me 404 / missing)", () => {
-    const makeMockJwt = (payload: Record<string, any>) => {
-      const header = Buffer.from(
-        JSON.stringify({ alg: "HS256", typ: "JWT" })
-      ).toString("base64url");
-      const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-      return `${header}.${body}.mock-signature`;
-    };
-
-    it("should synthesize email from JWT, hasPassword true, and canEnterCode true when /api/v1/me fails", async () => {
-      vi.spyOn(httpService, "get").mockRejectedValue(new Error("404 Not Found"));
-
-      const token = makeMockJwt({
-        sub: "6710a1b2c3d4e5f6a7b8c9d0",
-        email: "recovered.email@palmsight.app",
-        username: "nguyenvana",
-      });
-
-      // User without email and without hasPassword / referral, simulating backend login UserSummaryDto
-      const minimalUser = {
-        id: "6710a1b2c3d4e5f6a7b8c9d0",
-        displayName: "Nguyễn Văn A",
-        username: "nguyenvana",
-        email: undefined as any,
-        avatarUrl: null,
-        creditBalance: 3,
-        referralCode: "K7QX4MZP",
-        hasPassword: undefined as any,
-        referral: undefined as any,
-        providers: [],
-      };
+  describe("GET /me data", () => {
+    it("should show the real /me profile instead of the summary kept from login", async () => {
+      // Login responses carry no hasPassword: the page must not guess it
+      const loginSummary = { ...mockUserBase, hasPassword: undefined as any, referral: undefined as any };
+      vi.spyOn(httpService, "get").mockResolvedValue({
+        data: { ...mockUserBase, hasPassword: false },
+      } as any);
 
       render(
         <QueryClientProvider client={queryClient}>
           <MemoryRouter initialEntries={["/account"]}>
-            <AuthenticationProvider
-              skipInitialRefresh
-              initialUser={minimalUser}
-              initialAccessToken={token}
-            >
+            <AuthenticationProvider skipInitialRefresh initialUser={loginSummary}>
               <Account />
             </AuthenticationProvider>
           </MemoryRouter>
         </QueryClientProvider>
       );
 
-      // Verify email recovered from JWT with [+] Đã xác thực
-      await waitFor(() => {
-        expect(
-          screen.getByText("recovered.email@palmsight.app")
-        ).toBeInTheDocument();
-        expect(screen.getByText("[+] Đã xác thực")).toBeInTheDocument();
-      });
+      expect(await screen.findByRole("button", { name: "Đặt mật khẩu" })).toBeInTheDocument();
+      expect(httpService.get).toHaveBeenCalledWith("/api/v1/me");
+    });
 
-      // Verify "Đổi mật khẩu" button is shown (hasPassword defaults to true)
-      expect(
-        screen.getByRole("link", { name: "Đổi mật khẩu" })
-      ).toBeInTheDocument();
+    it("should not call /me while there is no user in context", async () => {
+      const getSpy = vi.spyOn(httpService, "get");
 
-      // Verify enter referral code form is displayed (canEnterCode defaults to true)
-      expect(screen.getByTestId("enter-referral-form")).toBeInTheDocument();
-      expect(screen.getByPlaceholderText("K7QX4MZP")).toBeInTheDocument();
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/account"]}>
+            <AuthenticationProvider skipInitialRefresh initialUser={null}>
+              <Account />
+            </AuthenticationProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      // No user in context means nothing to fetch for yet
+      expect(screen.getByText("Đang tải thông tin tài khoản...")).toBeInTheDocument();
+      expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    it("should show an error with a retry button instead of made-up data when /me fails", async () => {
+      const getSpy = vi
+        .spyOn(httpService, "get")
+        .mockRejectedValueOnce(new Error("Network Error"))
+        .mockResolvedValueOnce({ data: mockUserBase } as any);
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/account"]}>
+            <AuthenticationProvider skipInitialRefresh initialUser={mockUserBase}>
+              <Account />
+            </AuthenticationProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      expect(await screen.findByText("Không tải được thông tin tài khoản.")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Thử lại" }));
+
+      expect(await screen.findByTestId("account-id-display")).toHaveTextContent(mockUserBase.id);
+      expect(getSpy).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("Sub-menu navigation & bottom scroll interaction", () => {
     it("should maintain active state when clicking 'Giới thiệu' and ignore scroll overwrite during smooth scroll", async () => {
-      renderComponent();
+      await renderComponent();
 
       const navGioiThieu = screen.getByTestId("sub-nav-gioi-thieu");
       fireEvent.click(navGioiThieu);
@@ -542,7 +576,7 @@ describe("Account Page", () => {
     });
 
     it("should activate 'Giới thiệu' when scrolled to the bottom of the page", async () => {
-      renderComponent();
+      await renderComponent();
 
       // Simulate reaching bottom
       Object.defineProperty(window, "innerHeight", {

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import useChangePasswordMutation from "../hooks/useChangePasswordMutation";
 import type { ChangePasswordFormValues } from "../types";
+import type { ApiErrorPayload } from "@/services/authService";
 
 export const changePasswordValidationSchema = changePasswordSchema.shape({
   confirmPassword: yup
@@ -29,8 +30,9 @@ export const ChangePasswordForm = () => {
 
   const onSubmit = async (
     values: ChangePasswordFormValues,
-    { setSubmitting, resetForm }: FormikHelpers<ChangePasswordFormValues>
+    { setSubmitting, resetForm, setErrors }: FormikHelpers<ChangePasswordFormValues>
   ) => {
+    setSuccess(false);
     try {
       await changePasswordMutation.mutateAsync({
         currentPassword: values.currentPassword,
@@ -42,13 +44,23 @@ export const ChangePasswordForm = () => {
         description: "Đổi mật khẩu thành công.",
       });
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        description:
-          error?.response?.data?.error?.message ||
-          error?.message ||
-          "Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại.",
-      });
+      const apiError = error?.response?.data?.error as ApiErrorPayload | undefined;
+
+      if (apiError?.code === "CURRENT_PASSWORD_INCORRECT") {
+        setErrors({ currentPassword: "Mật khẩu hiện tại không đúng" });
+      } else if (apiError?.code === "VALIDATION_ERROR" && apiError.details?.fields?.length) {
+        setErrors(
+          Object.fromEntries(apiError.details.fields.map((f) => [f.field, f.message]))
+        );
+      } else {
+        toast({
+          variant: "destructive",
+          description:
+            apiError?.message ||
+            error?.message ||
+            "Không thể đổi mật khẩu lúc này. Vui lòng thử lại sau.",
+        });
+      }
     } finally {
       setSubmitting(false);
     }
