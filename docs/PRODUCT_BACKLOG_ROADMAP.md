@@ -237,7 +237,7 @@ schema-version: "1.2"
 
 > **Mục tiêu Sprint:** Người dùng có thể chọn trường phái (Phương Tây, Phương Đông, Ấn Độ), chọn mục xem cụ thể hoặc bói toàn bộ, chụp/tải ảnh lòng bàn tay, hệ thống trừ 1 credit an toàn, gọi AI Vision đọc chỉ tay và hiển thị kết quả phân tích chuẩn xác, nếu lỗi AI thì tự động hoàn credit.
 
-- [ ] **US-SCAN-001**: Chọn trường phái & cấu hình mục muốn bói
+- [x] **US-SCAN-001**: Chọn trường phái & cấu hình mục muốn bói
 
   - **Slug:** `scan-school-and-topic-picker`
   - **Effort:** S
@@ -247,17 +247,17 @@ schema-version: "1.2"
   - **Blocks:** `US-SCAN-002`
   - **Mô tả:** Người dùng có thể chọn 1 trong 3 trường phái bói (Phương Tây, Phương Đông, Ấn Độ), tích chọn các mục muốn bói riêng lẻ hoặc chọn bói toàn bộ, đồng thời chọn tay xem (trái/phải) với chi phí cố định là 1 credit.
   - **Acceptance Criteria (AC):**
-    - [ ] Hiển thị 3 thẻ trường phái theo định nghĩa chuẩn từ `READING_SCHOOLS` trong `@palmsight/shared`:
+    - [x] Hiển thị 3 thẻ trường phái theo định nghĩa chuẩn từ `READING_SCHOOLS` trong `@palmsight/shared`:
       - `WESTERN` (Chỉ tay phương Tây: Dáng tay 4 nguyên tố, các đường chỉ chính, 7 gò).
       - `EASTERN` (Chỉ tay phương Đông: Dáng tay ngũ hành, Thiên - Nhân - Địa văn, Cung bát quái, ngón tay).
       - `VEDIC` (Chỉ tay Ấn Độ: Gò 9 hành tinh, đường chính, dấu hiệu đặc biệt, ngón cái).
-    - [ ] Hiển thị danh sách checkbox chọn mục bói gồm 2 nhóm: Các mục riêng của trường phái đã chọn và 6 khía cạnh cuộc sống chung (`personality`, `love`, `career`, `finance`, `health`, `family`).
-    - [ ] Mặc định tích sẵn `[x] Bói toàn bộ`. Nếu bỏ tích, cho phép chọn từng mục lẻ. Tự động chuyển về "Bói toàn bộ" nếu người dùng tích chọn tất cả các mục bằng tay.
-    - [ ] Khóa nút tiếp tục và hiện cảnh báo nếu không có mục nào được chọn. Ghi chú giá cố định hiển thị rõ ràng: `Chi phí: 1 credit (dù chọn 1 mục hay toàn bộ)`.
-    - [ ] Chọn bàn tay (Trái / Phải); hiển thị gợi ý cho trường phái Phương Đông: `"Nam xem tay trái, Nữ xem tay phải"`. Ghi nhớ tùy chọn lần trước của người dùng vào local storage.
+    - [x] Hiển thị danh sách checkbox chọn mục bói gồm 2 nhóm: Các mục riêng của trường phái đã chọn và 6 khía cạnh cuộc sống chung (`personality`, `love`, `career`, `finance`, `health`, `family`).
+    - [x] Mặc định tích sẵn `[x] Bói toàn bộ`. Nếu bỏ tích, cho phép chọn từng mục lẻ. Tự động chuyển về "Bói toàn bộ" nếu người dùng tích chọn tất cả các mục bằng tay.
+    - [x] Khóa nút tiếp tục và hiện cảnh báo nếu không có mục nào được chọn. Ghi chú giá cố định hiển thị rõ ràng: `Chi phí: 1 credit (dù chọn 1 mục hay toàn bộ)`.
+    - [x] Chọn bàn tay (Trái / Phải); hiển thị gợi ý cho trường phái Phương Đông: `"Nam xem tay trái, Nữ xem tay phải"`. Ghi nhớ tùy chọn lần trước của người dùng vào local storage.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
-    - [ ] **Backend:** Định nghĩa đồng bộ enum `ReadingSchool`, `HandSide`, và schema validation DTO cho request bói chỉ tay trong `@palmsight/shared`.
-    - [ ] **Frontend:**
+    - [x] **Backend:** Định nghĩa đồng bộ enum `ReadingSchool`, `HandSide`, và schema validation DTO cho request bói chỉ tay trong `@palmsight/shared`.
+    - [x] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
         - Stitch Screen: `PalmSight - Xem bói` (`03b652be69ad4254876da7e142d2a33a` - Bước 1 & Bước 2: Chọn trường phái và khía cạnh chiêm đoán)
       - Thiết kế component `SchoolPicker`, `TopicSelector`, và `HandSelector` theo phong cách Terminal Card Minimalist với các ký hiệu ASCII `[x]` và `[ ]`; lưu state vào Zustand/React state.
@@ -265,7 +265,7 @@ schema-version: "1.2"
     - `.specify/features/scan-school-and-topic-picker/baseline.md` (SIGNED-OFF)
     - `docs/features/scan-school-and-topic-picker/README.md`
 
-- [ ] **US-SCAN-002**: Chụp ảnh lòng bàn tay qua camera & upload ảnh
+- [x] **US-SCAN-002**: Chụp ảnh lòng bàn tay qua camera & upload ảnh
 
   - **Slug:** `scan-camera-capture-and-upload`
   - **Effort:** M
@@ -275,15 +275,15 @@ schema-version: "1.2"
   - **Blocks:** `US-AI-001`
   - **Mô tả:** Người dùng có thể mở camera trực tiếp trên trình duyệt điện thoại/máy tính với khung viền căn chỉnh bàn tay để chụp ảnh, hoặc tải ảnh có sẵn từ thư viện ảnh; ảnh được xử lý tiền kỳ chuẩn hóa an toàn trước khi gửi lên máy chủ.
   - **Acceptance Criteria (AC):**
-    - [ ] Giao diện camera sử dụng `navigator.mediaDevices.getUserMedia` kèm overlay khung viền lòng bàn tay kiểu terminal hairline và lời nhắc: `Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera`.
-    - [ ] Cung cấp fallback tự động sang `<input type="file" accept="image/*" capture="environment">` nếu thiết bị không hỗ trợ getUserMedia hoặc người dùng từ chối cấp quyền camera.
-    - [ ] Cho phép xem trước ảnh chụp, nút `[ Chụp lại ]` và nút hành động `[ Xem bói (-1 credit) ]`.
-    - [ ] Bắt buộc người dùng tích chọn checkbox đồng ý: `[x] Tôi đồng ý gửi ảnh lòng bàn tay để AI phân tích theo chính sách bảo mật`. Nút gửi bị disable nếu chưa tích.
-    - [ ] Backend tiếp nhận file qua `multipart/form-data` với Multer `memoryStorage` (giới hạn file tối đa 8MB), sử dụng thư viện `sharp` tiền xử lý hoàn toàn trong bộ nhớ buffer: chuyển đổi định dạng (HEIC/PNG → JPEG), tự động xoay đúng chiều theo EXIF, xóa sạch toàn bộ metadata EXIF nhạy cảm (định vị GPS, thông số thiết bị), resize cạnh dài nhất tối đa 1280px, nén quality 85%.
-    - [ ] **Tuyệt đối không lưu trữ ảnh lòng bàn tay** trên server dưới bất kỳ hình thức nào (không lưu ổ đĩa, không lưu thư mục tạm `/tmp`, không lưu object storage Cloudflare R2 hay MinIO, không lưu database, không log ảnh) theo đúng [ADR-0010](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0010-no-image-storage.md); buffer ảnh chỉ được chuyển thành base64 data URL gửi sang AI Vision và tự động giải phóng ngay khi request kết thúc.
+    - [x] Giao diện camera sử dụng `navigator.mediaDevices.getUserMedia` kèm overlay khung viền lòng bàn tay kiểu terminal hairline và lời nhắc: `Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera`.
+    - [x] Cung cấp fallback tự động sang `<input type="file" accept="image/*" capture="environment">` nếu thiết bị không hỗ trợ getUserMedia hoặc người dùng từ chối cấp quyền camera.
+    - [x] Cho phép xem trước ảnh chụp, nút `[ Chụp lại ]` và nút hành động `[ Xem bói (-1 credit) ]`.
+    - [x] Bắt buộc người dùng tích chọn checkbox đồng ý: `[x] Tôi đồng ý gửi ảnh lòng bàn tay để AI phân tích theo chính sách bảo mật`. Nút gửi bị disable nếu chưa tích.
+    - [x] Backend tiếp nhận file qua `multipart/form-data` với Multer `memoryStorage` (giới hạn file tối đa 8MB), sử dụng thư viện `sharp` tiền xử lý hoàn toàn trong bộ nhớ buffer: chuyển đổi định dạng (HEIC/PNG → JPEG), tự động xoay đúng chiều theo EXIF, xóa sạch toàn bộ metadata EXIF nhạy cảm (định vị GPS, thông số thiết bị), resize cạnh dài nhất tối đa 1280px, nén quality 85%.
+    - [x] **Tuyệt đối không lưu trữ ảnh lòng bàn tay** trên server dưới bất kỳ hình thức nào (không lưu ổ đĩa, không lưu thư mục tạm `/tmp`, không lưu object storage Cloudflare R2 hay MinIO, không lưu database, không log ảnh) theo đúng [ADR-0010](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0010-no-image-storage.md); buffer ảnh chỉ được chuyển thành base64 data URL gửi sang AI Vision và tự động giải phóng ngay khi request kết thúc.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
-    - [ ] **Backend:** Cấu hình Multer `memoryStorage` với file size limit 8MB và mimetype whitelist (`image/jpeg`, `image/png`, `image/webp`, `image/heic`); xây dựng pipeline tiền xử lý ảnh in-memory bằng `sharp`; không triển khai `StorageService` hay Cloudflare R2/MinIO SDK theo ADR-0010.
-    - [ ] **Frontend:**
+    - [x] **Backend:** Cấu hình Multer `memoryStorage` với file size limit 8MB và mimetype whitelist (`image/jpeg`, `image/png`, `image/webp`, `image/heic`); xây dựng pipeline tiền xử lý ảnh in-memory bằng `sharp`; không triển khai `StorageService` hay Cloudflare R2/MinIO SDK theo ADR-0010.
+    - [x] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
         - Stitch Screen: `PalmSight - Xem bói` (`03b652be69ad4254876da7e142d2a33a` - Bước 3 & Bước 4: Khung bàn tay Terminal & Chụp ảnh)
       - Xây dựng component `CameraCapture` hỗ trợ stream video, căn chỉnh tỉ lệ, chuyển đổi canvas sang Blob, và fallback upload file.
@@ -291,7 +291,7 @@ schema-version: "1.2"
     - `.specify/features/scan-camera-capture-and-upload/baseline.md` (SIGNED-OFF)
     - `docs/features/scan-camera-capture-and-upload/README.md`
 
-- [ ] **US-AI-001**: Phân tích chỉ tay đa trường phái với AI Vision (Groq / Gemini)
+- [x] **US-AI-001**: Phân tích chỉ tay đa trường phái với AI Vision (Groq / Gemini)
 
   - **Slug:** `ai-vision-palm-reading-engine`
   - **Effort:** L
@@ -301,24 +301,24 @@ schema-version: "1.2"
   - **Blocks:** `US-READ-001`
   - **Mô tả:** Hệ thống trừ 1 credit, gửi ảnh đã tiền xử lý kèm prompt chuyên sâu theo trường phái đã chọn tới Groq Vision (hoặc Gemini fallback) với cơ chế Idempotency chống trừ tiền trùng; nếu AI từ chối ảnh hoặc gặp sự cố, credit được tự động hoàn lại cho người dùng.
   - **Acceptance Criteria (AC):**
-    - [ ] Endpoint `POST /readings` yêu cầu bắt buộc header `Idempotency-Key` (UUID v4 sinh bởi client). Nếu gửi lại cùng key:
+    - [x] Endpoint `POST /readings` yêu cầu bắt buộc header `Idempotency-Key` (UUID v4 sinh bởi client). Nếu gửi lại cùng key:
       - Khi reading đang xử lý → trả về `409 READING_IN_PROGRESS`.
       - Khi reading đã hoàn thành → trả về kết quả cũ kèm header `Idempotent-Replayed: true` (không trừ thêm credit).
-    - [ ] Trừ 1 credit nguyên tử qua `CreditLedgerService` với loại giao dịch `READING_SPEND` trước khi gọi AI.
-    - [ ] Gọi `AiProvider` (mặc định Groq Vision, tự động fallback sang Google Gemini khi Groq gặp lỗi hoặc quá quota); giới hạn timeout 40 giây.
-    - [ ] Prompt được quản lý bảo mật tại `backend/src/ai/prompts/` (phần chung, phương Tây, phương Đông, Ấn Độ). AI bắt buộc trả về duy nhất JSON object theo Yup schema `PalmResult` (`isPalm`, `rejectReason`, `imageQuality`, `summary`, `sections`, `aspects`, `advice`, `disclaimer`).
-    - [ ] Nếu ảnh không phải bàn tay hoặc quá mờ (`isPalm = false`): đánh dấu reading là `REJECTED`, hoàn trả ngay +1 credit (`READING_REFUND`) và trả về lý do từ chối thân thiện.
-    - [ ] Nếu AI trả về JSON sai schema hoặc lỗi timeout/network sau 1 lần retry: đánh dấu reading là `FAILED`, hoàn trả ngay +1 credit (`READING_REFUND`) trong cùng transaction, đảm bảo người dùng không bị mất credit oan.
-    - [ ] Bắt buộc bao gồm câu miễn trừ trách nhiệm ở cuối mọi bài đọc: `Kết quả bói chỉ mang tính chất tham khảo, chiêm nghiệm và giải trí`.
+    - [x] Trừ 1 credit nguyên tử qua `CreditLedgerService` với loại giao dịch `READING_SPEND` trước khi gọi AI.
+    - [x] Gọi `AiProvider` (mặc định Groq Vision, tự động fallback sang Google Gemini khi Groq gặp lỗi hoặc quá quota); giới hạn timeout 40 giây.
+    - [x] Prompt được quản lý bảo mật tại `backend/src/ai/prompts/` (phần chung, phương Tây, phương Đông, Ấn Độ). AI bắt buộc trả về duy nhất JSON object theo Yup schema `PalmResult` (`isPalm`, `rejectReason`, `imageQuality`, `summary`, `sections`, `aspects`, `advice`, `disclaimer`).
+    - [x] Nếu ảnh không phải bàn tay hoặc quá mờ (`isPalm = false`): đánh dấu reading là `REJECTED`, hoàn trả ngay +1 credit (`READING_REFUND`) và trả về lý do từ chối thân thiện.
+    - [x] Nếu AI trả về JSON sai schema hoặc lỗi timeout/network sau 1 lần retry: đánh dấu reading là `FAILED`, hoàn trả ngay +1 credit (`READING_REFUND`) trong cùng transaction, đảm bảo người dùng không bị mất credit oan.
+    - [x] Bắt buộc bao gồm câu miễn trừ trách nhiệm ở cuối mọi bài đọc: `Kết quả bói chỉ mang tính chất tham khảo, chiêm nghiệm và giải trí`.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
-    - [ ] **Backend:** Tạo interface `AiProvider`; implement `GroqAiProvider` và `GeminiAiProvider`; xây dựng bộ prompts tiếng Việt chuẩn xác theo văn hóa chỉ tay 3 trường phái; viết logic xử lý transaction trừ/hoàn credit trong `ReadingsService`.
-    - [ ] **Frontend:** Thiết kế màn hình loading chờ AI phong cách Terminal Monospace với thanh progress ASCII `[====>    ] 45%` và thông điệp động: `Đang quét đường sinh đạo...`, `Đang nhận diện cung bát quái...`; xử lý polling nếu gặp `409 READING_IN_PROGRESS`.
+    - [x] **Backend:** Tạo interface `AiProvider`; implement `GroqAiProvider` và `GeminiAiProvider`; xây dựng bộ prompts tiếng Việt chuẩn xác theo văn hóa chỉ tay 3 trường phái; viết logic xử lý transaction trừ/hoàn credit trong `ReadingsService`.
+    - [x] **Frontend:** Thiết kế màn hình loading chờ AI phong cách Terminal Monospace với thanh progress ASCII `[====>    ] 45%` và thông điệp động: `Đang quét đường sinh đạo...`, `Đang nhận diện cung bát quái...`; xử lý polling nếu gặp `409 READING_IN_PROGRESS`.
   - **Deliverables khi [x]:**
     - `.specify/features/ai-vision-palm-reading-engine/baseline.md` (SIGNED-OFF)
     - `docs/features/ai-vision-palm-reading-engine/README.md`
     - `docs/user-guides/ai-vision-palm-reading-engine.md`
 
-- [ ] **US-READ-001**: Hiển thị kết quả bói chi tiết & quản lý lịch sử xem bói
+- [x] **US-READ-001**: Hiển thị kết quả bói chi tiết & quản lý lịch sử xem bói
   - **Slug:** `readings-detail-and-history-view`
   - **Effort:** M
   - **Context-budget:** single-session
@@ -327,7 +327,7 @@ schema-version: "1.2"
   - **Blocks:** `US-REF-001`
   - **Mô tả:** Người dùng có thể xem kết quả bói chi tiết gồm nhận xét tổng quan, từng đường chỉ tay và các khía cạnh cuộc sống được định dạng rõ ràng; xem lại lịch sử các lần bói trước đó hoặc xóa bài bói khỏi lịch sử cá nhân.
   - **Acceptance Criteria (AC):**
-    - [ ] Màn hình `/readings/:id` hiển thị cấu trúc bài bói khoa học, thẩm mỹ chuẩn Terminal Minimalist:
+    - [x] Màn hình `/readings/:id` hiển thị cấu trúc bài bói khoa học, thẩm mỹ chuẩn Terminal Minimalist:
       1. Nhãn trường phái + nhãn "Toàn bộ" hoặc "N mục" (không hiển thị ảnh tay từ server theo [ADR-0010](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0010-no-image-storage.md)).
       2. Banner cảnh báo nếu chất lượng ảnh thấp (`imageQuality == POOR`): `Ảnh hơi mờ, kết quả có thể chưa đạt độ chính xác cao`.
       3. Tổng quan (`summary`).
@@ -335,13 +335,13 @@ schema-version: "1.2"
       5. Các khía cạnh cuộc sống (`aspects`).
       6. Lời khuyên định hướng (`advice`).
       7. Câu miễn trừ trách nhiệm pháp lý giải trí (`disclaimer`).
-    - [ ] Nút "Bói thêm mục khác / trường phái khác (-1 credit)": cho phép chuyển nhanh về màn hình cấu hình bói mới, tái sử dụng ảnh chụp vừa rồi nếu còn lưu trên bộ nhớ client.
-    - [ ] Nút "Sao chép kết quả": chỉ sao chép nội dung văn bản bói toán để người dùng dán chia sẻ, không đính kèm ảnh chụp tay nhằm bảo vệ quyền riêng tư.
-    - [ ] Nút "Xóa bài bói": gọi `DELETE /readings/:id` (đánh dấu `deletedAt`); bài bói bị ẩn hoàn toàn khỏi danh sách lịch sử và không thể truy cập lại.
-    - [ ] Màn hình `/readings` (tab Lịch sử): hiển thị danh sách các bài bói đã xem dạng danh sách Terminal Card, hỗ trợ cursor-based pagination (`limit`, `cursor`), hiển thị ngày giờ, trường phái và tóm tắt ngắn.
+    - [x] Nút "Bói thêm mục khác / trường phái khác (-1 credit)": cho phép chuyển nhanh về màn hình cấu hình bói mới, tái sử dụng ảnh chụp vừa rồi nếu còn lưu trên bộ nhớ client.
+    - [x] Nút "Sao chép kết quả": chỉ sao chép nội dung văn bản bói toán để người dùng dán chia sẻ, không đính kèm ảnh chụp tay nhằm bảo vệ quyền riêng tư.
+    - [x] Nút "Xóa bài bói": gọi `DELETE /readings/:id` (đánh dấu `deletedAt`); bài bói bị ẩn hoàn toàn khỏi danh sách lịch sử và không thể truy cập lại.
+    - [x] Màn hình `/readings` (tab Lịch sử): hiển thị danh sách các bài bói đã xem dạng danh sách Terminal Card, hỗ trợ cursor-based pagination (`limit`, `cursor`), hiển thị ngày giờ, trường phái và tóm tắt ngắn.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
-    - [ ] **Backend:** Endpoints `GET /readings/:id`, `GET /readings` (cursor pagination), `DELETE /readings/:id`; kiểm tra quyền sở hữu bài đọc (chỉ chủ bài đọc mới được xem/xóa).
-    - [ ] **Frontend:**
+    - [x] **Backend:** Endpoints `GET /readings/:id`, `GET /readings` (cursor pagination), `DELETE /readings/:id`; kiểm tra quyền sở hữu bài đọc (chỉ chủ bài đọc mới được xem/xóa).
+    - [x] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP cho 2 màn hình:
         - Stitch Screen: `PalmSight - Kết quả xem bói` (`767fe31042964fefb0f0645368f00d94`)
         - Stitch Screen: `PalmSight - Lịch sử` (`211eba0f785841a6bac74bb69a3a0ee9`)
@@ -513,11 +513,11 @@ schema-version: "1.2"
   - **Mô tả:** Triển khai Frontend React Vite lên Vercel, cấu hình reverse proxy / rewrite cho `/api/v1` sang backend Render, và cấu hình fallback SPA định tuyến không bị lỗi 404 khi người dùng refresh trang con.
   - **Acceptance Criteria (AC):**
     - [ ] **WEB-01**: Frontend SPA được build và deploy thành công trên Vercel với custom domain hoặc subdomain chính thức.
-    - [ ] File `vercel.json` định cấu hình rewrite: chuyển hướng toàn bộ `/api/v1/*` sang Render backend service, bảo đảm Frontend và API hoạt động cùng nguồn gốc (Same-Origin) để cookie `rt` lưu trữ trơn tru.
-    - [ ] Cấu hình SPA routing fallback (`"routes": [{ "handle": "filesystem" }, { "src": "/(.*)", "dest": "/index.html" }]`): khi refresh trực tiếp ở các route sâu như `/readings/6710a1b2c3d4e5f6a7b8c9d0`, `/scan`, `/referral` không bao giờ bị lỗi 404.
-    - [ ] PWA manifest hoạt động chuẩn, cài đặt thử nghiệm ra màn hình chính (Add to Home Screen) trên thiết bị di động hiển thị đúng icon và splash screen Terminal.
+    - [x] File `vercel.json` định cấu hình rewrite: chuyển hướng toàn bộ `/api/v1/*` sang Render backend service, bảo đảm Frontend và API hoạt động cùng nguồn gốc (Same-Origin) để cookie `rt` lưu trữ trơn tru.
+    - [x] Cấu hình SPA routing fallback (`cleanUrls: true`, rewrite `/(.*)` sang `/index.html`): khi refresh trực tiếp ở các route sâu như `/readings/6710a1b2c3d4e5f6a7b8c9d0`, `/scan`, `/referral` không bao giờ bị lỗi 404.
+    - [x] PWA manifest hoạt động chuẩn, cài đặt thử nghiệm ra màn hình chính (Add to Home Screen) trên thiết bị di động hiển thị đúng icon và splash screen Terminal.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
-    - [ ] **Frontend:** Cấu hình file `vercel.json`, `vite.config.ts`, kiểm tra build tĩnh `pnpm --filter frontend build` không sinh lỗi TypeScript hay asset path sai.
+    - [x] **Frontend:** Cấu hình file `vercel.json`, `vite.config.ts`, kiểm tra build tĩnh `pnpm --filter frontend build` không sinh lỗi TypeScript hay asset path sai.
   - **Deliverables khi [x]:**
     - URL Web production sống, tải mượt mà dưới 2 giây và refresh không gặp 404.
 
