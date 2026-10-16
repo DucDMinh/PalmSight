@@ -1,41 +1,113 @@
-import { UserInfo } from "../interfaces/user";
-import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  InternalAxiosRequestConfig,
+} from "axios";
+import type { RefreshTokenResponseDto } from "@palmsight/shared";
+import { AUTH_REFRESH_URL } from "@/consts/apiUrl";
 
-export const TOKEN_KEY = "token";
-export const USER_KEY = "user";
+// Keys written by older builds; removed once on load so no stale token is ever sent
+const LEGACY_STORAGE_KEYS = ["token", "user"];
+const REFRESH_LOCK_NAME = "palmsight-refresh";
+
+interface AuthHandlers {
+  onTokenRefreshed?: (accessToken: string) => void;
+  onSessionExpired?: () => void;
+}
+
+type RetriableConfig = InternalAxiosRequestConfig & { _retry?: boolean };
+
+const errorCodeOf = (error: AxiosError) =>
+  (error.response?.data as { error?: { code?: string } } | undefined)?.error?.code;
 
 class Services {
   axios: AxiosInstance;
+  // Access token lives in memory only (api-contract.md "Xác thực"); the refresh token is an HttpOnly cookie
   private inMemoryToken: string | null = null;
+  private pendingRefresh: Promise<string> | null = null;
+  // Bumped on logout so a refresh still in flight cannot log the user back in
+  private sessionEpoch = 0;
+  private handlers: AuthHandlers = {};
 
   constructor() {
     this.axios = axios.create({
       withCredentials: true,
     });
 
-    //! Interceptor request
-    this.axios.interceptors.request.use(
-      (config) => {
-        const token = this.inMemoryToken || this.getTokenStorage();
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
+    try {
+      LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+    } catch {
+      // Storage may be unavailable (private mode); nothing to clean up then
+    }
 
-    //! Interceptor response
+    //! Interceptor request
+    this.axios.interceptors.request.use((config) => {
+      if (this.inMemoryToken && config.headers) {
+        config.headers.Authorization = `Bearer ${this.inMemoryToken}`;
+      }
+      return config;
+    });
+
+    //! Interceptor response: refresh once on TOKEN_EXPIRED, end the session on UNAUTHENTICATED
     this.axios.interceptors.response.use(
-      (config) => {
-        return config;
-      },
-      (error) => {
+      (response) => response,
+      async (error: AxiosError) => {
+        const config = error.config as RetriableConfig | undefined;
+        // /auth/* answers 401 for its own reasons (wrong password, missing cookie): never refresh on those
+        if (error.response?.status !== 401 || !config || config.url?.includes("/auth/")) {
+          return Promise.reject(error);
+        }
+
+        if (errorCodeOf(error) === "TOKEN_EXPIRED" && !config._retry) {
+          config._retry = true;
+          try {
+            await this.refreshAccessToken();
+          } catch {
+            this.handlers.onSessionExpired?.();
+            return Promise.reject(error);
+          }
+          return this.axios(config);
+        }
+
+        this.handlers.onSessionExpired?.();
         return Promise.reject(error);
       }
     );
+  }
+
+  setAuthHandlers(handlers: AuthHandlers) {
+    this.handlers = handlers;
+  }
+
+  /**
+   * The only way the app refreshes. The backend treats two refreshes with the same cookie as token
+   * theft and ends every session, so callers in this tab share one request and tabs take turns via a
+   * Web Lock (the next tab then sends the already-rotated cookie).
+   */
+  refreshAccessToken(): Promise<string> {
+    if (!this.pendingRefresh) {
+      const epoch = this.sessionEpoch;
+      const doRefresh = async () => {
+        const response = await this.axios.post<RefreshTokenResponseDto>(AUTH_REFRESH_URL);
+        if (epoch !== this.sessionEpoch) throw new Error("Session ended while refreshing");
+        this.inMemoryToken = response.data.accessToken;
+        this.handlers.onTokenRefreshed?.(response.data.accessToken);
+        return response.data.accessToken;
+      };
+      const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+      this.pendingRefresh = (
+        locks ? locks.request(REFRESH_LOCK_NAME, doRefresh) : doRefresh()
+      ).finally(() => {
+        this.pendingRefresh = null;
+      });
+    }
+    return this.pendingRefresh;
+  }
+
+  clearSession() {
+    this.sessionEpoch += 1;
+    this.inMemoryToken = null;
   }
 
   setInMemoryToken(token: string | null) {
@@ -44,38 +116,6 @@ class Services {
 
   getInMemoryToken(): string | null {
     return this.inMemoryToken;
-  }
-
-  attachTokenToHeader(token: string) {
-    this.axios.interceptors.request.use(
-      function (config) {
-        if (config.headers) {
-          // Do something before request is sent
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      function (error) {
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  setupInterceptors() {
-    this.axios.interceptors.response.use(
-      (response) => {
-        return response;
-      },
-      (error) => {
-        const { status } = error?.response || {};
-        if (status === 401) {
-          window.localStorage.clear();
-          window.location.reload();
-        }
-
-        return Promise.reject(error);
-      }
-    );
   }
 
   get(url: string, config?: AxiosRequestConfig) {
@@ -92,32 +132,6 @@ class Services {
 
   put(url: string, data: any, config?: AxiosRequestConfig) {
     return this.axios.put(url, data, config);
-  }
-
-  saveTokenStorage(token: string) {
-    localStorage.setItem(TOKEN_KEY, token);
-  }
-
-  getTokenStorage() {
-    const token = localStorage.getItem(TOKEN_KEY);
-    return token || "";
-  }
-
-  clearStorage() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  }
-
-  saveUserStorage(user: UserInfo) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  }
-
-  getUserStorage() {
-    if (localStorage.getItem(USER_KEY)) {
-      return JSON.parse(localStorage?.getItem(USER_KEY) || "") as UserInfo;
-    }
-
-    return null;
   }
 }
 

@@ -10,7 +10,9 @@ import {
 import httpService from "@/services/httpService";
 import authService from "@/services/authService";
 import useAuthStore from "@/stores/useAuthStore";
+import { ME_URL } from "@/consts/apiUrl";
 import type {
+  MeResponseDto,
   UserSummaryDto,
   UserReferralInfoDto,
   AuthProvider,
@@ -131,10 +133,28 @@ export const AuthenticationProvider = ({
   );
   const [loading, setLoading] = useState(!initialAccessToken && !skipInitialRefresh);
 
-  // Sync token to httpService on change
+  //! Function: drop the session locally (the cookie is handled by the backend)
+  const clearSession = useCallback(() => {
+    httpService.clearSession();
+    setAccessToken(null);
+    setUser(null);
+    useAuthStore.getState().clearAuthSession();
+  }, []);
+
+  // httpService owns the token: mirror its refreshes and session expiry into React state
   useEffect(() => {
-    httpService.setInMemoryToken(accessToken);
-  }, [accessToken]);
+    if (initialAccessToken) httpService.setInMemoryToken(initialAccessToken);
+    httpService.setAuthHandlers({
+      onTokenRefreshed: (token) => {
+        setAccessToken(token);
+        useAuthStore.setState({ accessToken: token });
+      },
+      onSessionExpired: clearSession,
+    });
+    return () => httpService.setAuthHandlers({});
+    // initialAccessToken only seeds the first render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearSession]);
 
   //! Function: set authenticated session
   const setAuthSession = useCallback(
@@ -159,34 +179,17 @@ export const AuthenticationProvider = ({
     useAuthStore.getState().updateUser(updatedFields);
   }, []);
 
-  //! Function: refresh session via HttpOnly rt cookie
+  //! Function: refresh session via HttpOnly rt cookie (the new token arrives through onTokenRefreshed)
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await authService.postRefresh();
-      if ('accessToken' in response && response.accessToken) {
-        setAccessToken(response.accessToken);
-        httpService.setInMemoryToken(response.accessToken);
-        if ('user' in response && response.user) {
-          const enrichedUser =
-            enrichUserWithJwt(response.user, response.accessToken) ||
-            (response.user as AuthUser);
-          setUser(enrichedUser);
-          useAuthStore.getState().setAuthSession({
-            accessToken: response.accessToken,
-            user: enrichedUser,
-          });
-        }
-        return true;
-      }
-      return false;
+      await authService.postRefresh();
+      return true;
     } catch {
-      setAccessToken(null);
-      httpService.setInMemoryToken(null);
       return false;
     }
   }, []);
 
-  //! Silent refresh on initial load (if not skipped in tests)
+  //! Restore the session on load: refresh token cookie -> access token -> profile from GET /me
   useEffect(() => {
     if (skipInitialRefresh || initialAccessToken) {
       setLoading(false);
@@ -194,38 +197,24 @@ export const AuthenticationProvider = ({
     }
 
     let isMounted = true;
-    authService
-      .postRefresh()
-      .then((response) => {
+    (async () => {
+      try {
+        const token = await authService.postRefresh();
+        const { data } = await httpService.get(ME_URL);
         if (!isMounted) return;
-        if ('accessToken' in response && response.accessToken) {
-          setAccessToken(response.accessToken);
-          httpService.setInMemoryToken(response.accessToken);
-          if ('user' in response && response.user) {
-            const enrichedUser =
-              enrichUserWithJwt(response.user, response.accessToken) ||
-              (response.user as AuthUser);
-            setUser(enrichedUser);
-            useAuthStore.getState().setAuthSession({
-              accessToken: response.accessToken,
-              user: enrichedUser,
-            });
-          }
-        }
-      })
-      .catch(() => {
-        // Unauthenticated session, no active cookie
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
+        setAuthSession({ accessToken: token, user: data as MeResponseDto });
+      } catch {
+        // No valid cookie (or the profile could not be loaded): stay logged out
+        if (isMounted) httpService.setInMemoryToken(null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
 
     return () => {
       isMounted = false;
     };
-  }, [skipInitialRefresh, initialAccessToken]);
+  }, [skipInitialRefresh, initialAccessToken, setAuthSession]);
 
   //! Function: login
   const login = useCallback(
@@ -256,15 +245,11 @@ export const AuthenticationProvider = ({
   //! Function: logout
   const logout = useCallback(() => {
     authService.postLogout().catch(() => {});
-    httpService.setInMemoryToken(null);
-    httpService.clearStorage();
     if (typeof window !== 'undefined') {
       window.sessionStorage.clear();
     }
-    setAccessToken(null);
-    setUser(null);
-    useAuthStore.getState().clearAuthSession();
-  }, []);
+    clearSession();
+  }, [clearSession]);
 
   //! Context value
   const value = useMemo<AuthenticationContextI>(() => {
