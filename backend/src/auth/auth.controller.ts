@@ -16,8 +16,10 @@ import {
   RegisterResponseDto,
   VerifyEmailRequestDto,
   ResendVerificationRequestDto,
+  LoginRequestDto,
   AuthResponseDto,
   registerSchema,
+  loginSchema,
 } from '@palmsight/shared';
 import { AuthService } from './auth.service';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
@@ -80,6 +82,42 @@ export class AuthController {
 
     const { authResponse, rawRefreshToken } = await this.authService.verifyEmail(
       body.token.trim(),
+    );
+
+    const isProd = this.configService.get('NODE_ENV') === 'production';
+    const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
+
+    res.cookie('rt', rawRefreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'lax',
+      path: '/api/v1/auth',
+      maxAge: refreshTtlDays * 24 * 60 * 60 * 1000,
+    });
+
+    return authResponse;
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(
+    @Body() body: LoginRequestDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    const validated = await loginSchema.validate(body, { abortEarly: false });
+    const rawIp =
+      (req.headers['x-forwarded-for'] as string) ||
+      req.ip ||
+      req.socket?.remoteAddress ||
+      '127.0.0.1';
+    const clientIp = rawIp.split(',')[0].trim();
+    const currentRefreshToken = req.cookies?.rt;
+
+    const { authResponse, rawRefreshToken } = await this.authService.login(
+      validated,
+      currentRefreshToken,
+      clientIp,
     );
 
     const isProd = this.configService.get('NODE_ENV') === 'production';

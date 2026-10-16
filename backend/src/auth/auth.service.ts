@@ -2,6 +2,10 @@ import {
   Injectable,
   ConflictException,
   BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Connection, ClientSession, Types } from 'mongoose';
@@ -14,6 +18,7 @@ import {
   RegisterRequestDto,
   RegisterResponseDto,
   ResendVerificationRequestDto,
+  LoginRequestDto,
   AuthResponseDto,
   CreditTransactionType,
   ReferralStatus,
@@ -51,6 +56,112 @@ export class AuthService {
     @InjectConnection()
     private readonly connection: Connection,
   ) {}
+
+  // ponytail: in-memory failed login tracking per process, upgrade to Redis when scaling to multiple instances
+  private readonly failedLogins = new Map<string, { timestamps: number[] }>();
+
+  private checkLoginRateLimit(key: string): void {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000;
+    const record = this.failedLogins.get(key);
+    if (!record) return;
+
+    record.timestamps = record.timestamps.filter((t) => now - t < windowMs);
+    if (record.timestamps.length === 0) {
+      this.failedLogins.delete(key);
+      return;
+    }
+
+    if (record.timestamps.length >= 5) {
+      throw new HttpException(
+        {
+          code: 'RATE_LIMITED',
+          message: 'Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút.',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private recordFailedLogin(key: string): void {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000;
+    const record = this.failedLogins.get(key) || { timestamps: [] };
+    record.timestamps = record.timestamps.filter((t) => now - t < windowMs);
+    record.timestamps.push(now);
+    this.failedLogins.set(key, record);
+  }
+
+  private resetFailedLogins(key: string): void {
+    this.failedLogins.delete(key);
+  }
+
+  private async checkPendingRegistration(
+    login: string,
+    password: string,
+  ): Promise<PendingRegistrationDocument | null> {
+    const pending = await this.pendingModel.findOne({
+      $or: [{ email: login }, { username: login }],
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (pending && (await this.verifyPassword(password, pending.passwordHash))) {
+      return pending;
+    }
+
+    return null;
+  }
+
+  async login(
+    dto: LoginRequestDto,
+    currentRefreshToken?: string,
+    clientIp?: string,
+  ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
+    const normalizedLogin = dto.login.trim().toLowerCase();
+    const rateLimitKey = `${clientIp || '127.0.0.1'}:${normalizedLogin}`;
+    this.checkLoginRateLimit(rateLimitKey);
+
+    const isEmail = normalizedLogin.includes('@');
+    const user = await this.userModel.findOne(
+      isEmail ? { email: normalizedLogin } : { username: normalizedLogin },
+    );
+
+    if (user) {
+      if (user.deletedAt != null) {
+        this.recordFailedLogin(rateLimitKey);
+        throw new UnauthorizedException({
+          code: 'INVALID_CREDENTIALS',
+          message: 'Thông tin đăng nhập không chính xác.',
+        });
+      }
+
+      if (user.passwordHash && (await this.verifyPassword(dto.password, user.passwordHash))) {
+        this.resetFailedLogins(rateLimitKey);
+
+        if (currentRefreshToken) {
+          const oldHash = crypto.createHash('sha256').update(currentRefreshToken).digest('hex');
+          await this.sessionModel.deleteOne({ refreshTokenHash: oldHash });
+        }
+
+        return this.createAuthSession(user, false);
+      }
+    }
+
+    const pending = await this.checkPendingRegistration(normalizedLogin, dto.password);
+    if (pending) {
+      throw new ForbiddenException({
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Tài khoản chưa được xác minh email.',
+        details: { email: pending.email },
+      });
+    }
+
+    this.recordFailedLogin(rateLimitKey);
+    throw new UnauthorizedException({
+      code: 'INVALID_CREDENTIALS',
+      message: 'Thông tin đăng nhập không chính xác.',
+    });
+  }
 
   async hashPassword(password: string): Promise<string> {
     return argon2.hash(password, {
