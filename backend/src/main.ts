@@ -1,30 +1,38 @@
-import { NestFactory } from '@nestjs/core';
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import cookieParser from 'cookie-parser';
-import helmet from 'helmet';
-import { AppModule } from './app.module';
-import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+import { NestFactory } from "@nestjs/core";
+import { Logger, ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import { AppModule } from "./app.module";
+import { ApiExceptionFilter } from "./common/filters/api-exception.filter";
 
 const DEV_ORIGINS = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:4000',
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4000",
 ];
 
-export function createCorsOriginValidator(nodeEnv: string, publicBaseUrl: string) {
-  const normalizedPublic = publicBaseUrl.replace(/\/+$/, '');
+export function createCorsOriginValidator(
+  nodeEnv: string,
+  publicBaseUrl: string
+) {
+  const normalizedPublic = publicBaseUrl.replace(/\/+$/, "");
 
-  return (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  return (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
     if (!origin) {
       return callback(null, true);
     }
 
-    if (nodeEnv === 'production') {
-      if (normalizedPublic === '*' || !normalizedPublic) {
-        return callback(new Error('CORS wildcard * is strictly forbidden in production'));
+    if (nodeEnv === "production") {
+      if (normalizedPublic === "*" || !normalizedPublic) {
+        return callback(
+          new Error("CORS wildcard * is strictly forbidden in production")
+        );
       }
-      if (origin.replace(/\/+$/, '') === normalizedPublic) {
+      if (origin.replace(/\/+$/, "") === normalizedPublic) {
         return callback(null, true);
       }
       return callback(new Error(`Origin ${origin} not allowed by CORS`));
@@ -32,7 +40,7 @@ export function createCorsOriginValidator(nodeEnv: string, publicBaseUrl: string
 
     if (
       DEV_ORIGINS.includes(origin) ||
-      origin.replace(/\/+$/, '') === normalizedPublic ||
+      origin.replace(/\/+$/, "") === normalizedPublic ||
       /^https?:\/\/([a-zA-Z0-9-]+\.)*ngrok-free\.app(?::\d+)?$/.test(origin)
     ) {
       return callback(null, true);
@@ -44,55 +52,59 @@ export function createCorsOriginValidator(nodeEnv: string, publicBaseUrl: string
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Bootstrap');
+  const logger = new Logger("Bootstrap");
   const configService = app.get(ConfigService);
 
-  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
-  const publicBaseUrl = configService.get<string>('PUBLIC_BASE_URL', 'http://localhost:5173');
+  const nodeEnv = configService.get<string>("NODE_ENV", "development");
+  const publicBaseUrl = configService.get<string>(
+    "PUBLIC_BASE_URL",
+    "http://localhost:5173"
+  );
   const port = Number(
-    configService.get<number | string>('PORT') ||
-    configService.get<number | string>('API_PORT', 4000),
+    configService.get<number | string>("PORT") ||
+      configService.get<number | string>("API_PORT", 4000)
   );
 
   app.use(
     helmet({
+      crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
           baseUri: ["'self'"],
-          fontSrc: ["'self'", 'https:', 'data:'],
+          fontSrc: ["'self'", "https:", "data:"],
           formAction: ["'self'"],
           frameAncestors: ["'self'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
+          imgSrc: ["'self'", "data:", "https:"],
           objectSrc: ["'none'"],
           scriptSrc: ["'self'"],
           scriptSrcAttr: ["'none'"],
-          styleSrc: ["'self'", 'https:', "'unsafe-inline'"],
+          styleSrc: ["'self'", "https:", "'unsafe-inline'"],
           upgradeInsecureRequests: [],
         },
       },
-      xFrameOptions: { action: 'sameorigin' },
+      xFrameOptions: { action: "sameorigin" },
       xContentTypeOptions: true,
-    }),
+    })
   );
 
   app.enableCors({
     credentials: true,
     origin: createCorsOriginValidator(nodeEnv, publicBaseUrl),
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: [
-      'Authorization',
-      'Content-Type',
-      'Idempotency-Key',
-      'Origin',
-      'ngrok-skip-browser-warning',
-      'X-Request-Id',
+      "Authorization",
+      "Content-Type",
+      "Idempotency-Key",
+      "Origin",
+      "ngrok-skip-browser-warning",
+      "X-Request-Id",
     ],
     exposedHeaders: [
-      'Set-Cookie',
-      'Retry-After',
-      'Idempotent-Replayed',
-      'X-Request-Id',
+      "Set-Cookie",
+      "Retry-After",
+      "Idempotent-Replayed",
+      "X-Request-Id",
     ],
     maxAge: 86400,
   });
@@ -103,10 +115,10 @@ async function bootstrap() {
       transform: true,
       whitelist: true,
       forbidNonWhitelisted: false,
-    }),
+    })
   );
   app.useGlobalFilters(new ApiExceptionFilter());
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix("api/v1");
   app.enableShutdownHooks();
 
   await app.listen(port);
