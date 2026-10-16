@@ -26,6 +26,7 @@ export type AuthUser = UserSummaryDto & {
   providers?: AuthProvider[];
   referral?: UserReferralInfoDto;
   referralLink?: string;
+  avatar?: string;
 };
 
 export interface AuthenticationContextI {
