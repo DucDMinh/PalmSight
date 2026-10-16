@@ -20,6 +20,7 @@ import { CreditsModule } from '../credits/credits.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
+import { GoogleAuthVerifier } from './google-auth.verifier';
 
 @Module({
   imports: [
@@ -43,7 +44,7 @@ import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
     CreditsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRateLimitGuard],
+  providers: [AuthService, AuthRateLimitGuard, GoogleAuthVerifier],
   exports: [AuthService],
 })
 export class AuthModule {}

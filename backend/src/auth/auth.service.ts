@@ -23,6 +23,8 @@ import {
   CreditTransactionType,
   ReferralStatus,
   CREDIT_AMOUNTS,
+  AuthProvider,
+  DeletedIdentityKind,
 } from '@palmsight/shared';
 
 import { PendingRegistration, PendingRegistrationDocument } from '../schemas/pending-registration.schema';
@@ -32,6 +34,7 @@ import { Referral, ReferralDocument } from '../schemas/referral.schema';
 import { DeletedIdentity, DeletedIdentityDocument } from '../schemas/deleted-identity.schema';
 import { MailService } from '../mail/mail.service';
 import { CreditLedgerService } from '../credits/credit-ledger.service';
+import type { GoogleProfile } from './google-auth.verifier';
 
 const REFERRAL_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
@@ -89,10 +92,7 @@ export class AuthService {
 
     if (user && !user.deletedAt && user.passwordHash && (await this.verifyPassword(dto.password, user.passwordHash))) {
       this.failedLogins.delete(rateLimitKey);
-      if (currentRefreshToken) {
-        const oldHash = crypto.createHash('sha256').update(currentRefreshToken).digest('hex');
-        await this.sessionModel.deleteOne({ refreshTokenHash: oldHash });
-      }
+      await this.revokeSession(currentRefreshToken);
       return this.createAuthSession(user, false);
     }
 
@@ -241,40 +241,24 @@ export class AuthService {
         await existingUser.save({ session });
         verifiedUser = existingUser;
       } else {
-        const isDeleted = await this.isDeletedIdentity(pending.email, session);
-        const referralCode = await this.generateReferralCode(session);
-        const bonus = isDeleted ? 0 : CREDIT_AMOUNTS.SIGNUP_BONUS;
-
-        const [newUser] = await this.userModel.create(
-          [
-            {
-              displayName: pending.displayName,
-              username: pending.username,
-              email: pending.email,
-              passwordHash: pending.passwordHash,
-              passwordUpdatedAt: new Date(),
-              referralCode,
-              creditBalance: bonus,
-              referralBlocked: isDeleted,
-            },
-          ],
-          { session },
+        const isDeleted = await this.isDeletedIdentity(
+          [{ kind: DeletedIdentityKind.EMAIL, value: pending.email }],
+          session,
+        );
+        const newUser = await this.createUserWithBonus(
+          {
+            displayName: pending.displayName,
+            username: pending.username,
+            email: pending.email,
+            passwordHash: pending.passwordHash,
+            passwordUpdatedAt: new Date(),
+          },
+          isDeleted,
+          session,
         );
 
-        if (!isDeleted) {
-          await this.creditLedgerService.recordWithSession(
-            {
-              userId: newUser._id,
-              amount: CREDIT_AMOUNTS.SIGNUP_BONUS,
-              type: CreditTransactionType.SIGNUP_BONUS,
-              balanceAfter: CREDIT_AMOUNTS.SIGNUP_BONUS,
-            },
-            session,
-          );
-
-          if (pending.referralCode) {
-            await this.processReferralReward(newUser, pending.referralCode, session);
-          }
+        if (!isDeleted && pending.referralCode) {
+          await this.processReferralReward(newUser, pending.referralCode, session);
         }
 
         verifiedUser = newUser;
@@ -293,12 +277,141 @@ export class AuthService {
     return this.createAuthSession(verifiedUser!, isNewUser);
   }
 
-  private async isDeletedIdentity(email: string, session: ClientSession): Promise<boolean> {
-    const identitySecret = this.configService.get<string>('IDENTITY_HASH_SECRET', 'palmsight-identity-secret');
-    const identityHmac = crypto.createHmac('sha256', identitySecret).update(email.toLowerCase()).digest('hex');
-    const exists = await this.deletedIdentityModel
-      .exists({ $or: [{ valueHmac: identityHmac }, { identityHash: identityHmac }] })
-      .session(session);
+  async googleLogin(
+    profile: GoogleProfile,
+    currentRefreshToken?: string,
+    isRetry = false,
+  ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
+    if (!isRetry) await this.revokeSession(currentRefreshToken);
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+
+    let user: UserDocument;
+    let isNewUser = false;
+
+    try {
+      const linkedUser = await this.userModel
+        .findOne({
+          identities: { $elemMatch: { provider: AuthProvider.GOOGLE, providerUserId: profile.sub } },
+          deletedAt: null,
+        })
+        .session(session);
+
+      // Only a provider-verified email may be used to merge into an existing account
+      const verifiedEmail = profile.emailVerified ? profile.email : null;
+      const emailUser =
+        !linkedUser && verifiedEmail
+          ? await this.userModel.findOne({ email: verifiedEmail, deletedAt: null }).session(session)
+          : null;
+
+      if (linkedUser) {
+        if (profile.picture) linkedUser.avatarUrl = profile.picture;
+        await linkedUser.save({ session });
+        user = linkedUser;
+      } else if (emailUser) {
+        emailUser.identities.push({
+          provider: AuthProvider.GOOGLE,
+          providerUserId: profile.sub,
+          email: verifiedEmail,
+          linkedAt: new Date(),
+        });
+        if (!emailUser.avatarUrl && profile.picture) emailUser.avatarUrl = profile.picture;
+        await emailUser.save({ session });
+        user = emailUser;
+      } else {
+        const deletedChecks = [{ kind: DeletedIdentityKind.GOOGLE, value: profile.sub }];
+        if (verifiedEmail) deletedChecks.push({ kind: DeletedIdentityKind.EMAIL, value: verifiedEmail });
+        const isDeleted = await this.isDeletedIdentity(deletedChecks, session);
+
+        const fallbackName = verifiedEmail?.split('@')[0] || 'Người dùng Google';
+        user = await this.createUserWithBonus(
+          {
+            displayName: (profile.name?.trim() || fallbackName).slice(0, 50),
+            email: verifiedEmail,
+            avatarUrl: profile.picture,
+            identities: [
+              {
+                provider: AuthProvider.GOOGLE,
+                providerUserId: profile.sub,
+                email: verifiedEmail,
+                linkedAt: new Date(),
+              },
+            ],
+          },
+          isDeleted,
+          session,
+        );
+        isNewUser = true;
+      }
+
+      await session.commitTransaction();
+    } catch (error: any) {
+      await session.abortTransaction();
+      // Two concurrent first logins race on the unique identity/email index: retry once to pick up the winner
+      if (!isRetry && (error?.code === 11000 || error?.hasErrorLabel?.('TransientTransactionError'))) {
+        return this.googleLogin(profile, undefined, true);
+      }
+      throw error;
+    } finally {
+      await session.endSession();
+    }
+
+    return this.createAuthSession(user, isNewUser);
+  }
+
+  private async revokeSession(rawRefreshToken?: string): Promise<void> {
+    if (!rawRefreshToken) return;
+    const hash = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+    await this.sessionModel.deleteOne({ refreshTokenHash: hash });
+  }
+
+  private async createUserWithBonus(
+    data: Partial<User>,
+    isDeletedIdentity: boolean,
+    session: ClientSession,
+  ): Promise<UserDocument> {
+    const referralCode = await this.generateReferralCode(session);
+    const [newUser] = await this.userModel.create(
+      [
+        {
+          ...data,
+          referralCode,
+          creditBalance: isDeletedIdentity ? 0 : CREDIT_AMOUNTS.SIGNUP_BONUS,
+          referralBlocked: isDeletedIdentity,
+        },
+      ],
+      { session },
+    );
+
+    if (!isDeletedIdentity) {
+      await this.creditLedgerService.recordWithSession(
+        {
+          userId: newUser._id,
+          amount: CREDIT_AMOUNTS.SIGNUP_BONUS,
+          type: CreditTransactionType.SIGNUP_BONUS,
+          balanceAfter: CREDIT_AMOUNTS.SIGNUP_BONUS,
+        },
+        session,
+      );
+    }
+
+    return newUser;
+  }
+
+  // Email HMACs hash the bare address (existing data format); provider IDs use "KIND:value" as in database-erd.md
+  private identityHmac(kind: DeletedIdentityKind, value: string): string {
+    const secret = this.configService.get<string>('IDENTITY_HASH_SECRET', 'palmsight-identity-secret');
+    const input = kind === DeletedIdentityKind.EMAIL ? value.toLowerCase() : `${kind}:${value}`;
+    return crypto.createHmac('sha256', secret).update(input).digest('hex');
+  }
+
+  private async isDeletedIdentity(
+    identities: Array<{ kind: DeletedIdentityKind; value: string }>,
+    session: ClientSession,
+  ): Promise<boolean> {
+    const hmacs = identities.map(({ kind, value }) => this.identityHmac(kind, value));
+    const exists = await this.deletedIdentityModel.exists({ valueHmac: { $in: hmacs } }).session(session);
     return !!exists;
   }
 

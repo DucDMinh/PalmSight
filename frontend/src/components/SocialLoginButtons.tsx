@@ -1,3 +1,5 @@
+import GoogleLoginButton from "./GoogleLoginButton";
+
 export const SocialLoginButtons = () => {
   return (
     <>
@@ -11,12 +13,7 @@ export const SocialLoginButtons = () => {
       </div>
 
       <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          className="w-full h-9 bg-canvas text-ink border border-hairline-strong rounded font-medium text-base px-5 flex items-center justify-center hover:bg-surface-card transition-colors cursor-pointer"
-        >
-          <span className="font-bold mr-2">[G]</span> Đăng nhập bằng Google
-        </button>
+        <GoogleLoginButton />
         <button
           type="button"
           className="w-full h-9 bg-canvas text-ink border border-hairline-strong rounded font-medium text-base px-5 flex items-center justify-center hover:bg-surface-card transition-colors cursor-pointer"

@@ -4,6 +4,7 @@ import {
   AUTH_RESEND_VERIFICATION_URL,
   AUTH_VERIFY_EMAIL_URL,
   AUTH_LOGIN_URL,
+  AUTH_GOOGLE_URL,
   AUTH_FORGOT_PASSWORD_URL,
   AUTH_RESET_PASSWORD_URL,
   AUTH_REFRESH_URL,
@@ -15,6 +16,7 @@ import type {
   VerifyEmailRequestDto,
   ResendVerificationRequestDto,
   LoginRequestDto,
+  GoogleAuthRequestDto,
   ForgotPasswordRequestDto,
   ResetPasswordRequestDto,
   AuthResponseDto,
@@ -52,6 +54,11 @@ class AuthService {
 
   async postLogin(data: LoginRequestDto): Promise<AuthResponseDto> {
     const response = await httpService.post(AUTH_LOGIN_URL, data);
+    return response.data;
+  }
+
+  async postGoogleLogin(data: GoogleAuthRequestDto): Promise<AuthResponseDto> {
+    const response = await httpService.post(AUTH_GOOGLE_URL, data);
     return response.data;
   }
 
