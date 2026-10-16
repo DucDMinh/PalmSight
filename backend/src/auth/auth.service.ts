@@ -159,8 +159,11 @@ export class AuthService {
 
     const existingUser = await this.userModel.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      if (existingUser.email === email && existingUser.passwordHash) {
-        throw new ConflictException({ code: 'EMAIL_TAKEN', message: 'Email này đã được sử dụng.' });
+      if (existingUser.email === email) {
+        const message = existingUser.passwordHash
+          ? 'Email này đã được sử dụng.'
+          : 'Email này đã được liên kết với tài khoản Google hoặc Facebook. Vui lòng đăng nhập.';
+        throw new ConflictException({ code: 'EMAIL_TAKEN', message });
       }
       if (existingUser.username === username) {
         throw new ConflictException({ code: 'USERNAME_TAKEN', message: 'Tên người dùng đã được sử dụng.' });

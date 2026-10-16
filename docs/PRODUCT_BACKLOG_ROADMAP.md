@@ -20,7 +20,7 @@ schema-version: "1.2"
 
 > **Sản phẩm:** PalmSight — Ứng dụng Web/PWA bói chỉ tay thông minh đa trường phái bằng AI Vision (Groq/Gemini), phong cách giao diện Terminal Minimalist, quản lý lượt bói minh bạch qua Sổ cái Credits và đòn bẩy lan tỏa giới thiệu bạn bè.  
 > **Cập nhật lần cuối:** 2026-10-15  
-> **Trạng thái tài liệu:** Living Document — Quản lý tiến độ và đồng bộ với `/command-continue-project`  
+> **Trạng thái tài liệu:** Living Document — Quản lý tiến độ và đồng bộ với `/command-continue-project`
 >
 > **Ký hiệu trạng thái:**
 >
@@ -49,15 +49,15 @@ schema-version: "1.2"
 
 ## 📊 Bảng Ma Trận Ưu Tiên MoSCoW & RICE Score
 
-| Mã Epic | Nghiệp vụ / Tính năng | Phân loại MoSCoW | RICE Score | Mức ưu tiên | Sprint khuyến nghị |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **EPIC-00** | **Monorepo & Engineering Setup:** Pnpm workspace, Docker Compose, `@palmsight/shared`, Stitch Design Tokens, 8 Mongoose Schemas, Vite Proxy, GitHub Actions CI | **Must Have** | 9.5 | **P0 (Foundation)** | Sprint 0 |
-| **EPIC-01** | **Auth & Identity:** Đăng ký xác minh email, Đăng nhập Email/Username, OAuth Google/Facebook gộp tài khoản, Quên mật khẩu | **Must Have** | 9.2 | **P0 (Critical)** | Sprint 1 |
-| **EPIC-02** | **Credit Ledger & Wallet:** Sổ cái biến động Credits (`CreditLedgerService`), trừ/hoàn credit với MongoDB transaction, Lịch sử ví | **Must Have** | 9.0 | **P0 (Core USP)** | Sprint 1 |
-| **EPIC-03** | **AI Palm Reading Engine:** 3 trường phái (Phương Tây, Phương Đông, Ấn Độ), Chụp/Upload ảnh lòng bàn tay, Phân tích AI Vision Groq/Gemini, Trả kết quả chi tiết & Lịch sử bói | **Must Have** | 8.8 | **P0 (Core USP)** | Sprint 2 |
-| **EPIC-04** | **Referral & Viral Mechanics:** Liên kết giới thiệu `/r/:code`, Nhập mã nhận thưởng 2 chiều (+1 referee, +2 referrer), Cơ chế chống gian lận & Giới hạn trần ngày | **Should Have** | 7.8 | **P1 (High)** | Sprint 3 |
-| **EPIC-05** | **Production Hardening & Deployment:** Audit bảo mật, Replica Set Cloud DB, Deploy API Render, Deploy SPA Vercel, E2E Smoke Test | **Must Have** | 8.5 | **P0 (Go-Live)** | Sprint 4 |
-| **EPIC-06** | **Monetization & Future Horizons:** Cổng thanh toán mua credit, So sánh chỉ tay 2 người, Xuất ảnh Card chiêm tinh chia sẻ mạng xã hội | **Won't Have (v1)** | 4.0 | **P3 (Future)** | Horizon V2.0+ |
+| Mã Epic     | Nghiệp vụ / Tính năng                                                                                                                                                         |  Phân loại MoSCoW   | RICE Score |     Mức ưu tiên     | Sprint khuyến nghị |
+| :---------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | :--------: | :-----------------: | :----------------: |
+| **EPIC-00** | **Monorepo & Engineering Setup:** Pnpm workspace, Docker Compose, `@palmsight/shared`, Stitch Design Tokens, 8 Mongoose Schemas, Vite Proxy, GitHub Actions CI                |    **Must Have**    |    9.5     | **P0 (Foundation)** |      Sprint 0      |
+| **EPIC-01** | **Auth & Identity:** Đăng ký xác minh email, Đăng nhập Email/Username, OAuth Google/Facebook gộp tài khoản, Quên mật khẩu                                                     |    **Must Have**    |    9.2     |  **P0 (Critical)**  |      Sprint 1      |
+| **EPIC-02** | **Credit Ledger & Wallet:** Sổ cái biến động Credits (`CreditLedgerService`), trừ/hoàn credit với MongoDB transaction, Lịch sử ví                                             |    **Must Have**    |    9.0     |  **P0 (Core USP)**  |      Sprint 1      |
+| **EPIC-03** | **AI Palm Reading Engine:** 3 trường phái (Phương Tây, Phương Đông, Ấn Độ), Chụp/Upload ảnh lòng bàn tay, Phân tích AI Vision Groq/Gemini, Trả kết quả chi tiết & Lịch sử bói |    **Must Have**    |    8.8     |  **P0 (Core USP)**  |      Sprint 2      |
+| **EPIC-04** | **Referral & Viral Mechanics:** Liên kết giới thiệu `/r/:code`, Nhập mã nhận thưởng 2 chiều (+1 referee, +2 referrer), Cơ chế chống gian lận & Giới hạn trần ngày             |   **Should Have**   |    7.8     |    **P1 (High)**    |      Sprint 3      |
+| **EPIC-05** | **Production Hardening & Deployment:** Audit bảo mật, Replica Set Cloud DB, Deploy API Render, Deploy SPA Vercel, E2E Smoke Test                                              |    **Must Have**    |    8.5     |  **P0 (Go-Live)**   |      Sprint 4      |
+| **EPIC-06** | **Monetization & Future Horizons:** Cổng thanh toán mua credit, So sánh chỉ tay 2 người, Xuất ảnh Card chiêm tinh chia sẻ mạng xã hội                                         | **Won't Have (v1)** |    4.0     |   **P3 (Future)**   |   Horizon V2.0+    |
 
 ---
 
@@ -103,7 +103,7 @@ schema-version: "1.2"
 
 ## ⚙️ Sprint 0: Project Setup & Architecture (Đã hoàn thành — [x])
 
-> **Tiến độ hiện tại:** Đã hoàn thành 100% toàn bộ 8 nhiệm vụ nền tảng (SETUP-001 đến SETUP-008). Monorepo pnpm workspace hoạt động trơn tru với cả 3 package (`frontend`, `backend`, `shared`), hạ tầng Docker Compose (MongoDB RS0 ánh xạ cổng 27019:27017, Mailpit SMTP; không dùng MinIO theo [ADR-0010](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0010-no-image-storage.md)), 8 Mongoose schemas với index sync, Stitch Design Tokens, Vite proxy /api/v1/* kết nối NestJS, và GitHub Actions CI tự động hóa toàn diện cho push và pull_request (`.github/workflows/ci.yml`). Toàn bộ test suites, linter, typecheck và production build đều pass 100%.
+> **Tiến độ hiện tại:** Đã hoàn thành 100% toàn bộ 8 nhiệm vụ nền tảng (SETUP-001 đến SETUP-008). Monorepo pnpm workspace hoạt động trơn tru với cả 3 package (`frontend`, `backend`, `shared`), hạ tầng Docker Compose (MongoDB RS0 ánh xạ cổng 27019:27017, Mailpit SMTP; không dùng MinIO theo [ADR-0010](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0010-no-image-storage.md)), 8 Mongoose schemas với index sync, Stitch Design Tokens, Vite proxy /api/v1/\* kết nối NestJS, và GitHub Actions CI tự động hóa toàn diện cho push và pull_request (`.github/workflows/ci.yml`). Toàn bộ test suites, linter, typecheck và production build đều pass 100%.
 
 - [x] **SETUP-001**: Khởi tạo monorepo pnpm workspace (`pnpm-workspace.yaml`, gộp `frontend`, `backend`, `shared`), chuẩn hóa script chạy toàn repo (`pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`).
 - [x] **SETUP-002**: Dọn dẹp boilerplate `frontend/` theo [ADR-0007](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0007-vite-spa-frontend.md) (bỏ mock login `don/don`, bỏ role-based guards `withCheckRole`, bỏ selector đa ngữ, bỏ trang mẫu Todos/Examples, sửa lỗi import case-sensitive `CommonIcons` -> `commonIcons`).
@@ -121,6 +121,7 @@ schema-version: "1.2"
 > **Mục tiêu Sprint:** Người dùng có thể đăng ký tài khoản với email thật, xác minh qua link email, đăng nhập bằng Email/Username hoặc gộp tài khoản Google/Facebook; hệ thống cấp đúng 3 credits ban đầu vào ví thông qua `CreditLedgerService` đảm bảo tính toàn vẹn dữ liệu.
 
 - [ ] **US-AUTH-001**: Đăng ký tài khoản và xác minh Email bắt buộc
+
   - **Slug:** `auth-register-verify-email`
   - **Effort:** M
   - **Context-budget:** single-session
@@ -137,12 +138,12 @@ schema-version: "1.2"
     - [ ] Trả về mã lỗi chuẩn tiếng Việt nếu email/username đã tồn tại (`EMAIL_TAKEN`, `USERNAME_TAKEN`), hoặc token hết hạn (`VERIFICATION_TOKEN_INVALID`).
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Tạo Mongoose schema cho `pending_registrations` (TTL index) và `users`; implement `MailService` sử dụng `nodemailer`; viết endpoint `POST /auth/register`, `POST /auth/verify-email`, `POST /auth/resend-verification`; hash mật khẩu bằng `argon2id`.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP cho 4 màn hình:
-        * Stitch Screen: `PalmSight - Register` (`59bf8c4b91a04c18a0afbf3139812e0d`)
-        * Stitch Screen: `PalmSight - Kiểm tra hộp thư của bạn` (`e2ca007ff9be4c8eb496a3933785c6db`)
-        * Stitch Screen: `PalmSight - Email verified` (`1d106024adaa426eadcacab751819351`)
-        * Stitch Screen: `PalmSight - Transactional Email` (`2e38ad0c7e83457d89a391c8a8466a86`)
+        - Stitch Screen: `PalmSight - Register` (`59bf8c4b91a04c18a0afbf3139812e0d`)
+        - Stitch Screen: `PalmSight - Kiểm tra hộp thư của bạn` (`e2ca007ff9be4c8eb496a3933785c6db`)
+        - Stitch Screen: `PalmSight - Email verified` (`1d106024adaa426eadcacab751819351`)
+        - Stitch Screen: `PalmSight - Transactional Email` (`2e38ad0c7e83457d89a391c8a8466a86`)
       - Thiết kế màn hình `/register`, `/register/check-email`, `/verify-email` theo phong cách Terminal Minimalist (canvas `#fdfcfc`, ink `#201d1d`, bo góc 4px, font monospace Berkeley Mono); kết nối TanStack Query và lưu access token trong memory state của `AuthProvider`.
   - **Deliverables khi [x]:**
     - `.specify/features/auth-register-verify-email/baseline.md` (SIGNED-OFF)
@@ -150,6 +151,7 @@ schema-version: "1.2"
     - `docs/user-guides/auth-register-verify-email.md` (kèm ảnh chụp Playwright thật)
 
 - [ ] **US-AUTH-002**: Đăng nhập đa phương thức (Email/Username, Google, Facebook gộp tài khoản)
+
   - **Slug:** `auth-multi-login-and-account-linking`
   - **Effort:** M
   - **Context-budget:** single-session
@@ -167,9 +169,9 @@ schema-version: "1.2"
     - [ ] Hỗ trợ cơ chế Web Locks (`navigator.locks.request("palmsight-refresh")`) trên frontend để tránh race condition khi nhiều tab trình duyệt refresh đồng thời làm thu hồi token phiên.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Tạo `GoogleAuthVerifier` (`google-auth-library`) và `FacebookAuthVerifier`; xây dựng logic đăng nhập, tạo session mới trong collection `sessions`, xoay vòng refresh token; implement Auth Guard và Rate Limiting 5 lần sai mật khẩu / 15 phút.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
-        * Stitch Screen: `PalmSight - Login` (`cc0b1d9d18a14673b30ce02c73d06d81`)
+        - Stitch Screen: `PalmSight - Login` (`cc0b1d9d18a14673b30ce02c73d06d81`)
       - Thiết kế giao diện `/login` chuẩn phong cách Terminal Minimalist với nút ASCII button `[ Đăng nhập ]`, dải phân cách nét đứt và các nút liên kết mạng xã hội `[+ Google]` `[+ Facebook]`; cấu hình auto-refresh token trong `apiClient`.
   - **Deliverables khi [x]:**
     - `.specify/features/auth-multi-login-and-account-linking/baseline.md` (SIGNED-OFF)
@@ -177,6 +179,7 @@ schema-version: "1.2"
     - `docs/user-guides/auth-multi-login-and-account-linking.md`
 
 - [ ] **US-AUTH-003**: Quên và đặt lại mật khẩu an toàn qua Email
+
   - **Slug:** `auth-forgot-reset-password`
   - **Effort:** S
   - **Context-budget:** single-session
@@ -191,11 +194,11 @@ schema-version: "1.2"
     - [ ] Chuyển hướng người dùng về `/login?reset=1` hiển thị banner ASCII thông báo thành công: `[x] Đã đặt lại mật khẩu, hãy đăng nhập lại`.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Schema `password_resets`, template email reset password, endpoints `POST /auth/forgot-password` và `POST /auth/reset-password`, endpoint `PUT /me/password` (đổi mật khẩu khi đã đăng nhập).
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP cho 3 màn hình:
-        * Stitch Screen: `PalmSight - Quên mật khẩu` (`939cd59ab1314dd5a7f4c22b430bb733`)
-        * Stitch Screen: `PalmSight - Đặt lại mật khẩu` (`450e73adc13c4138ae553ff9698b6a82`)
-        * Stitch Screen: `PalmSight - Transactional Email` (`4c3c5497fe6743839889cb29f044328d`)
+        - Stitch Screen: `PalmSight - Quên mật khẩu` (`939cd59ab1314dd5a7f4c22b430bb733`)
+        - Stitch Screen: `PalmSight - Đặt lại mật khẩu` (`450e73adc13c4138ae553ff9698b6a82`)
+        - Stitch Screen: `PalmSight - Transactional Email` (`4c3c5497fe6743839889cb29f044328d`)
       - Xây dựng màn hình `/forgot-password`, `/reset-password` và trang `/account/password` đồng bộ phong cách Terminal Minimalist.
   - **Deliverables khi [x]:**
     - `.specify/features/auth-forgot-reset-password/baseline.md` (SIGNED-OFF)
@@ -218,10 +221,10 @@ schema-version: "1.2"
     - [ ] Cung cấp API `GET /me` (trả về `creditBalance`) và `GET /me/credit-transactions` phân trang cursor-based (`limit`, `cursor`).
     - [ ] Màn hình `/wallet` hiển thị số dư lớn phong cách Terminal Monospace `[ 3 CREDITS ]` và danh sách lịch sử biến động (+3 đăng ký, -1 xem bói, +1 hoàn tiền, v.v.).
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
-    - [ ] **Backend:** Mongoose schema cho `credit_transactions`; xây dựng `CreditLedgerService` với các phương thức `grantSignupBonus`, `spendForReading`, `refundReading`, `rewardReferral`; viết unit/integration tests mô phỏng concurrency và rollback.
-    - [ ] **Frontend:** 
+    - [x] **Backend:** Mongoose schema cho `credit_transactions`; xây dựng `CreditLedgerService` với các phương thức `grantSignupBonus`, `spendForReading`, `refundReading`, `rewardReferral`; viết unit/integration tests mô phỏng concurrency và rollback.
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
-        * Stitch Screen: `PalmSight - Tài khoản` (`405bac78d239413cab5b68e8c3f9f0b3` - Phần Ví Credits & Lịch sử biến động)
+        - Stitch Screen: `PalmSight - Tài khoản` (`405bac78d239413cab5b68e8c3f9f0b3` - Phần Ví Credits & Lịch sử biến động)
       - Component `CreditBadge` trên thanh header/navbar, trang `/wallet` với danh sách biến động và cursor pagination; tự động cập nhật số dư từ API response không cần tải lại toàn trang.
   - **Deliverables khi [x]:**
     - `.specify/features/wallet-credit-ledger-management/baseline.md` (SIGNED-OFF)
@@ -235,6 +238,7 @@ schema-version: "1.2"
 > **Mục tiêu Sprint:** Người dùng có thể chọn trường phái (Phương Tây, Phương Đông, Ấn Độ), chọn mục xem cụ thể hoặc bói toàn bộ, chụp/tải ảnh lòng bàn tay, hệ thống trừ 1 credit an toàn, gọi AI Vision đọc chỉ tay và hiển thị kết quả phân tích chuẩn xác, nếu lỗi AI thì tự động hoàn credit.
 
 - [ ] **US-SCAN-001**: Chọn trường phái & cấu hình mục muốn bói
+
   - **Slug:** `scan-school-and-topic-picker`
   - **Effort:** S
   - **Context-budget:** single-session
@@ -253,15 +257,16 @@ schema-version: "1.2"
     - [ ] Chọn bàn tay (Trái / Phải); hiển thị gợi ý cho trường phái Phương Đông: `"Nam xem tay trái, Nữ xem tay phải"`. Ghi nhớ tùy chọn lần trước của người dùng vào local storage.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Định nghĩa đồng bộ enum `ReadingSchool`, `HandSide`, và schema validation DTO cho request bói chỉ tay trong `@palmsight/shared`.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
-        * Stitch Screen: `PalmSight - Xem bói` (`03b652be69ad4254876da7e142d2a33a` - Bước 1 & Bước 2: Chọn trường phái và khía cạnh chiêm đoán)
+        - Stitch Screen: `PalmSight - Xem bói` (`03b652be69ad4254876da7e142d2a33a` - Bước 1 & Bước 2: Chọn trường phái và khía cạnh chiêm đoán)
       - Thiết kế component `SchoolPicker`, `TopicSelector`, và `HandSelector` theo phong cách Terminal Card Minimalist với các ký hiệu ASCII `[x]` và `[ ]`; lưu state vào Zustand/React state.
   - **Deliverables khi [x]:**
     - `.specify/features/scan-school-and-topic-picker/baseline.md` (SIGNED-OFF)
     - `docs/features/scan-school-and-topic-picker/README.md`
 
 - [ ] **US-SCAN-002**: Chụp ảnh lòng bàn tay qua camera & upload ảnh
+
   - **Slug:** `scan-camera-capture-and-upload`
   - **Effort:** M
   - **Context-budget:** single-session
@@ -278,15 +283,16 @@ schema-version: "1.2"
     - [ ] **Tuyệt đối không lưu trữ ảnh lòng bàn tay** trên server dưới bất kỳ hình thức nào (không lưu ổ đĩa, không lưu thư mục tạm `/tmp`, không lưu object storage Cloudflare R2 hay MinIO, không lưu database, không log ảnh) theo đúng [ADR-0010](file:///Users/vutuanhau/Documents/PROJECT/PalmSight/docs/adr/0010-no-image-storage.md); buffer ảnh chỉ được chuyển thành base64 data URL gửi sang AI Vision và tự động giải phóng ngay khi request kết thúc.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Cấu hình Multer `memoryStorage` với file size limit 8MB và mimetype whitelist (`image/jpeg`, `image/png`, `image/webp`, `image/heic`); xây dựng pipeline tiền xử lý ảnh in-memory bằng `sharp`; không triển khai `StorageService` hay Cloudflare R2/MinIO SDK theo ADR-0010.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
-        * Stitch Screen: `PalmSight - Xem bói` (`03b652be69ad4254876da7e142d2a33a` - Bước 3 & Bước 4: Khung bàn tay Terminal & Chụp ảnh)
+        - Stitch Screen: `PalmSight - Xem bói` (`03b652be69ad4254876da7e142d2a33a` - Bước 3 & Bước 4: Khung bàn tay Terminal & Chụp ảnh)
       - Xây dựng component `CameraCapture` hỗ trợ stream video, căn chỉnh tỉ lệ, chuyển đổi canvas sang Blob, và fallback upload file.
   - **Deliverables khi [x]:**
     - `.specify/features/scan-camera-capture-and-upload/baseline.md` (SIGNED-OFF)
     - `docs/features/scan-camera-capture-and-upload/README.md`
 
 - [ ] **US-AI-001**: Phân tích chỉ tay đa trường phái với AI Vision (Groq / Gemini)
+
   - **Slug:** `ai-vision-palm-reading-engine`
   - **Effort:** L
   - **Context-budget:** multi-session
@@ -335,10 +341,10 @@ schema-version: "1.2"
     - [ ] Màn hình `/readings` (tab Lịch sử): hiển thị danh sách các bài bói đã xem dạng danh sách Terminal Card, hỗ trợ cursor-based pagination (`limit`, `cursor`), hiển thị ngày giờ, trường phái và tóm tắt ngắn.
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Endpoints `GET /readings/:id`, `GET /readings` (cursor pagination), `DELETE /readings/:id`; kiểm tra quyền sở hữu bài đọc (chỉ chủ bài đọc mới được xem/xóa).
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP cho 2 màn hình:
-        * Stitch Screen: `PalmSight - Kết quả xem bói` (`767fe31042964fefb0f0645368f00d94`)
-        * Stitch Screen: `PalmSight - Lịch sử` (`211eba0f785841a6bac74bb69a3a0ee9`)
+        - Stitch Screen: `PalmSight - Kết quả xem bói` (`767fe31042964fefb0f0645368f00d94`)
+        - Stitch Screen: `PalmSight - Lịch sử` (`211eba0f785841a6bac74bb69a3a0ee9`)
       - Thiết kế component `ReadingDetailLayout`, `SectionAccordion`, `ReadingCardItem` và tích hợp clipboard API để copy văn bản kết quả.
   - **Deliverables khi [x]:**
     - `.specify/features/readings-detail-and-history-view/baseline.md` (SIGNED-OFF)
@@ -352,6 +358,7 @@ schema-version: "1.2"
 > **Mục tiêu Sprint:** Người dùng có thể chia sẻ liên kết mã giới thiệu độc bản `/r/:code`; người được mời và người mời đều nhận thưởng credits minh bạch với đầy đủ 6 bước kiểm tra chống gian lận, cùng trang quản lý hồ sơ và hướng dẫn xóa dữ liệu chuẩn chỉ.
 
 - [ ] **US-REF-001**: Chia sẻ mã giới thiệu & điều hướng liên kết `/r/:code`
+
   - **Slug:** `referral-sharing-and-link-redirection`
   - **Effort:** S
   - **Context-budget:** single-session
@@ -367,16 +374,17 @@ schema-version: "1.2"
     - [ ] Form đăng ký `/register` tự động đọc cookie `ref_code` và điền sẵn vào ô nhập mã giới thiệu (nếu có).
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Endpoint `GET /me/referrals` với phân trang cursor; trả về thống kê tổng số người đã giới thiệu và tổng credits kiếm được.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP cho 2 màn hình:
-        * Stitch Screen: `PalmSight - Landing Page` (`7cf746a450694080b4958a283e70d8dc` - Hero TUI mockup & nút Bắt đầu)
-        * Stitch Screen: `PalmSight - Tài khoản` (`405bac78d239413cab5b68e8c3f9f0b3` - Mục Mã giới thiệu của tôi)
+        - Stitch Screen: `PalmSight - Landing Page` (`7cf746a450694080b4958a283e70d8dc` - Hero TUI mockup & nút Bắt đầu)
+        - Stitch Screen: `PalmSight - Tài khoản` (`405bac78d239413cab5b68e8c3f9f0b3` - Mục Mã giới thiệu của tôi)
       - Thiết kế trang `/referral` chuẩn phong cách Terminal Minimalist; xử lý route `/r/:code` với logic cookie và redirect trong React Router.
   - **Deliverables khi [x]:**
     - `.specify/features/referral-sharing-and-link-redirection/baseline.md` (SIGNED-OFF)
     - `docs/features/referral-sharing-and-link-redirection/README.md`
 
 - [ ] **US-REF-002**: Nhập mã giới thiệu nhận thưởng Credits & phòng chống gian lận
+
   - **Slug:** `referral-redemption-and-anti-abuse`
   - **Effort:** M
   - **Context-budget:** single-session
@@ -397,9 +405,9 @@ schema-version: "1.2"
     - [ ] Màn hình `/referral/enter` hỗ trợ người dùng nhập mã bổ sung bất kỳ lúc nào sau khi đăng nhập (miễn là trường `canEnterCode == true`).
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Xây dựng `ReferralsService` và controller `POST /me/referral`; tích hợp transaction liên thông với `CreditLedgerService`; viết kịch bản test đầy đủ cho 6 ca từ chối và ca trần ngày CAPPED.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP:
-        * Stitch Screen: `PalmSight - Nhập mã giới thiệu` (`f5d217aa5f13413fafe761311d74aec1`)
+        - Stitch Screen: `PalmSight - Nhập mã giới thiệu` (`f5d217aa5f13413fafe761311d74aec1`)
       - Thiết kế màn hình `/referral/enter` với các trạng thái thông báo lỗi/thành công bằng tiếng Việt chuẩn xác theo thiết kế Terminal.
   - **Deliverables khi [x]:**
     - `.specify/features/referral-redemption-and-anti-abuse/baseline.md` (SIGNED-OFF)
@@ -422,10 +430,10 @@ schema-version: "1.2"
     - [ ] Xây dựng các trang tĩnh chuẩn SEO/PWA: `/privacy` (Chính sách bảo mật, cam kết xóa EXIF ảnh), `/terms` (Điều khoản sử dụng giải trí), `/data-deletion` (Hướng dẫn gửi email tới `support@palmsight.app` kèm ID tài khoản; giải thích việc lưu trữ hash HMAC để chống gian lận credits theo ADR-0009).
   - **Tasks (Phân rã kỹ thuật cho Subagents):**
     - [ ] **Backend:** Script quản trị dòng lệnh `backend/scripts/users:delete` hỗ trợ xóa user theo ID, ghi nhận mã băm vào `deleted_identities`, và thu hồi toàn bộ sessions; script `credits:reconcile` để đối soát số dư.
-    - [ ] **Frontend:** 
+    - [ ] **Frontend:**
       - Tích hợp và đối soát độ tương đồng (Fidelity Check) qua `get_screen` Stitch MCP cho 2 màn hình:
-        * Stitch Screen: `PalmSight - Tài khoản` (`405bac78d239413cab5b68e8c3f9f0b3`)
-        * Stitch Screen: `PalmSight - Hướng dẫn xoá dữ liệu` (`7eaf92fbe7444a19b53c3a6c5f227dd2`)
+        - Stitch Screen: `PalmSight - Tài khoản` (`405bac78d239413cab5b68e8c3f9f0b3`)
+        - Stitch Screen: `PalmSight - Hướng dẫn xoá dữ liệu` (`7eaf92fbe7444a19b53c3a6c5f227dd2`)
       - Thiết kế trang `/account`, và các trang tĩnh `/privacy`, `/terms`, `/data-deletion` bằng Tailwind CSS theo đúng styleguide Terminal Minimalist.
   - **Deliverables khi [x]:**
     - `.specify/features/account-profile-and-compliance-pages/baseline.md` (SIGNED-OFF)
@@ -438,6 +446,7 @@ schema-version: "1.2"
 > **Mục tiêu Sprint:** Kiểm tra và chốt toàn bộ các tiêu chí bảo mật Pre-Deploy, khởi tạo database MongoDB Replica Set trên Cloud (Atlas M0), deploy backend NestJS lên Render, deploy frontend React Vite lên Vercel kèm SPA routing fallback, và chạy bộ kiểm thử khói Playwright trên URL production thực tế.
 
 - [ ] **US-DEPLOY-01**: Security Hardening & Secret Audit (Pre-Deploy SEC-01 → SEC-03)
+
   - **Slug:** `deploy-security-hardening-and-audit`
   - **Effort:** S
   - **Context-budget:** single-session
@@ -457,6 +466,7 @@ schema-version: "1.2"
     - Báo cáo kiểm tra bảo mật Pre-Deploy Signed-Off trong `docs/deployment.md`.
 
 - [ ] **US-DEPLOY-02**: Cloud Database Setup & MongoDB Replica Set
+
   - **Slug:** `deploy-cloud-database-replica-set`
   - **Effort:** S
   - **Context-budget:** single-session
@@ -475,6 +485,7 @@ schema-version: "1.2"
     - Nhật ký khởi tạo Database Cloud và sync index thành công.
 
 - [ ] **US-DEPLOY-03**: Backend API Deployment & Health Check Verification
+
   - **Slug:** `deploy-backend-render-healthcheck`
   - **Effort:** M
   - **Context-budget:** single-session
@@ -492,6 +503,7 @@ schema-version: "1.2"
     - URL API production sống (`https://api.palmsight.app/api/v1/health` hoặc Render URL) trả về HTTP 200.
 
 - [ ] **US-DEPLOY-04**: Frontend Deployment & SPA Routing Fallback Verification
+
   - **Slug:** `deploy-frontend-vercel-spa-fallback`
   - **Effort:** S
   - **Context-budget:** single-session
@@ -655,7 +667,7 @@ REFERRAL_DAILY_CAP=10
 
 ### Quy tắc quét và thực thi của `/command-continue-project`:
 
-1. **Step 1 (Context Injection & Tool Loading)**: 
+1. **Step 1 (Context Injection & Tool Loading)**:
    - Đọc thông số `tech-stack` và `mcp-tools` (`StitchMCP`, `code-review-graph`) từ YAML frontmatter ở đầu tài liệu và đưa vào system prompt của toàn bộ subagent (`backend-developer`, `frontend-developer`, `qa-engineer`).
    - Khi thực hiện nhiệm vụ Frontend, subagent bắt buộc kết nối `StitchMCP` với project ID `15464591816682045618` để đối chiếu layout và style qua `get_screen`.
 2. **Step 2 (Story Selection)**: Ưu tiên tìm story mang trạng thái `[/]` (In Progress) để tiếp tục thực hiện cho xong trước. Nếu không có story nào đang dang dở, chọn story `[ ]` (To Do) đầu tiên theo thứ tự từ trên xuống dưới (bắt đầu từ `SETUP-001` thuộc Sprint 0).

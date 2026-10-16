@@ -204,6 +204,28 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
       });
     });
 
+    it('should throw ConflictException with EMAIL_TAKEN and OAuth message when registering with email of existing user without passwordHash', async () => {
+      userModel.findOne.mockResolvedValue({
+        email: 'oauth@example.com',
+        username: 'oauth_user',
+        passwordHash: null,
+      });
+
+      await expect(
+        authService.register({
+          displayName: 'Test User',
+          username: 'valid_user',
+          email: 'oauth@example.com',
+          password: 'Password_123',
+        }),
+      ).rejects.toMatchObject({
+        response: {
+          code: 'EMAIL_TAKEN',
+          message: 'Email này đã được liên kết với tài khoản Google hoặc Facebook. Vui lòng đăng nhập.',
+        },
+      });
+    });
+
     it('should catch E11000 on username in verifyEmail and throw ConflictException with USERNAME_TAKEN', async () => {
       const mockSession = {
         startTransaction: vi.fn(),

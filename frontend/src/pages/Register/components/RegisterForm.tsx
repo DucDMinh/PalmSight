@@ -4,6 +4,7 @@ import { Formik, Form, FormikHelpers } from "formik";
 import * as yup from "yup";
 import { registerFormSchema } from "@palmsight/shared";
 import { getCookie } from "@/helpers/cookie";
+import { useToast } from "@/components/ui/use-toast";
 import BaseUrl from "@/consts/baseUrl";
 import RegisterFormFields from "./RegisterFormFields";
 import RegisterSocialActions from "./RegisterSocialActions";
@@ -21,7 +22,8 @@ export const registerValidationSchema = registerFormSchema.shape({
 const handleSubmissionError = (
   err: any,
   setErrors: (errors: Record<string, string>) => void,
-  setGeneralError: (msg: string | null) => void
+  setGeneralError: (msg: string | null) => void,
+  toast: ReturnType<typeof useToast>["toast"]
 ) => {
   const response = err?.response;
   const status = response?.status;
@@ -29,7 +31,12 @@ const handleSubmissionError = (
 
   if (status === 409) {
     if (apiError.code === "EMAIL_TAKEN") {
-      setErrors({ email: apiError.message || "Email này đã được sử dụng." });
+      const errorMessage = apiError.message || "Email này đã được sử dụng.";
+      setErrors({ email: errorMessage });
+      toast({
+        variant: "destructive",
+        description: errorMessage,
+      });
     } else if (apiError.code === "USERNAME_TAKEN") {
       setErrors({ username: apiError.message || "Tên người dùng đã được sử dụng." });
     } else {
@@ -54,6 +61,7 @@ export const RegisterForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const { toast } = useToast();
   const registerMutation = useRegisterMutation();
 
   const initialReferralCode = useMemo(() => {
@@ -94,7 +102,7 @@ export const RegisterForm = () => {
         { state: { email: result.email || values.email } }
       );
     } catch (err: any) {
-      handleSubmissionError(err, setErrors, setGeneralError);
+      handleSubmissionError(err, setErrors, setGeneralError, toast);
     } finally {
       setSubmitting(false);
     }
