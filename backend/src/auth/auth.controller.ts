@@ -8,8 +8,9 @@ import {
   Req,
   UseGuards,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import type { Response, Request } from 'express';
+import type { Response, Request, CookieOptions } from 'express';
 import { ConfigService } from '@nestjs/config';
 import {
   RegisterRequestDto,
@@ -22,9 +23,11 @@ import {
   loginSchema,
   GoogleAuthRequestDto,
   googleAuthSchema,
+  RefreshTokenResponseDto,
 } from '@palmsight/shared';
 import { AuthService } from './auth.service';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
+import { OriginGuard } from './guards/origin.guard';
 import { GoogleAuthVerifier } from './google-auth.verifier';
 
 @Controller('auth')
@@ -136,16 +139,50 @@ export class AuthController {
     return authResponse;
   }
 
-  private setRefreshCookie(res: Response, rawRefreshToken: string): void {
-    const isProd = this.configService.get('NODE_ENV') === 'production';
-    const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(OriginGuard, AuthRateLimitGuard)
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<RefreshTokenResponseDto> {
+    try {
+      const { tokens, rawRefreshToken } = await this.authService.refresh(req.cookies?.rt);
+      this.setRefreshCookie(res, rawRefreshToken);
+      return tokens;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) this.clearRefreshCookie(res);
+      throw error;
+    }
+  }
 
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(OriginGuard, AuthRateLimitGuard)
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
+    await this.authService.logout(req.cookies?.rt);
+    this.clearRefreshCookie(res);
+  }
+
+  private setRefreshCookie(res: Response, rawRefreshToken: string): void {
+    const refreshTtlDays = Number(this.configService.get('REFRESH_TOKEN_TTL_DAYS', 30));
     res.cookie('rt', rawRefreshToken, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: 'lax',
-      path: '/api/v1/auth',
+      ...this.refreshCookieOptions(),
       maxAge: refreshTtlDays * 24 * 60 * 60 * 1000,
     });
+  }
+
+  // Same name, path and flags as setRefreshCookie, otherwise the browser keeps the old cookie
+  private clearRefreshCookie(res: Response): void {
+    res.cookie('rt', '', { ...this.refreshCookieOptions(), maxAge: 0 });
+  }
+
+  private refreshCookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite: 'lax',
+      path: '/api/v1/auth',
+    };
   }
 }

@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { ForbiddenException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+
+// Passed to the CORS callback so a foreign origin gets the API's 403 instead of a generic 500
+const originNotAllowed = () =>
+  new ForbiddenException({ code: 'ORIGIN_NOT_ALLOWED', message: 'Yêu cầu không được phép từ nguồn này.' });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -32,7 +36,7 @@ async function bootstrap() {
         if (origin === publicBaseUrl) {
           return callback(null, true);
         }
-        return callback(new Error(`Origin ${origin} not allowed by CORS`));
+        return callback(originNotAllowed());
       }
 
       // In development/test
@@ -44,7 +48,7 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      return callback(originNotAllowed());
     },
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
