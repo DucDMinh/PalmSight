@@ -13,6 +13,7 @@
     "test:frontend": "pnpm --filter frontend test",
     "typecheck:frontend": "pnpm --filter frontend typecheck",
     "stitch:sync": "node scripts/sync-stitch-screens.mjs",
+    "push": "bash scripts/modular-push.sh",
     "prepare": "pnpm --filter @palmsight/shared build"
   },
   "pnpm": {
