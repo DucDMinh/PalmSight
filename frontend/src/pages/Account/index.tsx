@@ -22,7 +22,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 ];
 
 export const Account = () => {
-  const { data: meData, isLoading } = useMeQuery();
+  const { data: meData, isLoading, isError, refetch } = useMeQuery();
   const user = (meData || null) as UserDto | null;
   const [activeSection, setActiveSection] = useState<string>("ho-so");
   const isManualScrollRef = useRef(false);
@@ -133,7 +133,24 @@ export const Account = () => {
 
           {/* RIGHT CONTENT COLUMN */}
           <div className="w-full md:max-w-[680px] shrink-0 flex flex-col">
-            {isLoading && !user ? (
+            {isError && !user ? (
+              <div
+                role="alert"
+                className="p-4 border border-terminal-danger rounded-[4px] text-sm text-ink flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <span>
+                  <span className="font-bold text-terminal-danger mr-2">[!]</span>
+                  Không tải được thông tin tài khoản.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  className="h-8 px-3 rounded-[4px] bg-canvas text-ink border border-hairline hover:bg-surface-soft text-xs font-medium self-start sm:self-auto"
+                >
+                  Thử lại
+                </button>
+              </div>
+            ) : isLoading || !user ? (
               <div className="p-8 text-center text-sm text-mute">
                 Đang tải thông tin tài khoản...
               </div>

@@ -162,10 +162,25 @@ describe("ResetPassword Page", () => {
     });
   });
 
-  it("should redirect to Homepage if user is already logged in", () => {
-    renderComponent(["/reset-password?token=valid-token"], true);
+  it("should let a logged-in user (setting a first password) use the link, then log them out locally", async () => {
+    vi.spyOn(authService, "postResetPassword").mockResolvedValue(undefined);
+    const logoutSpy = vi.spyOn(authService, "postLogout").mockResolvedValue(undefined);
 
-    expect(screen.getByText("Homepage Content")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Đặt lại mật khẩu" })).not.toBeInTheDocument();
+    renderComponent(["/reset-password?token=set-first-password"], true);
+
+    expect(screen.getByRole("heading", { name: "Đặt lại mật khẩu" })).toBeInTheDocument();
+    expect(screen.queryByText("Homepage Content")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/Mật khẩu mới/), {
+      target: { value: "FirstPassword888" },
+    });
+    fireEvent.change(screen.getByLabelText(/Xác nhận mật khẩu/), {
+      target: { value: "FirstPassword888" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Đặt lại mật khẩu" }));
+
+    // The server already ended every session, so the stale local one is dropped too
+    expect(await screen.findByText("Login Page Redirected")).toBeInTheDocument();
+    expect(logoutSpy).toHaveBeenCalled();
   });
 });

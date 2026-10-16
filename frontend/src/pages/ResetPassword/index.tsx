@@ -1,15 +1,8 @@
-import { Navigate } from "react-router-dom";
-import BaseUrl from "@/consts/baseUrl";
-import { useAuth } from "@/providers/AuthenticationProvider";
 import ResetPasswordForm from "./components/ResetPasswordForm";
 
+// Open to logged-in users too: a Google-only user sets a first password from /account,
+// then opens the emailed link in the same browser
 export const ResetPassword = () => {
-  const { isLogged } = useAuth();
-
-  if (isLogged) {
-    return <Navigate to={BaseUrl.Homepage} replace />;
-  }
-
   return (
     <div className="component:ResetPassword flex-1 w-full max-w-[960px] mx-auto my-12 md:my-20 px-4 flex flex-col md:flex-row gap-8 md:gap-0 items-start font-mono text-ink">
       {/* Left Column: 360px */}

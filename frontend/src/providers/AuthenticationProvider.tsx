@@ -126,14 +126,12 @@ export const AuthenticationProvider = ({
   initialUser = null,
   skipInitialRefresh = false,
 }: AuthenticationProviderProps) => {
-  //! State: in-memory token (no localStorage storage for access tokens per ADR-0008)
   const [accessToken, setAccessToken] = useState<string | null>(initialAccessToken);
   const [user, setUser] = useState<AuthUser | null>(() =>
     enrichUserWithJwt(initialUser, initialAccessToken)
   );
   const [loading, setLoading] = useState(!initialAccessToken && !skipInitialRefresh);
 
-  //! Function: drop the session locally (the cookie is handled by the backend)
   const clearSession = useCallback(() => {
     httpService.clearSession();
     setAccessToken(null);
@@ -141,7 +139,6 @@ export const AuthenticationProvider = ({
     useAuthStore.getState().clearAuthSession();
   }, []);
 
-  // httpService owns the token: mirror its refreshes and session expiry into React state
   useEffect(() => {
     if (initialAccessToken) httpService.setInMemoryToken(initialAccessToken);
     httpService.setAuthHandlers({
@@ -152,11 +149,9 @@ export const AuthenticationProvider = ({
       onSessionExpired: clearSession,
     });
     return () => httpService.setAuthHandlers({});
-    // initialAccessToken only seeds the first render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearSession]);
 
-  //! Function: set authenticated session
   const setAuthSession = useCallback(
     (session: { accessToken: string; user: AuthUser | UserSummaryDto }) => {
       const enrichedUser =
@@ -173,13 +168,11 @@ export const AuthenticationProvider = ({
     []
   );
 
-  //! Function: update user profile in state
   const updateUser = useCallback((updatedFields: Partial<AuthUser>) => {
     setUser((prev) => (prev ? { ...prev, ...updatedFields } : null));
     useAuthStore.getState().updateUser(updatedFields);
   }, []);
 
-  //! Function: refresh session via HttpOnly rt cookie (the new token arrives through onTokenRefreshed)
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
       await authService.postRefresh();
@@ -189,7 +182,6 @@ export const AuthenticationProvider = ({
     }
   }, []);
 
-  //! Restore the session on load: refresh token cookie -> access token -> profile from GET /me
   useEffect(() => {
     if (skipInitialRefresh || initialAccessToken) {
       setLoading(false);
@@ -204,7 +196,6 @@ export const AuthenticationProvider = ({
         if (!isMounted) return;
         setAuthSession({ accessToken: token, user: data as MeResponseDto });
       } catch {
-        // No valid cookie (or the profile could not be loaded): stay logged out
         if (isMounted) httpService.setInMemoryToken(null);
       } finally {
         if (isMounted) setLoading(false);
@@ -216,7 +207,6 @@ export const AuthenticationProvider = ({
     };
   }, [skipInitialRefresh, initialAccessToken, setAuthSession]);
 
-  //! Function: login
   const login = useCallback(
     async ({
       username,
@@ -242,7 +232,6 @@ export const AuthenticationProvider = ({
     [setAuthSession]
   );
 
-  //! Function: logout
   const logout = useCallback(() => {
     authService.postLogout().catch(() => {});
     if (typeof window !== 'undefined') {
@@ -251,7 +240,6 @@ export const AuthenticationProvider = ({
     clearSession();
   }, [clearSession]);
 
-  //! Context value
   const value = useMemo<AuthenticationContextI>(() => {
     return {
       loading,
