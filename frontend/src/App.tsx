@@ -13,7 +13,6 @@ import {
 } from "@tanstack/react-query";
 
 import Page404 from "@/pages/Page404";
-import { ToastContainer } from "react-toastify";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "react-error-boundary";
 import PrivateRoute from "@/components/PrivateRoute";
@@ -158,7 +157,6 @@ const App = () => {
           <AuthenticationProvider>
             {renderContent()}
             <Toaster />
-            <ToastContainer />
           </AuthenticationProvider>
         </QueryClientProvider>
       </ThemeProvider>
