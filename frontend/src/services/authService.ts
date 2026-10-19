@@ -5,6 +5,7 @@ import {
   AUTH_VERIFY_EMAIL_URL,
   AUTH_LOGIN_URL,
   AUTH_GOOGLE_URL,
+  AUTH_FACEBOOK_URL,
   AUTH_FORGOT_PASSWORD_URL,
   AUTH_RESET_PASSWORD_URL,
   AUTH_LOGOUT_URL,
@@ -16,6 +17,7 @@ import type {
   ResendVerificationRequestDto,
   LoginRequestDto,
   GoogleAuthRequestDto,
+  FacebookAuthRequestDto,
   ForgotPasswordRequestDto,
   ResetPasswordRequestDto,
   AuthResponseDto,
@@ -60,6 +62,11 @@ class AuthService {
     return response.data;
   }
 
+  async postFacebookLogin(data: FacebookAuthRequestDto): Promise<AuthResponseDto> {
+    const response = await httpService.post(AUTH_FACEBOOK_URL, data);
+    return response.data;
+  }
+
   async postForgotPassword(data: ForgotPasswordRequestDto): Promise<void> {
     await httpService.post(AUTH_FORGOT_PASSWORD_URL, data);
   }
@@ -68,7 +75,6 @@ class AuthService {
     await httpService.post(AUTH_RESET_PASSWORD_URL, data);
   }
 
-  // Goes through httpService so every refresh shares its single-flight + cross-tab lock
   postRefresh(): Promise<string> {
     return httpService.refreshAccessToken();
   }
