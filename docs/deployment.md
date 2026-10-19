@@ -29,16 +29,16 @@ Cấu hình trong `frontend/vercel.json`. Header bảo mật cũng khai báo ở
 
 ```json
 {
-  "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/v1/:path*", "destination": "https://palmsight-api.onrender.com/api/v1/:path*" },
+    { "source": "/api/v1/:path*", "destination": "https://palmsight-backend.onrender.com/api/v1/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
 ```
 
 - Vercel không đọc biến môi trường trong `rewrites`, nên URL của API trên Render ghi thẳng vào file. URL này không phải secret. Đổi URL API thì phải sửa file này.
-- `cleanUrls` cho phép `privacy.html` được phục vụ tại `/privacy`.
+- `/privacy`, `/terms`, `/data-deletion` là trang React (SPA fallback). **Không** thêm rewrite cho 3 đường dẫn này, nếu không Vercel sẽ trả file HTML tĩnh thay cho trang React.
+- Bản HTML tĩnh `privacy.html`, `terms.html`, `data-deletion.html` vẫn truy cập được tại đúng đường dẫn `.html` (file tĩnh có thật). Đây là URL khai báo trong Meta App Dashboard, vì crawler của Meta không chạy JavaScript nên cần trang có sẵn nội dung.
 
 Khi dev, Vite dev server làm việc tương tự bằng `server.proxy`, với đích là `API_PROXY_TARGET` trong `frontend/.env`.
 
