@@ -1,4 +1,4 @@
-import { UserSummaryDto } from './user.dto';
+import { UserSummaryDto } from "./user.dto";
 
 export interface RegisterRequestDto {
   displayName: string;
@@ -44,6 +44,7 @@ export interface GoogleAuthRequestDto {
 
 export interface FacebookAuthRequestDto {
   accessToken: string;
+  claimToken?: string;
 }
 
 export interface RefreshTokenResponseDto {
@@ -76,4 +77,3 @@ export interface ApiErrorResponse {
     };
   };
 }
-

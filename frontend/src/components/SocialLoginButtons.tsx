@@ -1,4 +1,5 @@
 import GoogleLoginButton from "./GoogleLoginButton";
+import FacebookLoginButton from "./FacebookLoginButton";
 
 export const SocialLoginButtons = () => {
   return (
@@ -16,13 +17,7 @@ export const SocialLoginButtons = () => {
 
       <div className="flex flex-col gap-2.5">
         <GoogleLoginButton />
-        <button
-          type="button"
-          className="w-full btn-secondary text-sm"
-        >
-          <span className="font-bold text-[#d4af37] mr-1">[f]</span> Đăng nhập
-          bằng Facebook
-        </button>
+        <FacebookLoginButton />
       </div>
     </>
   );

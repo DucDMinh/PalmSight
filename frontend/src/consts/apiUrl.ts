@@ -1,8 +1,6 @@
 const ROOT_URL = `/api`;
 const API_V1_URL = `/api/v1`;
 
-// Dont remove this command
-// ImportAPIURL
 export const USER_URL = `${ROOT_URL}/user`;
 export const TODO_URL = `https://jsonplaceholder.typicode.com/photos`;
 
@@ -11,6 +9,7 @@ export const AUTH_RESEND_VERIFICATION_URL = `${API_V1_URL}/auth/resend-verificat
 export const AUTH_VERIFY_EMAIL_URL = `${API_V1_URL}/auth/verify-email`;
 export const AUTH_LOGIN_URL = `${API_V1_URL}/auth/login`;
 export const AUTH_GOOGLE_URL = `${API_V1_URL}/auth/google`;
+export const AUTH_FACEBOOK_URL = `${API_V1_URL}/auth/facebook`;
 export const AUTH_FORGOT_PASSWORD_URL = `${API_V1_URL}/auth/forgot-password`;
 export const AUTH_RESET_PASSWORD_URL = `${API_V1_URL}/auth/reset-password`;
 export const AUTH_REFRESH_URL = `${API_V1_URL}/auth/refresh`;

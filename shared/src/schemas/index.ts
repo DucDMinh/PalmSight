@@ -108,6 +108,19 @@ export const googleAuthSchema = yup.object({
     .optional(),
 });
 
+export const facebookAuthSchema = yup.object({
+  accessToken: yup
+    .string()
+    .trim()
+    .required("Thiếu mã đăng nhập Facebook")
+    .max(4096, "Mã đăng nhập Facebook không hợp lệ"),
+  claimToken: yup
+    .string()
+    .trim()
+    .matches(UUID_V4_REGEX, "Mã nhận bài bói phải là UUID v4 hợp lệ")
+    .optional(),
+});
+
 export const forgotPasswordSchema = yup.object({
   email: yup
     .string()
