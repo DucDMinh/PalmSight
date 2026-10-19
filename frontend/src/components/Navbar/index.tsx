@@ -1,5 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import {
+  Sparkles,
+  ScrollText,
+  User,
+  Wallet,
+  Gift,
+  KeyRound,
+  LogOut,
+  Hand,
+} from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import {
@@ -26,76 +36,96 @@ export default function Navbar({ rightAction }: NavbarProps) {
   const isLoginPage = location.pathname === BaseUrl.Login;
 
   return (
-    <header className="sticky left-0 right-0 top-0 z-50 flex min-h-[72px] w-full items-center border-b border-hairline bg-canvas py-3.5 font-mono text-ink sm:py-4">
+    <header className="sticky left-0 right-0 top-0 z-50 flex min-h-[72px] w-full items-center border-b border-hairline bg-[#0b0716]/85 backdrop-blur-xl py-3.5 text-ink sm:py-4 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
       <div className="mx-auto flex w-full max-w-[92%] items-center justify-between px-4 sm:px-6 2xl:max-w-[1536px]">
-        {/* Left: Wordmark & Navigation */}
         <div className="flex items-center gap-4 sm:gap-8">
           <Link
             to={BaseUrl.Homepage}
             aria-label="PALMSIGHT Home"
-            className="group flex select-none items-center py-0.5"
+            className="group flex select-none items-center gap-3 py-0.5"
           >
-            <pre
-              className="select-none whitespace-pre font-mono text-[7px] font-bold leading-[1.05] tracking-normal text-ink sm:text-[9px] md:text-[10px]"
-              aria-label="PALMSIGHT"
-            >
-              {ASCII_WORDMARK}
-            </pre>
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[#d4af37]/60 bg-gradient-to-br from-[#2c1d4f] to-[#140d26] shadow-[0_0_15px_rgba(212,175,55,0.3)] transition-transform duration-300 group-hover:scale-105">
+              <Hand className="h-5 w-5 text-[#f5d77f]" />
+              <span
+                aria-hidden="true"
+                className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-[#d4af37] text-[8px] text-[#0b0716] font-bold"
+              >
+                ✦
+              </span>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="font-display text-xl sm:text-2xl font-bold tracking-[0.14em] text-gold-gradient leading-none">
+                PALMSIGHT
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.22em] text-mute mt-0.5 hidden sm:inline">
+                Huyền Cơ Chỉ Tay
+              </span>
+              <pre
+                className="sr-only select-none whitespace-pre font-mono text-[7px] font-bold leading-[1.05] tracking-normal text-ink"
+                aria-label="PALMSIGHT"
+              >
+                {ASCII_WORDMARK}
+              </pre>
+            </div>
           </Link>
 
           {isLogged ? (
-            <nav className="hidden items-center gap-4 text-sm sm:flex md:gap-6">
+            <nav className="hidden items-center gap-2 text-sm sm:flex md:gap-4">
               <Link
                 to={BaseUrl.Scan}
-                className={`inline-flex items-center border-b-2 py-1.5 transition-colors ${
+                className={`inline-flex items-center gap-1.5 border-b-2 px-2 py-1.5 transition-all ${
                   location.pathname === BaseUrl.Scan
-                    ? "border-ash font-bold text-ink"
+                    ? "border-[#d4af37] font-semibold text-[#f7e7b4] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]"
                     : "border-transparent text-mute hover:text-ink"
                 }`}
               >
-                Xem bói
+                <Sparkles className="h-3.5 w-3.5 text-[#d4af37]" />
+                <span>Xem bói</span>
               </Link>
               <Link
                 to={BaseUrl.Readings}
-                className={`inline-flex items-center border-b-2 py-1.5 transition-colors ${
+                className={`inline-flex items-center gap-1.5 border-b-2 px-2 py-1.5 transition-all ${
                   location.pathname === BaseUrl.Readings ||
                   location.pathname.startsWith("/readings")
-                    ? "border-ash font-bold text-ink"
+                    ? "border-[#d4af37] font-semibold text-[#f7e7b4] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]"
                     : "border-transparent text-mute hover:text-ink"
                 }`}
               >
-                Lịch sử
+                <ScrollText className="h-3.5 w-3.5 text-[#a855f7]" />
+                <span>Lịch sử</span>
               </Link>
               <Link
                 to={BaseUrl.Account}
-                className={`inline-flex items-center border-b-2 py-1.5 transition-colors ${
+                className={`inline-flex items-center gap-1.5 border-b-2 px-2 py-1.5 transition-all ${
                   location.pathname === BaseUrl.Account ||
                   location.pathname === BaseUrl.ChangePassword
-                    ? "border-ash font-bold text-ink"
+                    ? "border-[#d4af37] font-semibold text-[#f7e7b4] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]"
                     : "border-transparent text-mute hover:text-ink"
                 }`}
               >
-                Tài khoản
+                <User className="h-3.5 w-3.5 text-[#d4af37]" />
+                <span>Tài khoản</span>
               </Link>
             </nav>
           ) : (
             location.pathname === BaseUrl.Homepage && (
-              <nav className="hidden items-center gap-6 text-[16px] font-[500] text-[#201d1d] sm:flex">
+              <nav className="hidden items-center gap-6 text-[15px] font-medium text-body sm:flex">
                 <a
                   href="#cach-hoat-dong"
-                  className="py-1 text-[#201d1d] no-underline transition-colors hover:underline"
+                  className="py-1 text-body no-underline transition-colors hover:text-[#f7e7b4]"
                 >
                   Cách hoạt động
                 </a>
                 <a
                   href="#truong-phai"
-                  className="py-1 text-[#201d1d] no-underline transition-colors hover:underline"
+                  className="py-1 text-body no-underline transition-colors hover:text-[#f7e7b4]"
                 >
                   Trường phái
                 </a>
                 <a
                   href="#hoi-dap"
-                  className="py-1 text-[#201d1d] no-underline transition-colors hover:underline"
+                  className="py-1 text-body no-underline transition-colors hover:text-[#f7e7b4]"
                 >
                   Hỏi đáp
                 </a>
@@ -104,7 +134,6 @@ export default function Navbar({ rightAction }: NavbarProps) {
           )}
         </div>
 
-        {/* Right Section */}
         {rightAction !== "none" && (
           <div className="flex items-center gap-3">
             {isLogged ? (
@@ -112,9 +141,10 @@ export default function Navbar({ rightAction }: NavbarProps) {
                 <Link
                   to={BaseUrl.Wallet}
                   data-testid="credit-balance-badge"
-                  className="rounded border border-hairline bg-surface-card px-2 py-0.5 font-mono text-xs font-bold text-ink transition-opacity hover:opacity-80"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#d4af37]/50 bg-gradient-to-r from-[#241842] to-[#1b1233] px-3 py-1 font-rune text-xs font-bold text-[#f7e7b4] shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all hover:border-[#d4af37] hover:shadow-[0_0_20px_rgba(212,175,55,0.4)]"
                 >
-                  [{user?.creditBalance ?? 0} CREDITS]
+                  <Sparkles aria-hidden="true" className="h-3 w-3 text-[#d4af37]" />
+                  <span>[{user?.creditBalance ?? 0} CREDITS]</span>
                 </Link>
 
                 <Popover open={openPopover} onOpenChange={setPopover}>
@@ -122,7 +152,7 @@ export default function Navbar({ rightAction }: NavbarProps) {
                     <button
                       type="button"
                       aria-label="User menu"
-                      className="flex h-7 w-7 cursor-pointer select-none items-center justify-center rounded-full bg-ink font-mono text-xs font-bold text-canvas transition-opacity hover:opacity-80 sm:h-8 sm:w-8"
+                      className="flex h-8 w-8 cursor-pointer select-none items-center justify-center rounded-full border border-[#d4af37]/70 bg-gradient-to-br from-[#f3dc99] via-[#d4af37] to-[#9a7b2c] font-display text-sm font-bold text-[#0b0716] shadow-[0_0_15px_rgba(212,175,55,0.35)] transition-transform hover:scale-105 sm:h-9 sm:w-9"
                     >
                       {user?.avatarUrl ? (
                         <img
@@ -139,48 +169,55 @@ export default function Navbar({ rightAction }: NavbarProps) {
                   </PopoverTrigger>
                   <PopoverContent
                     align="end"
-                    className="w-48 rounded-none border border-hairline bg-canvas p-1 font-mono text-sm text-ink shadow-md"
+                    className="w-56 rounded-xl border border-[#d4af37]/40 bg-[#140d26]/95 backdrop-blur-xl p-1.5 text-sm text-ink shadow-mystic-card"
                   >
-                    <div className="truncate border-b border-hairline px-3 py-2 text-xs text-mute">
-                      {user?.displayName || user?.username || "Người dùng"}
+                    <div className="truncate border-b border-hairline px-3 py-2.5 text-xs text-[#d4af37] font-medium flex items-center gap-1.5">
+                      <span aria-hidden="true">✦</span>
+                      <span>{user?.displayName || user?.username || "Người dùng"}</span>
                     </div>
                     <Link
                       to={BaseUrl.Account}
                       onClick={() => setPopover(false)}
-                      className="flex w-full items-center px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-card"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-[#241842] hover:text-[#f7e7b4]"
                     >
-                      Tài khoản
+                      <User className="h-4 w-4 text-[#d4af37]" />
+                      <span>Tài khoản</span>
                     </Link>
                     <Link
                       to={BaseUrl.Wallet}
                       onClick={() => setPopover(false)}
-                      className="flex w-full items-center px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-card"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-[#241842] hover:text-[#f7e7b4]"
                     >
-                      Ví credits
+                      <Wallet className="h-4 w-4 text-[#a855f7]" />
+                      <span>Ví credits</span>
                     </Link>
                     <Link
                       to={BaseUrl.Referral}
                       onClick={() => setPopover(false)}
-                      className="flex w-full items-center px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-card"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-[#241842] hover:text-[#f7e7b4]"
                     >
-                      Giới thiệu bạn bè
+                      <Gift className="h-4 w-4 text-[#34d399]" />
+                      <span>Giới thiệu bạn bè</span>
                     </Link>
                     <Link
                       to={BaseUrl.ChangePassword}
                       onClick={() => setPopover(false)}
-                      className="flex w-full items-center px-3 py-2 text-sm text-ink transition-colors hover:bg-surface-card"
+                      className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-ink transition-colors hover:bg-[#241842] hover:text-[#f7e7b4]"
                     >
-                      Đổi mật khẩu
+                      <KeyRound className="h-4 w-4 text-[#f59e0b]" />
+                      <span>Đổi mật khẩu</span>
                     </Link>
+                    <div className="my-1 h-px bg-hairline" />
                     <button
                       type="button"
                       onClick={() => {
                         setPopover(false);
                         logout();
                       }}
-                      className="flex w-full cursor-pointer items-center px-3 py-2 text-left text-sm text-ink transition-colors hover:bg-surface-card"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-[#4c0519]/40"
                     >
-                      Đăng xuất
+                      <LogOut className="h-4 w-4" />
+                      <span>Đăng xuất</span>
                     </button>
                   </PopoverContent>
                 </Popover>
@@ -190,18 +227,18 @@ export default function Navbar({ rightAction }: NavbarProps) {
             ) : isLoginPage ? (
               <Link
                 to={BaseUrl.Register}
-                className="text-base font-medium text-ink underline underline-offset-4 transition-colors hover:text-charcoal"
+                className="btn-secondary !min-h-[36px] !px-4 !py-1.5 text-sm"
               >
                 Đăng ký
               </Link>
             ) : location.pathname === BaseUrl.Homepage ? (
-              <Link to={BaseUrl.Login} className="btn-primary">
+              <Link to={BaseUrl.Login} className="btn-primary !min-h-[38px] !px-5 !py-1.5 text-sm">
                 Bắt đầu
               </Link>
             ) : (
               <Link
                 to={BaseUrl.Login}
-                className="text-base font-medium text-ink underline underline-offset-4 transition-colors hover:text-charcoal"
+                className="btn-secondary !min-h-[36px] !px-4 !py-1.5 text-sm"
               >
                 Đăng nhập
               </Link>

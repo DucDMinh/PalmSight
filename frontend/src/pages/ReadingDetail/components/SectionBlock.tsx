@@ -1,4 +1,5 @@
 import React from "react";
+import { Eye, Sparkles } from "lucide-react";
 import type { ReadingSectionResult } from "@palmsight/shared";
 
 interface SectionBlockProps {
@@ -9,25 +10,30 @@ export const SectionBlock: React.FC<SectionBlockProps> = ({ sections }) => {
   if (!sections || sections.length === 0) return null;
 
   return (
-    <div data-testid="reading-sections-block">
+    <div className="mt-6 space-y-5" data-testid="reading-sections-block">
       {sections.map((section) => (
         <section
           key={section.key || section.title}
-          className="pt-6 pb-6 border-b border-hairline text-left"
+          className="p-5 sm:p-6 rounded-xl bg-[#0b0716]/55 border border-hairline text-left transition-colors hover:border-[#d4af37]/45"
           data-testid={`section-${section.key}`}
         >
-          <h3 className="font-heading-md text-heading-md text-ink pb-1 mb-2 border-b border-hairline font-bold">
-            {section.title}
+          <h3 className="font-display text-xl sm:text-2xl text-[#f7e7b4] pb-2 mb-4 border-b border-hairline font-bold flex items-center gap-2">
+            <span aria-hidden="true" className="text-[#d4af37] text-base">
+              ✦
+            </span>
+            <span>{section.title}</span>
           </h3>
-          <div className="space-y-2">
-            <p className="font-body-md text-body-md text-body leading-relaxed m-0">
-              <span className="font-heading-md text-heading-md text-ink font-bold font-mono">
+          <div className="space-y-3">
+            <p className="text-base text-body leading-relaxed m-0 bg-[#140d26]/80 p-3.5 rounded-lg border border-hairline/50">
+              <span className="text-[#c084fc] font-bold font-rune inline-flex items-center gap-1.5 mr-1">
+                <Eye aria-hidden="true" className="h-4 w-4 inline" />
                 [+] Quan sát{" "}
               </span>
               {section.observation}
             </p>
-            <p className="font-body-md text-body-md text-body leading-relaxed m-0">
-              <span className="font-heading-md text-heading-md text-ink font-bold font-mono">
+            <p className="text-base text-body leading-relaxed m-0 bg-[#140d26]/80 p-3.5 rounded-lg border border-hairline/50">
+              <span className="text-[#f5d77f] font-bold font-rune inline-flex items-center gap-1.5 mr-1">
+                <Sparkles aria-hidden="true" className="h-4 w-4 inline" />
                 [+] Ý nghĩa{" "}
               </span>
               {section.meaning}

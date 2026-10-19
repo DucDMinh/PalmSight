@@ -39,7 +39,6 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
       const trimmedCode = values.code.trim().toUpperCase();
       const response = await accountService.enterReferral(trimmedCode);
 
-      // Cập nhật creditBalance và referral vào context/store
       if (typeof response.creditBalance === "number") {
         updateUser({
           creditBalance: response.creditBalance,
@@ -56,7 +55,6 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
         `[✓] Đã ghi nhận mã của ${referrerName}! Bạn được cộng 1 credit.`
       );
 
-      // Làm mới query useMeQuery để cập nhật canEnterCode
       await queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
       resetForm();
     } catch (err: any) {
@@ -85,27 +83,26 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
   };
 
   return (
-    <section id="nhap-ma" className="mt-16 scroll-mt-20 font-mono text-ink">
-      <div className="pb-2 border-b border-hairline">
-        <h2 className="text-lg font-bold">Nhập mã giới thiệu</h2>
+    <section id="nhap-ma" className="mt-16 scroll-mt-24 font-sans text-ink">
+      <div className="pb-3 border-b border-gold/25 flex items-center gap-2">
+        <span className="text-gold text-sm">✦</span>
+        <h2 className="text-2xl font-display font-bold text-gold-gradient">Nhập mã giới thiệu</h2>
       </div>
 
       <div className="mt-6">
-        {/* Success Alert */}
         {successMessage && (
           <div
             role="status"
-            className="p-3 mb-4 text-sm border border-hairline bg-surface-soft text-ink rounded-[4px]"
+            className="p-3.5 mb-4 text-sm border border-terminal-success/40 bg-terminal-success/10 text-ink rounded-xl"
           >
             {successMessage}
           </div>
         )}
 
-        {/* Display when already entered code */}
         {currentEnteredCode ? (
           <div
             data-testid="entered-code-display"
-            className="p-4 bg-surface-card border border-hairline rounded-[4px] text-sm text-ink font-medium"
+            className="p-4 mystic-card rounded-xl text-sm text-gold-light font-mono font-medium"
           >
             [✓] Đã nhập mã giới thiệu: {currentEnteredCode}
           </div>
@@ -124,14 +121,14 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
               isSubmitting,
             }) => (
               <Form
-                className="w-full max-w-[480px] flex flex-col"
+                className="w-full max-w-[500px] mystic-card rounded-xl p-5 flex flex-col"
                 noValidate
                 data-testid="enter-referral-form"
               >
                 {generalError && (
                   <div
                     role="alert"
-                    className="p-3 mb-4 text-sm border border-terminal-danger/40 bg-terminal-danger/5 text-terminal-danger rounded-[4px]"
+                    className="p-3 mb-4 text-sm border border-terminal-danger/40 bg-error-container/30 text-terminal-danger rounded-lg"
                   >
                     {generalError}
                   </div>
@@ -139,7 +136,7 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
 
                 <label
                   htmlFor="referral-code-input"
-                  className="text-sm font-bold text-ink mb-2 block cursor-pointer"
+                  className="text-xs font-mono uppercase tracking-wider font-bold text-gold-light mb-2 block cursor-pointer"
                 >
                   Mã giới thiệu từ bạn bè
                 </label>
@@ -158,24 +155,24 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
                     }}
                     onBlur={handleBlur}
                     placeholder="K7QX4MZP"
-                    className="flex-1 h-10 px-3 bg-canvas text-ink border border-ink rounded-[4px] text-base font-normal tracking-[2px] uppercase outline-none focus:border-ink"
+                    className="flex-1 h-10 px-3.5 bg-surface-soft/80 text-gold-light border border-gold/30 rounded-lg text-base font-mono tracking-[3px] uppercase outline-none focus:border-gold"
                     aria-invalid={Boolean(touched.code && errors.code)}
                   />
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-10 px-5 bg-ink text-canvas font-medium rounded-[4px] hover:bg-charcoal transition-colors cursor-pointer select-none text-sm disabled:opacity-50 shrink-0"
+                    className="btn-primary h-10 px-5 text-sm cursor-pointer select-none disabled:opacity-50 shrink-0"
                   >
                     {isSubmitting ? "Đang xử lý..." : "Xác nhận mã"}
                   </button>
                 </div>
 
                 {touched.code && errors.code ? (
-                  <div className="text-xs text-terminal-danger mt-1">
+                  <div className="text-xs text-terminal-danger mt-2">
                     {errors.code}
                   </div>
                 ) : (
-                  <div className="mt-2 text-xs text-mute">
+                  <div className="mt-2.5 text-xs text-mute">
                     [i] Mã gồm 8 ký tự in hoa. Nhập mã để nhận ngay 1 credit.
                   </div>
                 )}
@@ -185,7 +182,7 @@ export const EnterReferralSection = ({ user }: EnterReferralSectionProps) => {
         ) : (
           <div
             data-testid="referral-not-eligible"
-            className="p-4 bg-surface-card border border-hairline rounded-[4px] text-sm text-mute"
+            className="p-4 mystic-card rounded-xl text-sm text-mute"
           >
             Tài khoản không đủ điều kiện nhập mã.
           </div>

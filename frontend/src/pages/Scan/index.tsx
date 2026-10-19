@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import {
   ReadingSchool,
   HandOrientation,
@@ -9,6 +10,7 @@ import {
   ReadingDto,
 } from "@palmsight/shared";
 import { useAuth } from "@/providers/AuthenticationProvider";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import SchoolStep from "./components/SchoolStep";
 import TopicsStep from "./components/TopicsStep";
 import HandStep from "./components/HandStep";
@@ -24,7 +26,6 @@ export const Scan: React.FC = () => {
   const navigate = useNavigate();
   const { updateUser } = useAuth();
 
-  // Load remembered school
   const [school, setSchool] = useState<ReadingSchool>(() => {
     try {
       const saved = localStorage.getItem(LAST_SCHOOL_STORAGE_KEY);
@@ -37,12 +38,10 @@ export const Scan: React.FC = () => {
         return saved as ReadingSchool;
       }
     } catch {
-      // Ignore localStorage read errors
     }
     return ReadingSchool.EASTERN;
   });
 
-  // Topics
   const [isAllTopics, setIsAllTopics] = useState(true);
   const [selectedSections, setSelectedSections] = useState<string[]>(() =>
     READING_SCHOOLS[ReadingSchool.EASTERN].sections.map((s) => s.key)
@@ -51,42 +50,31 @@ export const Scan: React.FC = () => {
     LIFE_ASPECTS.map((a) => a.key)
   );
 
-  // Hand
   const [hand, setHand] = useState<HandOrientation>(HandOrientation.LEFT);
 
-  // Photo & consent
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [aiConsent, setAiConsent] = useState(false);
 
-  // Flow status & errors
   const [status, setStatus] = useState<ScanStatus>("IDLE");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState<string | null>(null);
   const [pollingReadingId, setPollingReadingId] = useState<string | null>(null);
 
-  // Idempotency key
   const idempotencyKeyRef = useRef<string | null>(null);
 
   const { mutateAsync: createReading } = useCreateReadingMutation();
 
-  // School selection change
-  const handleSelectSchool = useCallback(
-    (newSchool: ReadingSchool) => {
-      setSchool(newSchool);
-      try {
-        localStorage.setItem(LAST_SCHOOL_STORAGE_KEY, newSchool);
-      } catch {
-        // Ignore
-      }
-      // When switching school: reset school custom sections, preserve selected aspects
-      const nextSections = READING_SCHOOLS[newSchool].sections.map((s) => s.key);
-      setSelectedSections(nextSections);
-    },
-    []
-  );
+  const handleSelectSchool = useCallback((newSchool: ReadingSchool) => {
+    setSchool(newSchool);
+    try {
+      localStorage.setItem(LAST_SCHOOL_STORAGE_KEY, newSchool);
+    } catch {
+    }
+    const nextSections = READING_SCHOOLS[newSchool].sections.map((s) => s.key);
+    setSelectedSections(nextSections);
+  }, []);
 
-  // Topics selection change
   const handleTopicsChange = useCallback(
     (isAll: boolean, sections: string[], aspects: string[]) => {
       setIsAllTopics(isAll);
@@ -96,23 +84,24 @@ export const Scan: React.FC = () => {
     []
   );
 
-  // Image change
-  const handleImageChange = useCallback((file: File | null, preview: string | null) => {
-    setImageFile(file);
-    setImagePreviewUrl(preview);
-    if (!file) {
-      setStatus("IDLE");
-      setRejectReason(null);
-      setErrorMessage(null);
-      idempotencyKeyRef.current = null;
-    }
-  }, []);
+  const handleImageChange = useCallback(
+    (file: File | null, preview: string | null) => {
+      setImageFile(file);
+      setImagePreviewUrl(preview);
+      if (!file) {
+        setStatus("IDLE");
+        setRejectReason(null);
+        setErrorMessage(null);
+        idempotencyKeyRef.current = null;
+      }
+    },
+    []
+  );
 
   const selectedCount = isAllTopics
     ? READING_SCHOOLS[school].sections.length + LIFE_ASPECTS.length
     : selectedSections.length + selectedAspects.length;
 
-  // Polling completed callback
   const handlePollFinished = useCallback(
     (reading: ReadingDto) => {
       setPollingReadingId(null);
@@ -142,7 +131,6 @@ export const Scan: React.FC = () => {
     enabled: Boolean(pollingReadingId),
   });
 
-  // Submit flow
   const doSubmit = useCallback(
     async (reuseKey = false) => {
       if (!imageFile) return;
@@ -156,7 +144,6 @@ export const Scan: React.FC = () => {
       setErrorMessage(null);
       setRejectReason(null);
 
-      // Topics param: omit if all topics
       const topicsParam = isAllTopics
         ? undefined
         : [...selectedSections, ...selectedAspects];
@@ -171,7 +158,6 @@ export const Scan: React.FC = () => {
           idempotencyKey: key,
         });
 
-        // Sync credit balance
         if (response.creditBalance !== undefined) {
           updateUser({ creditBalance: response.creditBalance });
         }
@@ -205,10 +191,8 @@ export const Scan: React.FC = () => {
           }
         } else if (statusCode === 503 || errCode === "AI_UNAVAILABLE") {
           setStatus("AI_UNAVAILABLE");
-          // Generate new key on next attempt
           idempotencyKeyRef.current = null;
         } else {
-          // Network error or timeout: keep same idempotencyKey for retry
           setStatus("NETWORK_ERROR");
           setErrorMessage(
             err?.response?.data?.error?.message ||
@@ -244,14 +228,32 @@ export const Scan: React.FC = () => {
   };
 
   return (
-    <main className="w-full bg-canvas min-h-[calc(100vh-56px)] text-ink font-body-md py-8">
-      <div className="max-w-[960px] mx-auto px-4">
+    <main className="w-full min-h-[calc(100vh-72px)] text-ink py-8 sm:py-12">
+      <div className="max-w-[1100px] mx-auto px-4">
+        <div
+          aria-hidden="true"
+          className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between border-b border-hairline pb-4 gap-2"
+        >
+          <div>
+            <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.25em] text-[#d4af37] font-semibold mb-1">
+              <Sparkles className="h-3.5 w-3.5" />
+              Đài Chiêm Tinh · Nghi Thức Xem Chỉ Tay
+            </span>
+            <p className="font-display text-2xl sm:text-3xl font-bold text-[#f7e7b4] m-0">
+              Khởi tạo Quẻ Bói Chỉ Tay
+            </p>
+          </div>
+          <span className="text-xs font-rune text-mute tracking-widest">
+            ✦ ☽ ☼ ☾ ✦
+          </span>
+        </div>
+
         {status === "ANALYZING" ? (
           <AnalyzingView />
         ) : (
-          <div className="flex flex-col md:flex-row justify-between items-start gap-8 md:gap-10">
-            {/* LEFT COLUMN: Configuration (400px) */}
-            <div className="w-full md:w-[400px] shrink-0 flex flex-col justify-start">
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-8 lg:gap-10">
+            <div className="relative w-full lg:w-[440px] shrink-0 mystic-card rounded-2xl p-6 sm:p-7 flex flex-col justify-start">
+              <TarotCorners />
               <SchoolStep
                 selectedSchool={school}
                 onSelectSchool={handleSelectSchool}
@@ -263,21 +265,11 @@ export const Scan: React.FC = () => {
                 selectedAspects={selectedAspects}
                 onChange={handleTopicsChange}
               />
-              <HandStep
-                school={school}
-                hand={hand}
-                onSelectHand={setHand}
-              />
+              <HandStep school={school} hand={hand} onSelectHand={setHand} />
             </div>
 
-            {/* 1px VERTICAL HAIRLINE DIVIDER */}
-            <div
-              aria-hidden="true"
-              className="hidden md:block w-[1px] bg-hairline shrink-0 self-stretch"
-            />
-
-            {/* RIGHT COLUMN: Camera / Upload (520px) */}
-            <div className="w-full md:w-[520px] shrink-0">
+            <div className="relative w-full flex-1 mystic-card rounded-2xl p-6 sm:p-7">
+              <TarotCorners />
               <CaptureStep
                 school={school}
                 hand={hand}
@@ -289,7 +281,11 @@ export const Scan: React.FC = () => {
                 onConsentChange={setAiConsent}
                 onImageChange={handleImageChange}
                 onSubmit={handleSubmit}
-                onRetry={status === "AI_UNAVAILABLE" ? handleRetryNewKey : handleRetrySameKey}
+                onRetry={
+                  status === "AI_UNAVAILABLE"
+                    ? handleRetryNewKey
+                    : handleRetrySameKey
+                }
                 status={status}
                 errorMessage={errorMessage}
                 rejectReason={rejectReason}

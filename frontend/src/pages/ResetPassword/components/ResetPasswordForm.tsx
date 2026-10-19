@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import BaseUrl from "@/consts/baseUrl";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import useResetPasswordMutation from "../hooks/useResetPasswordMutation";
 import type { ResetPasswordFormValues } from "../types";
 import type { ApiErrorPayload } from "@/services/authService";
@@ -58,7 +59,6 @@ export const ResetPasswordForm = () => {
         description: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.",
       });
 
-      // The server just ended every session, including this browser's
       if (isLogged) logout();
 
       navigate(`${BaseUrl.Login}?reset=1`);
@@ -111,7 +111,7 @@ export const ResetPasswordForm = () => {
       {!tokenFromUrl && (
         <div
           role="alert"
-          className="mb-4 p-3 bg-error-container/30 border border-terminal-danger text-ink rounded text-sm flex items-start gap-2"
+          className="mb-4 p-3.5 bg-error-container/30 border border-terminal-danger/50 text-ink rounded-xl text-sm flex items-start gap-2"
         >
           <span className="font-bold text-terminal-danger">[!]</span>
           <span>
@@ -123,15 +123,16 @@ export const ResetPasswordForm = () => {
       {generalError && (
         <div
           role="alert"
-          className="mb-4 p-3 bg-error-container/30 border border-terminal-danger text-ink rounded text-sm flex items-start gap-2"
+          className="mb-4 p-3.5 bg-error-container/30 border border-terminal-danger/50 text-ink rounded-xl text-sm flex items-start gap-2"
         >
           <span className="font-bold text-terminal-danger">[!]</span>
           <span>{generalError}</span>
         </div>
       )}
 
-      <Card className="w-full border-hairline bg-transparent shadow-none sm:shadow-sm sm:bg-surface-card/20 rounded">
-        <CardContent className="p-0 sm:p-6">
+      <Card className="w-full mystic-card rounded-2xl relative overflow-hidden">
+        <TarotCorners />
+        <CardContent className="p-6 sm:p-8 relative z-10">
           <Formik
             initialValues={initialValues}
             validationSchema={resetPasswordFormSchema}
@@ -178,7 +179,7 @@ export const ResetPasswordForm = () => {
                 <Button
                   type="submit"
                   isLoading={isSubmitting}
-                  className="w-full h-9 bg-ink hover:bg-charcoal text-on-dark font-mono text-base rounded transition-colors mt-2"
+                  className="w-full h-11 btn-primary text-base mt-2"
                 >
                   Đặt lại mật khẩu
                 </Button>
@@ -186,9 +187,9 @@ export const ResetPasswordForm = () => {
             )}
           </Formik>
 
-          <p className="text-center text-sm text-muted-foreground mt-4">
+          <p className="text-center text-sm text-mute mt-5">
             Đã nhớ mật khẩu?{" "}
-            <Link to={BaseUrl.Login} className="is-link text-ink underline">
+            <Link to={BaseUrl.Login} className="is-link text-gold-light font-semibold underline hover:text-gold">
               Đăng nhập
             </Link>
           </p>

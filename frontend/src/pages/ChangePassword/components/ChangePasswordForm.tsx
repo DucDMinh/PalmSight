@@ -73,9 +73,9 @@ export const ChangePasswordForm = () => {
       onSubmit={onSubmit}
     >
       {({ isSubmitting }) => (
-        <Form className="flex max-w-lg flex-col gap-4">
+        <Form className="flex max-w-lg flex-col gap-4 mystic-card rounded-2xl p-6 sm:p-8">
           {success && (
-            <div className="p-3 bg-surface-card border border-terminal-success rounded text-sm text-ink flex items-center gap-2">
+            <div className="p-3.5 bg-terminal-success/10 border border-terminal-success/40 rounded-xl text-sm text-ink flex items-center gap-2">
               <span className="font-bold text-terminal-success">[✓]</span>
               <span>Đổi mật khẩu thành công.</span>
             </div>
@@ -111,7 +111,7 @@ export const ChangePasswordForm = () => {
             disabled={isSubmitting}
           />
 
-          <Button type="submit" isLoading={isSubmitting} className="mt-2">
+          <Button type="submit" isLoading={isSubmitting} className="mt-2 h-11">
             Đổi mật khẩu
           </Button>
         </Form>

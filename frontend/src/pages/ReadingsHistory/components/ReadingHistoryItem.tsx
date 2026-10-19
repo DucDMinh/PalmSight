@@ -14,14 +14,17 @@ interface ReadingHistoryItemProps {
   item: ReadingListItemDto;
 }
 
-export const ReadingHistoryItem: React.FC<ReadingHistoryItemProps> = ({ item }) => {
+export const ReadingHistoryItem: React.FC<ReadingHistoryItemProps> = ({
+  item,
+}) => {
   const navigate = useNavigate();
 
   const isDone = item.status === ReadingStatus.DONE;
   const schoolConfig = READING_SCHOOLS[item.school];
   const rawName = schoolConfig?.name.replace("Chỉ tay ", "") ?? item.school;
   const schoolName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-  const handLabel = item.hand === HandOrientation.LEFT ? "Tay trái" : "Tay phải";
+  const handLabel =
+    item.hand === HandOrientation.LEFT ? "Tay trái" : "Tay phải";
 
   const totalSections = schoolConfig?.sections?.length ?? 0;
   const isAll =
@@ -48,25 +51,25 @@ export const ReadingHistoryItem: React.FC<ReadingHistoryItemProps> = ({ item }) 
     switch (item.status) {
       case ReadingStatus.DONE:
         return (
-          <span className="font-body-md text-body-md text-ink block font-mono">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#0b0716]/70 border border-success/40 text-xs text-success font-rune">
             [+] Xong
           </span>
         );
       case ReadingStatus.REJECTED:
         return (
-          <span className="font-caption-md text-caption-md text-danger block leading-normal font-mono">
+          <span className="text-xs text-danger block leading-normal font-rune">
             [!] Ảnh không rõ · đã hoàn 1 credit
           </span>
         );
       case ReadingStatus.FAILED:
         return (
-          <span className="font-caption-md text-caption-md text-danger block leading-normal font-mono">
+          <span className="text-xs text-danger block leading-normal font-rune">
             [!] Hệ thống bận · đã hoàn 1 credit
           </span>
         );
       case ReadingStatus.PROCESSING:
         return (
-          <span className="font-caption-md text-caption-md text-mute block leading-normal font-mono">
+          <span className="text-xs text-[#d4af37] block leading-normal font-rune animate-pulse">
             [...] Đang xử lý
           </span>
         );
@@ -91,57 +94,52 @@ export const ReadingHistoryItem: React.FC<ReadingHistoryItemProps> = ({ item }) 
   return (
     <tr
       onClick={handleClick}
-      className={`border-b border-hairline transition-colors ${
-        isDone ? "hover:bg-surface-soft cursor-pointer" : ""
+      className={`border-b border-hairline/60 transition-colors ${
+        isDone ? "hover:bg-[#241842]/50 cursor-pointer" : ""
       }`}
       data-testid={`reading-item-${item.id}`}
     >
-      {/* School Badge (No palm photo per ADR-0010) */}
-      <td className="w-[72px] py-4 pr-4 align-top">
+      <td className="w-[80px] py-4 pr-4 align-top">
         <div
-          className="w-[56px] h-[56px] bg-surface-card border border-hairline flex flex-col items-center justify-center font-mono select-none text-center"
+          className="w-[56px] h-[56px] rounded-xl bg-gradient-to-br from-[#2c1d4f] to-[#0b0716] border border-[#d4af37]/45 flex flex-col items-center justify-center font-rune select-none text-center shadow-[0_0_12px_rgba(212,175,55,0.15)]"
           title={schoolConfig?.name}
         >
-          <span className="text-[11px] font-bold text-ink tracking-wider">
+          <span className="text-[11px] font-bold text-[#f7e7b4] tracking-wider">
             [{getSchoolShortTag()}]
           </span>
-          <span className="text-[9px] text-mute uppercase tracking-tighter">
+          <span className="text-[9px] text-[#d4af37]/75 uppercase tracking-tighter">
             SYS::LOG
           </span>
         </div>
       </td>
 
-      {/* Lần xem */}
       <td className="w-[220px] py-4 pr-4 align-top">
-        <span className="font-body-strong text-body-strong text-ink font-medium block">
+        <span className="text-base text-[#f7e7b4] font-semibold block">
           {schoolName} · {handLabel} · {topicsBadge}
         </span>
         {!isAll && item.topics && item.topics.length > 0 && (
-          <span className="text-xs text-mute block mt-0.5 font-sans line-clamp-1">
+          <span className="text-xs text-mute block mt-1 font-sans line-clamp-1">
             {item.topics.map((t) => getTopicLabel(t, item.school)).join(", ")}
           </span>
         )}
       </td>
 
-      {/* Tóm tắt */}
       <td className="w-[340px] py-4 pr-6 align-top">
         {item.summary ? (
-          <p className="font-body-md text-body-md text-body leading-relaxed m-0 text-left line-clamp-2">
+          <p className="text-sm sm:text-base text-body leading-relaxed m-0 text-left line-clamp-2">
             {item.summary}
           </p>
         ) : (
-          <span className="font-body-md text-body-md text-mute block">—</span>
+          <span className="text-base text-mute block">—</span>
         )}
       </td>
 
-      {/* Ngày */}
       <td className="w-[150px] py-4 pr-4 align-top">
-        <span className="font-caption-md text-caption-md text-mute block font-mono text-xs">
+        <span className="text-mute block font-rune text-xs">
           {formattedDate}
         </span>
       </td>
 
-      {/* Trạng thái */}
       <td className="w-[178px] py-4 align-top">{getStatusBadge()}</td>
     </tr>
   );

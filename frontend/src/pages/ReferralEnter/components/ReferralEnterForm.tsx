@@ -6,6 +6,7 @@ import { getCookie, deleteCookie } from "@/helpers/cookie";
 import { showSuccess } from "@/helpers/toast";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import BaseUrl from "@/consts/baseUrl";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import useEnterReferralMutation from "../hooks/useEnterReferralMutation";
 import type { ReferralEnterFormValues } from "../types";
 import type { ApiErrorPayload } from "@/services/authService";
@@ -50,14 +51,12 @@ export const ReferralEnterForm = () => {
         code: trimmedCode,
       });
 
-      // Update credit balance in user state
       if (typeof response.creditBalance === "number") {
         updateUser({
           creditBalance: response.creditBalance,
         });
       }
 
-      // Clear ref_code cookie after successful consumption
       deleteCookie("ref_code");
 
       const referrerName = response.referrer?.displayName || "bạn bè";
@@ -92,11 +91,14 @@ export const ReferralEnterForm = () => {
   };
 
   return (
-    <div className="w-full max-w-[960px] mx-auto px-4 sm:px-6 pt-12 md:pt-20 pb-24 font-mono">
+    <div className="w-full max-w-[960px] mx-auto px-4 sm:px-6 pt-12 md:pt-20 pb-24 font-sans">
       <div className="grid grid-cols-1 md:grid-cols-[360px_1px_480px] gap-y-8 md:gap-y-0 justify-between items-start">
-        {/* LEFT COLUMN */}
         <section className="w-full md:w-[360px] flex flex-col text-left">
-          <h1 className="text-2xl sm:text-3xl text-ink font-bold leading-tight m-0 p-0">
+          <div className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.25em] text-gold mb-2">
+            <span>✦</span>
+            <span>Ấn Ký Tri Kỷ</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-display text-gold-gradient font-bold leading-tight m-0 p-0">
             Nhập mã giới thiệu
           </h1>
           <div className="h-4" />
@@ -110,14 +112,13 @@ export const ReferralEnterForm = () => {
           </p>
         </section>
 
-        {/* VERTICAL HAIRLINE DIVIDER */}
         <div
           aria-hidden="true"
-          className="hidden md:block w-px self-stretch bg-hairline"
+          className="hidden md:block w-px self-stretch bg-gradient-to-b from-transparent via-gold/25 to-transparent"
         />
 
-        {/* RIGHT COLUMN (FORM) */}
-        <section className="w-full md:w-[480px] flex flex-col text-left">
+        <section className="w-full md:w-[480px] mystic-card rounded-2xl p-6 sm:p-8 relative overflow-hidden flex flex-col text-left">
+          <TarotCorners />
           <Formik
             initialValues={initialValues}
             validationSchema={enterReferralSchema}
@@ -133,14 +134,14 @@ export const ReferralEnterForm = () => {
               isSubmitting,
             }) => (
               <Form
-                className="w-full flex flex-col m-0 p-0"
+                className="w-full flex flex-col m-0 p-0 relative z-10"
                 noValidate
                 data-testid="referral-enter-form"
               >
                 {generalError && (
                   <div
                     role="alert"
-                    className="p-3 mb-4 text-sm border border-terminal-danger/40 bg-terminal-danger/5 text-terminal-danger rounded-[4px]"
+                    className="p-3 mb-4 text-sm border border-terminal-danger/40 bg-error-container/30 text-terminal-danger rounded-lg"
                   >
                     {generalError}
                   </div>
@@ -148,7 +149,7 @@ export const ReferralEnterForm = () => {
 
                 <label
                   htmlFor="referral-code"
-                  className="text-base font-bold text-ink mb-2 block cursor-pointer"
+                  className="text-xs font-mono uppercase tracking-wider font-bold text-gold-light mb-2 block cursor-pointer"
                 >
                   Mã giới thiệu
                 </label>
@@ -166,17 +167,17 @@ export const ReferralEnterForm = () => {
                   }}
                   onBlur={handleBlur}
                   placeholder="K7QX4MZP"
-                  className="w-full h-10 px-3 py-2 bg-canvas text-ink border border-ink rounded-[4px] text-base font-normal tracking-[2px] uppercase outline-none focus:border-ink transition-none"
+                  className="w-full h-11 px-4 py-2 bg-surface-soft/80 text-gold-light border border-gold/30 rounded-lg text-base font-mono tracking-[3px] uppercase outline-none focus:border-gold transition-all"
                   aria-invalid={Boolean(touched.code && errors.code)}
                 />
 
                 {touched.code && errors.code ? (
-                  <div className="text-xs text-terminal-danger mt-1">
+                  <div className="text-xs text-terminal-danger mt-1.5">
                     {errors.code}
                   </div>
                 ) : (
                   <div className="mt-2 flex items-center gap-1.5 text-xs text-mute leading-relaxed">
-                    <span className="select-none font-bold">[i]</span>
+                    <span className="select-none font-bold text-gold">[i]</span>
                     <span>Mã gồm 8 ký tự.</span>
                   </div>
                 )}
@@ -187,7 +188,7 @@ export const ReferralEnterForm = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-9 px-5 py-1 bg-ink text-canvas font-medium rounded-[4px] border border-ink hover:bg-charcoal transition-colors cursor-pointer select-none text-center disabled:opacity-50"
+                    className="btn-primary h-10 px-6 text-sm cursor-pointer select-none text-center disabled:opacity-50"
                   >
                     {isSubmitting ? "Đang xử lý..." : "Xác nhận"}
                   </button>
@@ -195,7 +196,7 @@ export const ReferralEnterForm = () => {
                     type="button"
                     onClick={handleSkip}
                     disabled={isSubmitting}
-                    className="h-9 px-5 py-1 bg-canvas text-ink font-medium rounded-[4px] border border-mute hover:bg-surface-soft transition-colors cursor-pointer select-none text-center"
+                    className="btn-secondary h-10 px-6 text-sm cursor-pointer select-none text-center"
                   >
                     Bỏ qua
                   </button>

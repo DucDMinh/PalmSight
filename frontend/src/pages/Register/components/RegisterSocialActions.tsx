@@ -5,14 +5,16 @@ interface RegisterSocialActionsProps {
   isSubmitting: boolean;
 }
 
-export const RegisterSocialActions = ({ isSubmitting }: RegisterSocialActionsProps) => {
+export const RegisterSocialActions = ({
+  isSubmitting,
+}: RegisterSocialActionsProps) => {
   return (
     <>
       <div className="mt-6">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-9 bg-ink text-canvas rounded font-medium text-base px-5 flex items-center justify-center cursor-pointer transition-colors hover:bg-ink-deep active:bg-ink-deep disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "[...] Đang đăng ký..." : "Tạo tài khoản"}
         </button>
@@ -20,7 +22,10 @@ export const RegisterSocialActions = ({ isSubmitting }: RegisterSocialActionsPro
 
       <div className="mt-6 text-sm text-mute">
         Đã có tài khoản?{" "}
-        <Link to={BaseUrl.Login} className="text-ink underline hover:text-charcoal">
+        <Link
+          to={BaseUrl.Login}
+          className="text-[#f7e7b4] underline hover:text-[#d4af37] font-medium"
+        >
           Đăng nhập
         </Link>
       </div>

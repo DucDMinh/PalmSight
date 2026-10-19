@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import type { UserDto } from "../types";
 
 interface ProfileSectionProps {
@@ -43,106 +44,108 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
   };
 
   return (
-    <section id="ho-so" className="scroll-mt-20 font-mono text-ink">
-      <div className="pb-2 border-b border-hairline">
-        <h2 className="text-lg font-bold">Hồ sơ</h2>
+    <section id="ho-so" className="scroll-mt-24 font-sans text-ink">
+      <div className="pb-3 border-b border-gold/25 flex items-center gap-2">
+        <span className="text-gold text-sm">✦</span>
+        <h2 className="text-2xl font-display font-bold text-gold-gradient">Hồ sơ</h2>
       </div>
 
-      {/* Profile summary row */}
-      <div className="mt-6 flex items-start gap-4">
-        {user?.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt={user.displayName}
-            className="w-12 h-12 rounded-full border border-hairline object-cover shrink-0"
-          />
-        ) : (
-          <div className="w-12 h-12 rounded-full bg-surface-card border border-hairline flex items-center justify-center text-lg font-bold shrink-0 select-none">
-            {initialLetter}
-          </div>
-        )}
+      <div className="mt-6 mystic-card rounded-2xl p-6 relative overflow-hidden">
+        <TarotCorners />
+        <div className="flex items-start gap-5 relative z-10">
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.displayName}
+              className="w-16 h-16 rounded-full border-2 border-gold/50 object-cover shrink-0 shadow-gold-glow"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-surface-soft border-2 border-gold/40 flex items-center justify-center text-2xl font-display font-bold text-gold-light shrink-0 select-none shadow-gold-glow">
+              {initialLetter}
+            </div>
+          )}
 
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-base font-bold text-ink">
-            {user?.displayName || "Người dùng"}
-          </span>
-          <span className="text-sm text-mute">
-            {user?.username ? `@${user.username}` : "Chưa có username"}
-          </span>
-          <div className="text-sm">
-            <span className="text-mute">{user?.email || "Không có email"}</span>
-            {user?.email && (
-              <span className="text-ink font-medium ml-2">[+] Đã xác thực</span>
-            )}
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-xl font-display font-bold text-gold-light">
+              {user?.displayName || "Người dùng"}
+            </span>
+            <span className="text-sm font-mono text-mute">
+              {user?.username ? `@${user.username}` : "Chưa có username"}
+            </span>
+            <div className="text-sm mt-1">
+              <span className="text-body">{user?.email || "Không có email"}</span>
+              {user?.email && (
+                <span className="text-terminal-success font-mono text-xs font-medium ml-2 px-2 py-0.5 rounded-full bg-terminal-success/10 border border-terminal-success/30">
+                  [+] Đã xác thực
+                </span>
+              )}
+            </div>
+            <span className="text-xs font-mono text-mute mt-1">
+              Đăng nhập bằng: {loginProvidersText()}
+            </span>
           </div>
-          <span className="text-sm text-mute">
-            Đăng nhập bằng: {loginProvidersText()}
-          </span>
         </div>
-      </div>
 
-      {/* Account ID with copy button */}
-      <div className="mt-6 p-3 bg-surface-card border border-hairline rounded-[4px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="flex flex-col">
-          <span className="text-xs text-mute uppercase font-bold tracking-wider">
-            ID tài khoản
-          </span>
-          <span
-            data-testid="account-id-display"
-            className="text-xs sm:text-sm font-mono text-ink break-all select-all mt-0.5"
+        <div className="mt-6 p-3.5 bg-surface-soft/80 border border-gold/20 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 relative z-10">
+          <div className="flex flex-col">
+            <span className="text-[11px] font-mono text-gold-dim uppercase font-bold tracking-wider">
+              ID tài khoản
+            </span>
+            <span
+              data-testid="account-id-display"
+              className="text-xs sm:text-sm font-mono text-gold-light break-all select-all mt-0.5"
+            >
+              {user?.id || "—"}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyId}
+            disabled={!user?.id}
+            className="btn-secondary h-8 px-3 text-xs cursor-pointer self-start sm:self-auto"
           >
-            {user?.id || "—"}
-          </span>
+            {copiedId ? "Đã chép!" : "Sao chép"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleCopyId}
-          disabled={!user?.id}
-          className="h-8 px-3 rounded-[4px] bg-canvas text-ink border border-hairline hover:bg-surface-soft text-xs font-medium cursor-pointer self-start sm:self-auto transition-colors"
-        >
-          {copiedId ? "Đã chép!" : "Sao chép"}
-        </button>
       </div>
 
-      {/* Quick Navigation list */}
-      <div className="mt-8 flex flex-col border-t border-hairline">
+      <div className="mt-6 flex flex-col border-t border-gold/20">
         {user?.referral?.canEnterCode && (
           <a
             href="#nhap-ma"
             onClick={handleScrollToEnter}
-            className="py-3 border-b border-hairline flex justify-between items-center hover:bg-surface-soft px-1 transition-colors text-sm cursor-pointer"
+            className="py-3.5 border-b border-gold/15 flex justify-between items-center hover:bg-surface-soft/50 px-3 rounded-lg transition-colors text-sm cursor-pointer"
           >
-            <span className="text-ink">Nhập mã giới thiệu</span>
-            <span className="text-mute">&gt;</span>
+            <span className="text-gold-light">Nhập mã giới thiệu</span>
+            <span className="text-gold font-mono">&gt;</span>
           </a>
         )}
         <Link
           to={BaseUrl.Privacy}
-          className="py-3 border-b border-hairline flex justify-between items-center hover:bg-surface-soft px-1 transition-colors text-sm"
+          className="py-3.5 border-b border-gold/15 flex justify-between items-center hover:bg-surface-soft/50 px-3 rounded-lg transition-colors text-sm"
         >
           <span className="text-ink">Chính sách riêng tư</span>
-          <span className="text-mute">&gt;</span>
+          <span className="text-gold font-mono">&gt;</span>
         </Link>
         <Link
           to={BaseUrl.Terms}
-          className="py-3 border-b border-hairline flex justify-between items-center hover:bg-surface-soft px-1 transition-colors text-sm"
+          className="py-3.5 border-b border-gold/15 flex justify-between items-center hover:bg-surface-soft/50 px-3 rounded-lg transition-colors text-sm"
         >
           <span className="text-ink">Điều khoản dịch vụ</span>
-          <span className="text-mute">&gt;</span>
+          <span className="text-gold font-mono">&gt;</span>
         </Link>
         <Link
           to={BaseUrl.DataDeletion}
-          className="py-3 border-b border-hairline flex justify-between items-center hover:bg-surface-soft px-1 transition-colors text-sm"
+          className="py-3.5 border-b border-gold/15 flex justify-between items-center hover:bg-surface-soft/50 px-3 rounded-lg transition-colors text-sm"
         >
           <span className="text-ink">Hướng dẫn xoá dữ liệu</span>
-          <span className="text-mute">&gt;</span>
+          <span className="text-gold font-mono">&gt;</span>
         </Link>
       </div>
 
-      {/* Data deletion info (ADR-0009: No in-app self-delete button!) */}
-      <div className="mt-8 p-4 bg-canvas border border-hairline rounded-[4px]">
-        <h3 className="text-sm font-bold text-ink">Yêu cầu xoá dữ liệu</h3>
-        <p className="mt-1 text-xs text-mute leading-relaxed">
+      <div className="mt-6 p-5 bg-surface-soft/50 border border-gold/20 rounded-xl">
+        <h3 className="text-sm font-bold text-gold-light">Yêu cầu xoá dữ liệu</h3>
+        <p className="mt-1.5 text-xs text-mute leading-relaxed">
           Theo chính sách bảo mật, để xoá ảnh lòng bàn tay, kết quả bói và thông
           tin đăng nhập, vui lòng gửi email tới bộ phận hỗ trợ kèm ID tài khoản
           của bạn. Yêu cầu sẽ được xử lý trong vòng 30 ngày.
@@ -150,19 +153,18 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
         <div className="mt-3">
           <Link
             to={BaseUrl.DataDeletion}
-            className="text-xs font-medium text-ink underline underline-offset-4 hover:opacity-75 transition-opacity"
+            className="text-xs font-medium text-gold-light underline underline-offset-4 hover:text-gold transition-colors"
           >
             Xem hướng dẫn yêu cầu xoá dữ liệu &rarr;
           </Link>
         </div>
       </div>
 
-      {/* Logout button */}
-      <div className="mt-8 pt-4 border-t border-hairline flex items-center justify-between">
+      <div className="mt-6 pt-4 border-t border-gold/20 flex items-center justify-between">
         <button
           type="button"
           onClick={logout}
-          className="h-9 px-5 rounded-[4px] bg-canvas text-ink border border-hairline-strong hover:bg-surface-soft text-sm font-medium cursor-pointer transition-colors"
+          className="btn-secondary h-9 px-5 text-sm cursor-pointer"
         >
           Đăng xuất
         </button>

@@ -10,13 +10,12 @@ interface SecuritySectionProps {
 }
 
 const actionClassName =
-  "h-9 px-4 rounded-[4px] bg-ink text-canvas hover:bg-charcoal text-xs font-medium inline-flex items-center justify-center shrink-0 transition-colors select-none disabled:opacity-60";
+  "btn-primary h-9 px-4 text-xs inline-flex items-center justify-center shrink-0 select-none disabled:opacity-60";
 
 export const SecuritySection = ({ user }: SecuritySectionProps) => {
   const hasPassword = Boolean(user?.hasPassword);
   const email = user?.email ?? null;
 
-  // Google/Facebook-only users get their first password through the reset-password email (api-contract.md)
   const sendSetPasswordLink = useMutation({
     mutationFn: (to: string) => authService.postForgotPassword({ email: to }),
   });
@@ -26,16 +25,17 @@ export const SecuritySection = ({ user }: SecuritySectionProps) => {
     | null;
 
   return (
-    <section id="bao-mat" className="mt-16 scroll-mt-20 font-mono text-ink">
-      <div className="pb-2 border-b border-hairline">
-        <h2 className="text-lg font-bold">Bảo mật</h2>
+    <section id="bao-mat" className="mt-16 scroll-mt-24 font-sans text-ink">
+      <div className="pb-3 border-b border-gold/25 flex items-center gap-2">
+        <span className="text-gold text-sm">✦</span>
+        <h2 className="text-2xl font-display font-bold text-gold-gradient">Bảo mật</h2>
       </div>
 
       <div className="mt-6 flex flex-col gap-4">
         {hasPassword ? (
-          <div className="p-4 bg-surface-soft border border-hairline rounded-[4px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="p-5 mystic-card rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-ink">Mật khẩu tài khoản</h3>
+              <h3 className="text-base font-display font-bold text-gold-light">Mật khẩu tài khoản</h3>
               <p className="mt-1 text-xs text-mute leading-relaxed">
                 Đổi mật khẩu định kỳ giúp bảo vệ tài khoản của bạn an toàn hơn.
               </p>
@@ -45,10 +45,10 @@ export const SecuritySection = ({ user }: SecuritySectionProps) => {
             </Link>
           </div>
         ) : (
-          <div className="p-4 bg-surface-card border border-hairline rounded-[4px] flex flex-col gap-3">
+          <div className="p-5 mystic-card rounded-xl flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h3 className="text-sm font-bold text-ink">Thiết lập mật khẩu</h3>
+                <h3 className="text-base font-display font-bold text-gold-light">Thiết lập mật khẩu</h3>
                 <p className="mt-1 text-xs text-mute leading-relaxed">
                   Bạn đang chỉ đăng nhập được bằng Google/Facebook. Đặt mật khẩu để
                   có thêm cách đăng nhập bằng email.

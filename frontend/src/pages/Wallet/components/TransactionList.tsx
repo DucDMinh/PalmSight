@@ -45,8 +45,8 @@ export const TransactionList = ({
 }: TransactionListProps) => {
   if (isLoading && transactions.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-mute font-mono">
-        Đang tải lịch sử giao dịch...
+      <div className="py-10 mystic-card rounded-xl text-center text-sm text-mute font-mono">
+        ✦ Đang tải lịch sử giao dịch...
       </div>
     );
   }
@@ -55,7 +55,7 @@ export const TransactionList = ({
     return (
       <div
         data-testid="empty-transactions"
-        className="py-12 text-center text-sm text-mute font-mono border border-dashed border-hairline rounded-[4px]"
+        className="py-12 mystic-card rounded-xl text-center text-sm text-mute font-mono border border-dashed border-gold/25"
       >
         Chưa có giao dịch credits nào.
       </div>
@@ -63,37 +63,35 @@ export const TransactionList = ({
   }
 
   return (
-    <div className="w-full overflow-x-auto font-mono text-ink">
+    <div className="w-full overflow-x-auto mystic-card rounded-2xl p-4 sm:p-6 font-mono text-ink">
       <div className="min-w-[560px] flex flex-col">
-        {/* Header row */}
-        <div className="pb-2 border-b border-hairline text-xs uppercase tracking-wider text-mute grid grid-cols-[160px_1fr_100px_100px]">
+        <div className="pb-3 border-b border-gold/25 text-xs uppercase tracking-wider text-gold-dim grid grid-cols-[160px_1fr_100px_100px]">
           <div>Ngày</div>
           <div>Loại</div>
           <div>Credits</div>
           <div>Số dư</div>
         </div>
 
-        {/* Rows */}
         {transactions.map((tx) => {
           const isPositive = tx.amount > 0;
           return (
             <div
               key={tx.id}
               data-testid="transaction-row"
-              className="py-3.5 border-b border-hairline text-sm grid grid-cols-[160px_1fr_100px_100px] items-center hover:bg-surface-soft/50 transition-colors"
+              className="py-3.5 border-b border-gold/10 last:border-b-0 text-sm grid grid-cols-[160px_1fr_100px_100px] items-center hover:bg-surface-soft/50 transition-colors"
             >
               <div className="text-mute text-xs">{formatDate(tx.createdAt)}</div>
-              <div className="text-ink font-medium">
+              <div className="text-ink font-sans font-medium">
                 {getTransactionTypeName(tx)}
               </div>
               <div
                 className={`font-bold ${
-                  isPositive ? "text-ink" : "text-terminal-danger"
+                  isPositive ? "text-terminal-success" : "text-terminal-danger"
                 }`}
               >
                 {isPositive ? `+${tx.amount}` : `${tx.amount}`}
               </div>
-              <div className="font-bold text-ink">{tx.balanceAfter}</div>
+              <div className="font-bold text-gold-light">{tx.balanceAfter}</div>
             </div>
           );
         })}

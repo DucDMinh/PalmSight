@@ -1,4 +1,5 @@
 import React from "react";
+import { Stars } from "lucide-react";
 import {
   ReadingSchool,
   READING_SCHOOLS,
@@ -31,11 +32,9 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
 
   const handleToggleAll = () => {
     if (isAllTopics) {
-      // User is unchecking "Bói toàn bộ": uncheck the last aspect so they can customize
       const newAspects = allAspectKeys.slice(0, -1);
       onChange(false, allSectionKeys, newAspects);
     } else {
-      // User is checking "Bói toàn bộ"
       onChange(true, allSectionKeys, [...allAspectKeys]);
     }
   };
@@ -45,7 +44,6 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
     const nextAspects = isAllTopics ? [...allAspectKeys] : [...selectedAspects];
 
     if (isAllTopics) {
-      // If was all, now unchecking this section
       nextSections = allSectionKeys.filter((k) => k !== key);
     } else {
       if (selectedSections.includes(key)) {
@@ -63,11 +61,12 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
   };
 
   const handleToggleAspect = (key: string) => {
-    const nextSections = isAllTopics ? [...allSectionKeys] : [...selectedSections];
+    const nextSections = isAllTopics
+      ? [...allSectionKeys]
+      : [...selectedSections];
     let nextAspects: string[];
 
     if (isAllTopics) {
-      // If was all, now unchecking this aspect
       nextAspects = allAspectKeys.filter((k) => k !== key);
     } else {
       if (selectedAspects.includes(key)) {
@@ -93,28 +92,36 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
   return (
     <div className="flex flex-col mb-8">
       <div className="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
-        <h2 className="font-heading-md text-heading-md text-ink m-0 font-bold">
-          2. Mục muốn bói
-        </h2>
-        <span className="font-code-sm text-code-sm text-mute font-mono">SYS::OPT_02</span>
+        <div className="flex items-center gap-2">
+          <Stars aria-hidden="true" className="h-4 w-4 text-[#a855f7]" />
+          <h2 className="font-display text-xl text-[#f7e7b4] m-0 font-bold">
+            2. Mục muốn bói
+          </h2>
+        </div>
+        <span className="text-xs text-[#d4af37]/70 font-rune">SYS::OPT_02</span>
       </div>
 
-      {/* Checkbox Bói toàn bộ */}
       <button
         type="button"
         onClick={handleToggleAll}
-        className="font-heading-md text-heading-md text-ink py-1 flex items-center gap-2 cursor-pointer select-none text-left focus:outline-none"
+        className={`w-full px-3.5 py-2.5 rounded-xl border text-base flex items-center gap-2 cursor-pointer select-none text-left focus:outline-none transition-all ${
+          isAllTopics
+            ? "border-[#d4af37]/60 bg-[#2c1d4f]/70 text-[#f7e7b4] font-semibold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
+            : "border-hairline bg-[#0b0716]/40 text-body hover:border-[#d4af37]/40"
+        }`}
         data-testid="toggle-all-topics"
       >
-        <span className="font-mono">{isAllTopics ? "[x] " : "[ ] "}</span>
+        <span className="font-rune text-[#d4af37]">
+          {isAllTopics ? "[x] " : "[ ] "}
+        </span>
         <span>Bói toàn bộ</span>
       </button>
 
-      {/* Nhóm 1: Đường chỉ & dấu hiệu theo trường phái */}
-      <div className="font-body-sm text-body-sm text-mute mt-3 mb-2 font-medium">
-        Đường chỉ & dấu hiệu ({currentSchool.name.replace("Chỉ tay ", "").toLowerCase()})
+      <div className="text-xs uppercase tracking-[0.15em] text-[#d4af37]/90 mt-4 mb-2 font-semibold">
+        Đường chỉ & dấu hiệu (
+        {currentSchool.name.replace("Chỉ tay ", "").toLowerCase()})
       </div>
-      <div className="flex flex-col space-y-1">
+      <div className="flex flex-col space-y-1.5 bg-[#0b0716]/45 p-3 rounded-xl border border-hairline/60">
         {currentSchool.sections.map((section) => {
           const checked = isSectionSelected(section.key);
           return (
@@ -122,23 +129,28 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
               key={section.key}
               type="button"
               onClick={() => handleToggleSection(section.key)}
-              className={`py-0.5 text-left text-sm flex items-center gap-2 cursor-pointer select-none font-mono focus:outline-none transition-colors ${
-                isAllTopics ? "text-ash hover:text-ink" : checked ? "text-ink font-medium" : "text-mute hover:text-ink"
+              className={`py-1 px-2 rounded-lg text-left text-sm flex items-center gap-2 cursor-pointer select-none font-rune focus:outline-none transition-colors ${
+                isAllTopics
+                  ? "text-body/80 hover:text-[#f7e7b4]"
+                  : checked
+                  ? "text-[#f7e7b4] font-medium bg-[#241842]/70"
+                  : "text-mute hover:text-ink"
               }`}
               data-testid={`topic-section-${section.key}`}
             >
-              <span>{checked ? "[x]" : "[ ]"}</span>
+              <span className={checked ? "text-[#d4af37]" : "text-mute"}>
+                {checked ? "[x]" : "[ ]"}
+              </span>
               <span className="font-sans text-sm">{section.title}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Nhóm 2: Khía cạnh cuộc sống */}
-      <div className="font-body-sm text-body-sm text-mute mt-4 mb-2 font-medium">
+      <div className="text-xs uppercase tracking-[0.15em] text-[#d4af37]/90 mt-4 mb-2 font-semibold">
         Khía cạnh cuộc sống
       </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+      <div className="grid grid-cols-2 gap-2 bg-[#0b0716]/45 p-3 rounded-xl border border-hairline/60">
         {LIFE_ASPECTS.map((aspect) => {
           const checked = isAspectSelected(aspect.key);
           return (
@@ -146,12 +158,18 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
               key={aspect.key}
               type="button"
               onClick={() => handleToggleAspect(aspect.key)}
-              className={`py-0.5 text-left text-sm flex items-center gap-2 cursor-pointer select-none font-mono focus:outline-none transition-colors ${
-                isAllTopics ? "text-ash hover:text-ink" : checked ? "text-ink font-medium" : "text-mute hover:text-ink"
+              className={`py-1 px-2 rounded-lg text-left text-sm flex items-center gap-2 cursor-pointer select-none font-rune focus:outline-none transition-colors ${
+                isAllTopics
+                  ? "text-body/80 hover:text-[#f7e7b4]"
+                  : checked
+                  ? "text-[#f7e7b4] font-medium bg-[#241842]/70"
+                  : "text-mute hover:text-ink"
               }`}
               data-testid={`topic-aspect-${aspect.key}`}
             >
-              <span>{checked ? "[x]" : "[ ]"}</span>
+              <span className={checked ? "text-[#d4af37]" : "text-mute"}>
+                {checked ? "[x]" : "[ ]"}
+              </span>
               <span className="font-sans text-sm">{aspect.label}</span>
             </button>
           );
@@ -159,7 +177,10 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
       </div>
 
       {currentSelectedCount === 0 && (
-        <p className="font-body-sm text-danger text-sm mt-3" data-testid="no-topics-warning">
+        <p
+          className="text-danger text-sm mt-3 font-medium"
+          data-testid="no-topics-warning"
+        >
           [!] Chọn ít nhất 1 mục
         </p>
       )}
