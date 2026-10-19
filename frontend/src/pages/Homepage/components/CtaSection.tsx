@@ -17,19 +17,28 @@ export const CtaSection = () => {
         >
           ✦ Vận Mệnh Trong Lòng Bàn Tay ✦
         </div>
-        <h3
-          aria-hidden="true"
-          className="font-display text-2xl sm:text-4xl font-bold text-[#f7e7b4] max-w-[600px] mb-6"
-        >
+        <h3 className="font-display text-2xl sm:text-4xl font-bold text-[#f7e7b4] max-w-[600px] mb-6">
           Sẵn sàng lắng nghe thông điệp từ những đường chỉ tay của bạn?
         </h3>
-        <Link
-          to={isLogged ? BaseUrl.Scan : BaseUrl.Login}
-          className="btn-primary text-base px-8 py-3"
-        >
-          <Sparkles aria-hidden="true" className="h-4 w-4" />
-          <span>Bắt đầu xem bói</span>
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          <Link
+            to={isLogged ? BaseUrl.Scan : BaseUrl.Login}
+            className="btn-primary text-base px-8 py-3"
+          >
+            <Sparkles aria-hidden="true" className="h-4 w-4" />
+            <span>Bắt đầu xem bói</span>
+          </Link>
+          {!isLogged && (
+            <Link
+              to={BaseUrl.Scan}
+              data-testid="bottom-guest-trial-cta"
+              className="btn-secondary text-base px-6 py-3"
+            >
+              <span className="text-[#d4af37]">[#]</span>
+              <span>Bói thử 1 lần</span>
+            </Link>
+          )}
+        </div>
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import { TarotCorners } from "@/components/mystic/MysticDivider";
 export const AnalyzingView: React.FC = () => {
   const [seconds, setSeconds] = useState(0);
   const [dots, setDots] = useState("");
+  const progress = Math.min(40, seconds);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -53,7 +54,14 @@ export const AnalyzingView: React.FC = () => {
           <span>TASK: NEURAL_VISION_DECODE</span>
           <span>{Math.min(45, seconds)}s / 45s</span>
         </div>
-        <div className="w-full bg-[#1b1233] h-2.5 rounded-full overflow-hidden border border-[#d4af37]/30">
+        <div
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={40}
+          aria-label="Tiến độ phân tích lòng bàn tay"
+          className="w-full bg-[#1b1233] h-2.5 rounded-full overflow-hidden border border-[#d4af37]/30"
+        >
           <div
             className="h-full transition-all duration-1000 rounded-full"
             style={{

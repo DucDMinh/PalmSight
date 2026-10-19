@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import BaseUrl from "@/consts/baseUrl";
 import FormikField from "@/components/customFieldsFormik/FormikField";
 import InputField from "@/components/customFieldsFormik/InputField";
 import CheckBoxField from "@/components/customFieldsFormik/CheckBoxField";
@@ -117,19 +119,21 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
         label={
           <>
             Tôi đồng ý với{" "}
-            <a
-              href="#terms"
+            <Link
+              to={BaseUrl.Terms}
+              target="_blank"
               className="text-[#f7e7b4] underline hover:text-[#d4af37]"
             >
               Điều khoản dịch vụ
-            </a>{" "}
+            </Link>{" "}
             và{" "}
-            <a
-              href="#privacy"
+            <Link
+              to={BaseUrl.Privacy}
+              target="_blank"
               className="text-[#f7e7b4] underline hover:text-[#d4af37]"
             >
               Chính sách riêng tư
-            </a>
+            </Link>
             .
           </>
         }

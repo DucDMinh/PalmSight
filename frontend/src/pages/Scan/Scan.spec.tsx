@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Scan from "./index";
 import httpService from "@/services/httpService";
 import { AuthenticationProvider } from "@/providers/AuthenticationProvider";
+import readingsService from "@/services/readingsService";
+import * as toastHelper from "@/helpers/toast";
 import {
   ReadingSchool,
   HandOrientation,
@@ -331,5 +333,166 @@ describe("Scan Page (/scan)", () => {
       },
       { timeout: 5000 }
     );
+  });
+
+  describe("Guest Trial Scan Flow (US-GUEST-001)", () => {
+    const renderScanAsGuest = () => {
+      return render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/scan"]}>
+            <AuthenticationProvider skipInitialRefresh initialUser={null}>
+              <Routes>
+                <Route path="/scan" element={<Scan />} />
+                <Route
+                  path="/guest/reading/:token"
+                  element={<div data-testid="guest-preview-mock">Guest Preview</div>}
+                />
+              </Routes>
+            </AuthenticationProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+    };
+
+    it("should allow unauthenticated guest to submit scan and redirect to /guest/reading/:token", async () => {
+      const guestSpy = vi
+        .spyOn(readingsService, "createGuestReading")
+        .mockResolvedValueOnce({
+          claimToken: "guest-token-123",
+          reading: {
+            id: "reading-guest-1",
+            claimToken: "guest-token-123",
+            status: ReadingStatus.GUEST_PREVIEW,
+          } as any,
+        });
+
+      renderScanAsGuest();
+
+      const file = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [file] },
+      });
+      fireEvent.click(screen.getByTestId("ai-consent-checkbox"));
+
+      // Guest submit button has guest text
+      const submitBtn = screen.getByTestId("submit-reading-button");
+      expect(submitBtn).toHaveTextContent("Bói thử miễn phí");
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(guestSpy).toHaveBeenCalledWith(
+          expect.any(FormData),
+          expect.any(String)
+        );
+        expect(screen.getByTestId("guest-preview-mock")).toBeInTheDocument();
+      });
+    });
+
+    it("should handle 403 GUEST_TRIAL_LIMIT_REACHED by showing toast message and limit-reached banner", async () => {
+      const showErrorSpy = vi.spyOn(toastHelper, "showError");
+      vi.spyOn(readingsService, "createGuestReading").mockRejectedValueOnce({
+        response: {
+          status: 403,
+          data: {
+            error: {
+              code: "GUEST_TRIAL_LIMIT_REACHED",
+              message:
+                "Bạn đã sử dụng hết 1 lượt bói thử miễn phí. Hãy đăng ký tài khoản để tiếp tục trải nghiệm!",
+            },
+          },
+        },
+      });
+
+      renderScanAsGuest();
+
+      const file = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [file] },
+      });
+      fireEvent.click(screen.getByTestId("ai-consent-checkbox"));
+      fireEvent.click(screen.getByTestId("submit-reading-button"));
+
+      await waitFor(() => {
+        expect(showErrorSpy).toHaveBeenCalledWith(
+          "Bạn đã sử dụng hết 1 lượt bói thử miễn phí. Hãy đăng ký tài khoản để tiếp tục trải nghiệm!"
+        );
+        expect(screen.getByTestId("limit-reached-banner")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "Đăng ký tài khoản" })).toHaveAttribute(
+          "href",
+          "/register"
+        );
+        expect(screen.getByRole("link", { name: "Đăng nhập" })).toHaveAttribute(
+          "href",
+          "/login"
+        );
+      });
+    });
+
+    it("should handle 429 IP_TRIAL_LIMIT_EXCEEDED with rate-limited banner and toast (no network error banner)", async () => {
+      const showErrorSpy = vi.spyOn(toastHelper, "showError");
+      vi.spyOn(readingsService, "createGuestReading").mockRejectedValueOnce({
+        response: {
+          status: 429,
+          data: {
+            error: {
+              code: "IP_TRIAL_LIMIT_EXCEEDED",
+              message:
+                "Địa chỉ mạng của bạn đã đạt giới hạn 5 lượt bói thử trong ngày. Vui lòng đăng ký tài khoản để tiếp tục!",
+            },
+          },
+        },
+      });
+
+      renderScanAsGuest();
+
+      const file = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [file] },
+      });
+      fireEvent.click(screen.getByTestId("ai-consent-checkbox"));
+      fireEvent.click(screen.getByTestId("submit-reading-button"));
+
+      await waitFor(() => {
+        expect(showErrorSpy).toHaveBeenCalledWith(
+          "Địa chỉ IP đã đạt tối đa 5 lượt bói thử hôm nay. Đăng ký tài khoản để tiếp tục bói không giới hạn."
+        );
+        expect(screen.getByTestId("rate-limited-banner")).toBeInTheDocument();
+        expect(screen.queryByTestId("network-error-banner")).not.toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "Đăng ký tài khoản" })).toHaveAttribute(
+          "href",
+          "/register"
+        );
+      });
+    });
+
+    it("should handle REJECTED status with friendly Vietnamese toast message", async () => {
+      const showErrorSpy = vi.spyOn(toastHelper, "showError");
+      vi.spyOn(readingsService, "createGuestReading").mockResolvedValueOnce({
+        claimToken: "guest-token-123",
+        reading: {
+          id: "reading-guest-rejected",
+          claimToken: "guest-token-123",
+          status: ReadingStatus.REJECTED,
+          rejectReason:
+            "Không nhận diện được lòng bàn tay. Vui lòng chụp rõ lòng bàn tay và thử lại!",
+        } as any,
+      });
+
+      renderScanAsGuest();
+
+      const file = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [file] },
+      });
+      fireEvent.click(screen.getByTestId("ai-consent-checkbox"));
+      fireEvent.click(screen.getByTestId("submit-reading-button"));
+
+      await waitFor(() => {
+        expect(showErrorSpy).toHaveBeenCalledWith(
+          "Không nhận diện được lòng bàn tay. Vui lòng chụp rõ lòng bàn tay và thử lại!"
+        );
+        expect(screen.getByTestId("rejected-banner")).toBeInTheDocument();
+      });
+    });
   });
 });

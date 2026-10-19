@@ -16,7 +16,8 @@ const FB_SCOPES = "public_profile,email";
 const parseOAuthParams = (hash: string, search: string) => {
   const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
   const searchParams = new URLSearchParams(search.replace(/^\?/, ""));
-  const accessToken = hashParams.get("access_token") || searchParams.get("access_token");
+  const accessToken =
+    hashParams.get("access_token") || searchParams.get("access_token");
   const error =
     hashParams.get("error_description") ||
     hashParams.get("error_message") ||
@@ -34,7 +35,9 @@ export const FacebookLoginButton = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setAuthSession } = useAuth();
-  const [status, setStatus] = useState<ButtonStatus>(appId ? "ready" : "unavailable");
+  const [status, setStatus] = useState<ButtonStatus>(
+    appId ? "ready" : "unavailable"
+  );
   const isSubmittingRef = useRef(false);
   const popupTimerRef = useRef<number | null>(null);
 
@@ -53,8 +56,28 @@ export const FacebookLoginButton = () => {
       setStatus("submitting");
 
       try {
-        const data = await authService.postFacebookLogin({ accessToken });
+        const storedClaimToken =
+          typeof window !== "undefined"
+            ? sessionStorage.getItem("ps_claim_token") ||
+              localStorage.getItem("ps_claim_token") ||
+              undefined
+            : undefined;
+
+        const data = await authService.postFacebookLogin({
+          accessToken,
+          claimToken: storedClaimToken,
+        });
         setAuthSession({ accessToken: data.accessToken, user: data.user });
+
+        if (data.claimedReadingId) {
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("ps_claim_token");
+            localStorage.removeItem("ps_claim_token");
+          }
+          navigate(`/readings/${data.claimedReadingId}`);
+          return;
+        }
+
         navigate(data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Scan);
       } catch (error: any) {
         isSubmittingRef.current = false;
@@ -137,7 +160,8 @@ export const FacebookLoginButton = () => {
 
     const canUseJsSdk =
       Boolean(window.FB) &&
-      (window.location.protocol === "https:" || import.meta.env.MODE === "test");
+      (window.location.protocol === "https:" ||
+        import.meta.env.MODE === "test");
 
     if (canUseJsSdk && window.FB) {
       setStatus("submitting");
@@ -168,8 +192,14 @@ export const FacebookLoginButton = () => {
 
     const width = 600;
     const height = 680;
-    const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
-    const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+    const left = Math.max(
+      0,
+      Math.round(window.screenX + (window.outerWidth - width) / 2)
+    );
+    const top = Math.max(
+      0,
+      Math.round(window.screenY + (window.outerHeight - height) / 2)
+    );
 
     setStatus("submitting");
     const popup = window.open(
@@ -229,11 +259,15 @@ export const FacebookLoginButton = () => {
       type="button"
       onClick={handleFacebookClick}
       disabled={isDisabled}
-      title={status === "unavailable" ? "Đăng nhập Facebook hiện chưa khả dụng" : undefined}
-      className="w-full btn-secondary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+      title={
+        status === "unavailable"
+          ? "Đăng nhập Facebook hiện chưa khả dụng"
+          : undefined
+      }
+      className="btn-secondary w-full text-sm disabled:cursor-not-allowed disabled:opacity-60"
     >
       {status !== "submitting" && (
-        <span className="font-bold text-[#d4af37] mr-1">[f]</span>
+        <span className="mr-1 font-bold text-[#d4af37]">[f]</span>
       )}
       {labelText}
     </button>

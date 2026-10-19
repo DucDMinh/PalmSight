@@ -9,6 +9,7 @@ import {
   ReadingSchema,
   CreditTransactionSchema,
   DeletedIdentitySchema,
+  GuestTrialSchema,
 } from '../src/schemas';
 import {
   AuthProvider,
@@ -21,7 +22,7 @@ import {
 } from '@palmsight/shared';
 import { SYNC_TARGETS } from '../scripts/sync-indexes';
 
-describe('SETUP-006: Mongoose 8 Schemas & Indexes Verification', () => {
+describe('SETUP-006: Mongoose Schemas & Indexes Verification', () => {
   describe('Collection Names', () => {
     it('should have exact snake_case collection names', () => {
       expect((UserSchema as unknown as { get: (k: string) => unknown }).get('collection')).toBe('users');
@@ -32,6 +33,7 @@ describe('SETUP-006: Mongoose 8 Schemas & Indexes Verification', () => {
       expect((ReadingSchema as unknown as { get: (k: string) => unknown }).get('collection')).toBe('readings');
       expect((CreditTransactionSchema as unknown as { get: (k: string) => unknown }).get('collection')).toBe('credit_transactions');
       expect((DeletedIdentitySchema as unknown as { get: (k: string) => unknown }).get('collection')).toBe('deleted_identities');
+      expect((GuestTrialSchema as unknown as { get: (k: string) => unknown }).get('collection')).toBe('guest_trials');
     });
   });
 
@@ -356,9 +358,27 @@ describe('SETUP-006: Mongoose 8 Schemas & Indexes Verification', () => {
     });
   });
 
+  describe('GuestTrialSchema & Indexes', () => {
+    it('should have fingerprintHash unique, guestTokenHash unique, and expiresAt TTL index', () => {
+      const indexes = GuestTrialSchema.indexes();
+
+      const fpIdx = indexes.find(([fields]) => fields.fingerprintHash === 1);
+      expect(fpIdx).toBeDefined();
+      expect(fpIdx![1]).toMatchObject({ unique: true });
+
+      const tokenIdx = indexes.find(([fields]) => fields.guestTokenHash === 1);
+      expect(tokenIdx).toBeDefined();
+      expect(tokenIdx![1]).toMatchObject({ unique: true });
+
+      const ttlIdx = indexes.find(([fields]) => fields.expiresAt === 1);
+      expect(ttlIdx).toBeDefined();
+      expect(ttlIdx![1]).toMatchObject({ expireAfterSeconds: 0 });
+    });
+  });
+
   describe('sync-indexes targets', () => {
-    it('should register all 8 schemas in SYNC_TARGETS', () => {
-      expect(SYNC_TARGETS).toHaveLength(8);
+    it('should register all 9 schemas in SYNC_TARGETS', () => {
+      expect(SYNC_TARGETS).toHaveLength(9);
       const names = SYNC_TARGETS.map((t) => t.name);
       expect(names).toEqual([
         'User',
@@ -369,6 +389,7 @@ describe('SETUP-006: Mongoose 8 Schemas & Indexes Verification', () => {
         'Reading',
         'CreditTransaction',
         'DeletedIdentity',
+        'GuestTrial',
       ]);
     });
   });

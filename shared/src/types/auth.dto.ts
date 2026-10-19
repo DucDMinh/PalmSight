@@ -1,4 +1,4 @@
-import { UserSummaryDto } from './user.dto';
+import { UserSummaryDto } from "./user.dto";
 
 export interface RegisterRequestDto {
   displayName: string;
@@ -6,6 +6,7 @@ export interface RegisterRequestDto {
   email: string;
   password: string;
   referralCode?: string;
+  claimToken?: string;
 }
 
 export interface RegisterResponseDto {
@@ -15,6 +16,7 @@ export interface RegisterResponseDto {
 
 export interface VerifyEmailRequestDto {
   token: string;
+  claimToken?: string;
 }
 
 export interface ResendVerificationRequestDto {
@@ -39,10 +41,12 @@ export interface ResetPasswordRequestDto {
 export interface GoogleAuthRequestDto {
   idToken?: string;
   code?: string;
+  claimToken?: string;
 }
 
 export interface FacebookAuthRequestDto {
   accessToken: string;
+  claimToken?: string;
 }
 
 export interface RefreshTokenResponseDto {
@@ -55,6 +59,8 @@ export interface AuthResponseDto {
   expiresIn: number;
   isNewUser: boolean;
   user: UserSummaryDto;
+  claimedReadingId?: string | null;
+  claimFailed?: boolean;
 }
 
 export interface ErrorDetailField {
@@ -73,4 +79,3 @@ export interface ApiErrorResponse {
     };
   };
 }
-

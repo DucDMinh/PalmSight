@@ -23,8 +23,8 @@ Tóm tắt các request `POST`/`PUT`:
 
 | Endpoint | Path | Query | Header | Cookie | Body |
 | --- | --- | --- | --- | --- | --- |
-| `POST /auth/register` | — | — | — | — | JSON `{ displayName, username, email, password, referralCode? }` |
-| `POST /auth/verify-email` | — | — | — | `rt` (nếu có) | JSON `{ token }` |
+| `POST /auth/register` | — | — | — | — | JSON `{ displayName, username, email, password, referralCode?, claimToken? }` |
+| `POST /auth/verify-email` | — | — | — | `rt` (nếu có) | JSON `{ token, claimToken? }` |
 | `POST /auth/resend-verification` | — | — | — | — | JSON `{ email }` |
 | `POST /auth/login` | — | — | — | `rt` (nếu có) | JSON `{ login, password }` |
 | `POST /auth/forgot-password` | — | — | — | — | JSON `{ email }` |
@@ -36,6 +36,7 @@ Tóm tắt các request `POST`/`PUT`:
 | `PUT /me/password` | — | — | `Authorization` | — | JSON `{ currentPassword, newPassword }` |
 | `POST /me/referral` | — | — | `Authorization` | — | JSON `{ code }` |
 | `POST /readings` | — | — | `Authorization`, `Idempotency-Key` | — | multipart `school`, `topics`, `hand`, `aiConsent`, `image` |
+| `POST /readings/guest` | — | — | `Idempotency-Key` | `ps_guest_trial` (nếu có) | multipart `school`, `topics`, `hand`, `fingerprint`, `aiConsent`, `image` |
 
 ### Header
 
@@ -43,13 +44,13 @@ Tóm tắt các request `POST`/`PUT`:
 | --- | --- | --- | --- |
 | `Authorization` | request | Mọi endpoint cần đăng nhập | `Bearer <accessToken>` |
 | `Content-Type` | request | Request có body | `application/json`, hoặc `multipart/form-data; boundary=...`. Với multipart, để trình duyệt tự đặt, **không** tự ghi tay (sẽ thiếu `boundary`) |
-| `Idempotency-Key` | request | `POST /readings` | UUID v4 do client sinh (`crypto.randomUUID()`), 36 ký tự |
+| `Idempotency-Key` | request | `POST /readings`, `POST /readings/guest` | UUID v4 do client sinh (`crypto.randomUUID()`), 36 ký tự |
 | `Origin` | request | `/auth/refresh`, `/auth/logout` | Trình duyệt tự gửi; phải khớp `PUBLIC_BASE_URL` |
 | `ngrok-skip-browser-warning` | request | Chỉ khi dev qua ngrok | `true` |
 | `X-Request-Id` | response | Mọi response | ID để tra log; trùng `details.requestId` của lỗi 500 |
 | `Retry-After` | response | `429` | Số giây cần chờ |
 | `Idempotent-Replayed` | response | `POST /readings` trả lại kết quả cũ | `true` |
-| `Set-Cookie` | response | Đăng nhập, refresh, logout | Cookie `rt` |
+| `Set-Cookie` | response | Đăng nhập, refresh, logout; bói thử khách | Cookie `rt` (auth); cookie `ps_guest_trial` (bói thử, HMAC signed) |
 
 ### Xác thực
 
@@ -112,7 +113,7 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | `code` | HTTP | Khi nào |
 | --- | --- | --- |
 | `VALIDATION_ERROR` | 400 | Body, query hoặc header sai định dạng, thiếu trường bắt buộc, hoặc có trường lạ; `details.fields` liệt kê trường lỗi |
-| `IDEMPOTENCY_KEY_REQUIRED` | 400 | Thiếu header `Idempotency-Key` ở `POST /readings` |
+| `IDEMPOTENCY_KEY_REQUIRED` | 400 | Thiếu header `Idempotency-Key` ở `POST /readings`, `POST /readings/guest` |
 | `VERIFICATION_TOKEN_INVALID` | 400 | Link xác minh email sai, hết hạn hoặc đã dùng |
 | `RESET_TOKEN_INVALID` | 400 | Link đặt lại mật khẩu sai, hết hạn hoặc đã dùng |
 | `CURRENT_PASSWORD_INCORRECT` | 400 | `PUT /me/password`: mật khẩu hiện tại sai |
@@ -124,6 +125,7 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | `EMAIL_NOT_VERIFIED` | 403 | Đăng nhập đúng mật khẩu nhưng email chưa được xác minh |
 | `REFERRAL_NOT_ALLOWED` | 403 | Tài khoản được tạo lại từ email/Google/Facebook đã bị xoá, nên không được nhập mã giới thiệu |
 | `ORIGIN_NOT_ALLOWED` | 403 | Header `Origin` không khớp `PUBLIC_BASE_URL` ở `/auth/refresh`, `/auth/logout` |
+| `GUEST_TRIAL_LIMIT_REACHED` | 403 | Đã sử dụng hết 1 lượt bói thử miễn phí (kiểm tra qua cookie `ps_guest_trial` hoặc `fingerprintHash`) |
 | `NOT_FOUND` | 404 | Tài nguyên không tồn tại, đã xoá, hoặc không thuộc về user |
 | `REFERRAL_CODE_NOT_FOUND` | 404 | Mã giới thiệu không tồn tại hoặc sai định dạng |
 | `EMAIL_TAKEN` | 409 | Đăng ký với email đã thuộc một tài khoản có mật khẩu |
@@ -136,10 +138,11 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | `REFERRAL_SELF` | 422 | Nhập mã của chính mình |
 | `REFERRAL_CYCLE` | 422 | Nhập mã của người do mình giới thiệu |
 | `RATE_LIMITED` | 429 | Vượt giới hạn; có header `Retry-After` |
+| `IP_TRIAL_LIMIT_EXCEEDED` | 429 | Địa chỉ IP đã phát sinh 5 lượt bói thử thành công trong vòng 24 giờ |
 | `AI_UNAVAILABLE` | 503 | Nhà cung cấp AI lỗi, hết quota hoặc timeout; credit đã được hoàn |
 | `INTERNAL_ERROR` | 500 | Lỗi không xác định; có `details.requestId` |
 
-**Rate limit** đếm trong bộ nhớ của API. Endpoint cần đăng nhập đếm theo user; endpoint không cần đăng nhập đếm theo IP.
+**Rate limit** đếm trong bộ nhớ của API (riêng IP sliding rate limit của bói thử khách vãng lai được đếm trong MongoDB `guest_trials`). Endpoint cần đăng nhập đếm theo user; endpoint không cần đăng nhập đếm theo IP.
 
 | Endpoint | Giới hạn |
 | --- | --- |
@@ -149,14 +152,15 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | `PUT /me/password` | 5 request/giờ/user |
 | `POST /me/referral` | 5 request/giờ/user |
 | `POST /readings` | 5 request/phút/user, kể cả request trả lại kết quả cũ |
+| `POST /readings/guest` | Giới hạn trượt 5 lượt bói thử thành công/IP/24 giờ (`IP_TRIAL_LIMIT_EXCEEDED`); 1 lượt bói thử/thiết bị (`GUEST_TRIAL_LIMIT_REACHED`) |
 | Còn lại | 60 request/phút |
 
 ## Endpoints
 
 | Method | Path | Auth | Đầu vào | Mô tả |
 | --- | --- | --- | --- | --- |
-| POST | `/auth/register` | — | body JSON | Đăng ký bằng email + mật khẩu, gửi email xác minh |
-| POST | `/auth/verify-email` | — | body JSON | Xác minh email: tạo tài khoản và đăng nhập luôn |
+| POST | `/auth/register` | — | body JSON | Đăng ký bằng email + mật khẩu, gửi email xác minh (hỗ trợ kèm `claimToken`) |
+| POST | `/auth/verify-email` | — | body JSON | Xác minh email: tạo tài khoản, claim bài bói thử (nếu có `claimToken`) và đăng nhập |
 | POST | `/auth/resend-verification` | — | body JSON | Gửi lại email xác minh |
 | POST | `/auth/login` | — | body JSON | Đăng nhập bằng email hoặc username + mật khẩu |
 | POST | `/auth/forgot-password` | — | body JSON | Gửi email đặt lại mật khẩu |
@@ -175,6 +179,8 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | GET | `/readings` | Bearer | query phân trang | Lịch sử các lần xem |
 | GET | `/readings/{id}` | Bearer | path | Chi tiết một lần xem |
 | DELETE | `/readings/{id}` | Bearer | path | Xoá kết quả, ẩn khỏi lịch sử |
+| POST | `/readings/guest` | — | header + body multipart | Bói thử 1 lần cho khách vãng lai (không cần đăng nhập), xem trước 50% kết quả |
+| GET | `/readings/guest/{token}` | — | path | Xem lại bản xem trước 50% bằng claimToken trong thời hạn 7 ngày |
 
 Danh sách trường phái và các mục bói không có endpoint riêng: web đọc từ `@palmsight/shared` (`READING_SCHOOLS`, `LIFE_ASPECTS`).
 
@@ -237,12 +243,13 @@ Không tạo user ngay. Server lưu đăng ký vào `pending_registrations`, g�
 | body | `email` | string | có | Như trên |
 | body | `password` | string | có | Như trên |
 | body | `referralCode` | string | không | Mã giới thiệu, điền sẵn từ cookie `ref_code`. Chuẩn hoá như ở `POST /me/referral`. Lúc đăng ký chỉ kiểm tra định dạng; mã sai định dạng → `400 VALIDATION_ERROR` |
+| body | `claimToken` | string | không | Mã UUID v4 của bài bói thử khách vãng lai. Được lưu vào `pending_registrations` để truyền tiếp sang bước xác minh email |
 
 ```http
 POST /api/v1/auth/register
 Content-Type: application/json
 
-{ "displayName": "Nguyễn Văn A", "username": "nguyenvana", "email": "a@example.com", "password": "mat-khau-du-dai" }
+{ "displayName": "Nguyễn Văn A", "username": "nguyenvana", "email": "a@example.com", "password": "mat-khau-du-dai", "claimToken": "e4b8a21f-82df-4db3-9824-7128cf4291f0" }
 ```
 
 ```json
@@ -262,27 +269,34 @@ Lỗi: `VALIDATION_ERROR`, `EMAIL_TAKEN`, `USERNAME_TAKEN`, `RATE_LIMITED`.
 
 ### POST /auth/verify-email
 
-Trang `/verify-email` gọi endpoint này với `token` lấy từ link.
+Trang `/verify-email` gọi endpoint này với `token` lấy từ link và `claimToken` (tùy chọn).
 
-| Vị trí | Trường | Kiểu | Bắt buộc |
-| --- | --- | --- | --- |
-| body | `token` | string | có |
+| Vị trí | Trường | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- | --- |
+| body | `token` | string | có | Token xác minh lấy từ email |
+| body | `claimToken` | string | không | Mã UUID v4 nhận lại bài bói thử khách vãng lai |
 
 Server tìm đăng ký chờ theo hash của token, rồi trong **một transaction**:
 
-- Email chưa thuộc user nào → tạo user (`displayName`, `username`, `email`, `passwordHash`), sinh `referralCode`, cộng `SIGNUP_BONUS`. Trả `isNewUser = true`. Nếu email nằm trong `deleted_identities`: không cộng `SIGNUP_BONUS`, và đặt `referralBlocked = true`.
+- Email chưa thuộc user nào → tạo user (`displayName`, `username`, `email`, `passwordHash`), sinh `referralCode`, cộng `SIGNUP_BONUS` (+3 credits). Trả `isNewUser = true`. Nếu email nằm trong `deleted_identities`: không cộng `SIGNUP_BONUS`, và đặt `referralBlocked = true`.
 - Email thuộc user chỉ có Google/Facebook → gắn `username`, `passwordHash` vào user đó. Trả `isNewUser = false`.
+- **Mở khóa bài bói thử (`claimToken`)**: Nếu có `claimToken` (truyền trong body hoặc lấy từ `pending_registrations.claimToken`) hợp lệ và bài bói còn hạn lưu trữ (`previewExpiresAt > now`):
+  - Khấu trừ 1 credit (`READING_SPEND`) mở khóa bài bói qua `CreditLedgerService`.
+  - Cập nhật bài bói: `userId = user._id`, `claimedByUserId = user._id`, `status = DONE`, `previewExpiresAt = null`.
+  - Đánh dấu `guest_trials.isClaimed = true`.
+  - Số dư ví sau kích hoạt là 2 credits (hoặc 3 nếu có mã giới thiệu). Response trả về `claimedReadingId: "<reading_id>"`.
+  - Nếu `claimToken` không tồn tại, sai định dạng hoặc đã quá hạn 7 ngày: hệ thống bỏ qua việc trừ credit, user nhận đủ 3 credits (`SIGNUP_BONUS`), response trả về `claimedReadingId: null`, `claimFailed: true`.
 - Xoá đăng ký chờ (token chỉ dùng được một lần).
 
 Nếu đăng ký có `referralCode` và user vừa được **tạo mới**: sau transaction trên, server chạy đúng logic của `POST /me/referral` với mã đó.
 
 - Mã hợp lệ → người dùng +1, chủ mã +2 (hoặc 0 nếu chủ mã hết lượt trong ngày); `GET /me` trả `referral.canEnterCode = false`.
 - Mã lỗi (không tồn tại, của chính mình…) thì bỏ qua, request vẫn thành công; người dùng nhập tay lại được ở `/referral/enter`.
-- Response được trả **sau** bước này, nên `user.creditBalance` đã gồm +1 nếu mã hợp lệ (ví dụ 4 thay vì 3).
+- Response được trả **sau** bước này, nên `user.creditBalance` đã gồm +1 nếu mã hợp lệ (ví dụ 4 thay vì 3, hoặc 3 thay vì 2 khi có claim bài bói).
 
 Lý do: link xác minh thường được mở bằng trình duyệt khác (từ app mail), nên cookie `ref_code` bị mất.
 
-Response: [Response đăng nhập](#response-đăng-nhập-dùng-chung), tức là xác minh xong thì đăng nhập luôn.
+Response: [Response đăng nhập](#response-đăng-nhập-dùng-chung) mở rộng kèm `claimedReadingId` và `claimFailed`.
 
 Lỗi: `VALIDATION_ERROR`, `VERIFICATION_TOKEN_INVALID` (token sai, hết hạn 24 giờ, hoặc đã dùng), `RATE_LIMITED`.
 
@@ -794,3 +808,104 @@ Path: `id`. Không có body.
 | Reading `DONE`, `REJECTED`, `FAILED` | `204` |
 | Reading `PROCESSING` | `409 READING_IN_PROGRESS`; xoá lại sau khi xử lý xong |
 | Không tồn tại, đã xoá, hoặc thuộc user khác | `404 NOT_FOUND` |
+
+### POST /readings/guest
+
+Endpoint công khai cho khách vãng lai bói thử 1 lần không cần đăng nhập. Xử lý đồng bộ và trả về bản xem trước 50% kết quả (`summary` và 2 sections đầu tiên mở; các phần còn lại bị khóa và gán `null` ở cấp server DTO để ngăn ngừa lộ dữ liệu qua DevTools).
+
+**Header**
+
+| Header | Bắt buộc | Ràng buộc |
+| --- | --- | --- |
+| `Idempotency-Key` | có | UUID v4, 36 ký tự |
+| `Content-Type` | có | `multipart/form-data; boundary=...`, do trình duyệt tự đặt |
+| `Cookie` | không | `ps_guest_trial=<signed_cookie>` nếu đã từng bói thử |
+
+**Body (multipart/form-data)**
+
+| Part | Kiểu | Bắt buộc | Ràng buộc |
+| --- | --- | --- | --- |
+| `school` | text | có | `WESTERN` \| `EASTERN` \| `VEDIC` |
+| `hand` | text | có | `LEFT` \| `RIGHT` |
+| `topics` | text | không | Các key cách nhau bởi dấu phẩy, ví dụ `lifeLine,headLine,career`. Mặc định bói toàn bộ |
+| `fingerprint` | text | có | Chuỗi nhận diện thiết bị FingerprintJS (tối thiểu 16 ký tự) |
+| `aiConsent` | text | có | Phải là `true` |
+| `image` | file | có | Đúng 1 file ảnh, ≤ 8 MB (JPEG/PNG/WebP/HEIC) |
+
+**Bảo vệ chống lạm dụng (`GuestTrialGuard` & `GuestTrialRateLimitGuard`)**
+1. Kiểm tra cookie ký HMAC `ps_guest_trial` và hash SHA-256 của `fingerprint`: nếu đã từng có lượt thử thành công → chặn ngay với `403 GUEST_TRIAL_LIMIT_REACHED`.
+2. Kiểm tra IP sliding rate limit: tối đa 5 lượt bói thử thành công/IP trong vòng 24 giờ → vượt quá trả `429 IP_TRIAL_LIMIT_EXCEEDED`.
+
+**Response**
+
+```json
+// 201 Created — Bói thử thành công, trả 50% preview và Set-Cookie ps_guest_trial
+// Set-Cookie: ps_guest_trial=<signed_claim_token>; Path=/api/v1; Max-Age=604800; HttpOnly; SameSite=Lax; Secure
+{
+  "reading": {
+    "id": "67139f7e-c885-4463-a62a-3a5e1fb83001",
+    "school": "WESTERN",
+    "hand": "LEFT",
+    "topics": ["lifeLine", "headLine", "heartLine", "career", "love"],
+    "status": "GUEST_PREVIEW",
+    "summary": "Bàn tay của bạn mang năng lượng Thổ với đường sinh đạo sâu và rõ nét...",
+    "sections": [
+      {
+        "key": "lifeLine",
+        "title": "Đường Sinh Đạo (Life Line)",
+        "observation": "Đường cong sâu, rõ, không đứt đoạn.",
+        "meaning": "Bạn có thể chất dẻo dai và năng lượng dồi dào.",
+        "isLocked": false
+      },
+      {
+        "key": "headLine",
+        "title": "Đường Trí Đạo (Head Line)",
+        "observation": "Đường trí đạo thẳng và dài.",
+        "meaning": "Tư duy logic, thực tế.",
+        "isLocked": false
+      },
+      {
+        "key": "heartLine",
+        "title": "Đường Tâm Đạo (Heart Line)",
+        "observation": null,
+        "meaning": null,
+        "isLocked": true
+      }
+    ],
+    "aspects": {
+      "career": { "title": "Sự nghiệp & Công danh", "content": null, "isLocked": true },
+      "love": { "title": "Tình duyên & Mối quan hệ", "content": null, "isLocked": true }
+    },
+    "advice": {
+      "content": null,
+      "isLocked": true
+    },
+    "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.",
+    "previewExpiresAt": "2026-10-26T14:00:00.000Z",
+    "createdAt": "2026-10-19T14:00:00.000Z",
+    "claimToken": "e4b8a21f-82df-4db3-9824-7128cf4291f0"
+  },
+  "claimToken": "e4b8a21f-82df-4db3-9824-7128cf4291f0"
+}
+
+// 200 OK — Ảnh không phải bàn tay (isPalm = false), không tính lượt, không cấp cookie
+{
+  "reading": {
+    "id": "67139f7e-c885-4463-a62a-3a5e1fb83002",
+    "status": "REJECTED",
+    "rejectReason": "Không nhận diện được lòng bàn tay. Vui lòng chụp rõ lòng bàn tay và thử lại!"
+  }
+}
+```
+
+Lỗi: `VALIDATION_ERROR`, `IDEMPOTENCY_KEY_REQUIRED`, `GUEST_TRIAL_LIMIT_REACHED`, `IP_TRIAL_LIMIT_EXCEEDED`, `IMAGE_TOO_LARGE`, `UNSUPPORTED_IMAGE_TYPE`.
+
+### GET /readings/guest/{token}
+
+Cho phép khách vãng lai xem lại bản xem trước 50% trong thời hạn lưu trữ 7 ngày (`previewExpiresAt`).
+
+- **Path**: `token` là UUID v4 `claimToken`.
+- **Response**: `200 OK` trả về `GuestReadingPreviewDto` (cấu trúc tương tự response của `POST /readings/guest`).
+- **Lỗi**:
+  - `404 NOT_FOUND`: Token không tồn tại, sai định dạng UUID v4, đã bị TTL index dọn dẹp sau 7 ngày, hoặc đã được tài khoản khác claim.
+

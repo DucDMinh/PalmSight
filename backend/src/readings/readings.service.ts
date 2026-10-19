@@ -1,39 +1,29 @@
 import {
-  Injectable,
-  HttpException,
-  HttpStatus,
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
+  Injectable, HttpException, HttpStatus, BadRequestException, ConflictException, NotFoundException,
 } from "@nestjs/common";
 import { InjectModel, InjectConnection } from "@nestjs/mongoose";
 import { Model, Connection, Types, FilterQuery } from "mongoose";
+import * as crypto from "crypto";
 import {
-  ReadingSchool,
-  HandOrientation,
-  ReadingStatus,
-  normalizeReadingTopics,
-  createReadingRequestSchema,
-  ReadingListResponseDto,
-  ReadingDto,
-  PaginationQueryDto,
+  ReadingSchool, HandOrientation, ReadingStatus, normalizeReadingTopics,
+  createReadingRequestSchema, guestReadingRequestSchema, GuestReadingPreviewDto,
+  ReadingListResponseDto, ReadingDto, PaginationQueryDto,
 } from "@palmsight/shared";
 import { Reading, ReadingDocument } from "../schemas/reading.schema";
 import { User, UserDocument } from "../schemas/user.schema";
+import { GuestTrial, GuestTrialDocument } from "../schemas/guest-trial.schema";
 import { CreditLedgerService } from "../credits/credit-ledger.service";
 import { ImageProcessorService } from "./image-processor.service";
 import { AiService } from "../ai/ai.service";
-
-const UUID_V4_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const STUCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
-
-const resolveObjectId = (val: any): Types.ObjectId => {
-  if (val instanceof Types.ObjectId) return val;
-  if (typeof val === 'string') return new Types.ObjectId(val);
-  if (val && typeof val === 'object' && val._id) return new Types.ObjectId(val._id);
-  return new Types.ObjectId(String(val));
-};
+import { truncatePalmResultForGuest } from "./utils/truncate-palm-result.util";
+import {
+  UUID_V4_REGEX,
+  STUCK_TIMEOUT_MS,
+  resolveObjectId,
+  assertValidIdempotencyKey,
+  formatReading,
+  buildGuestPreviewResponse,
+} from "./utils/readings.util";
 
 @Injectable()
 export class ReadingsService {
@@ -42,6 +32,8 @@ export class ReadingsService {
     private readonly readingModel: Model<ReadingDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(GuestTrial.name)
+    private readonly guestTrialModel: Model<GuestTrialDocument>,
     @InjectConnection()
     private readonly connection: Connection,
     private readonly creditLedgerService: CreditLedgerService,
@@ -60,24 +52,7 @@ export class ReadingsService {
     idempotentReplayed: boolean;
   }> {
     // 1. Validate Idempotency-Key header
-    if (!idempotencyKey) {
-      throw new BadRequestException({
-        code: "IDEMPOTENCY_KEY_REQUIRED",
-        message: "Thiếu header Idempotency-Key.",
-      });
-    }
-
-    if (!UUID_V4_REGEX.test(idempotencyKey)) {
-      throw new BadRequestException({
-        code: "VALIDATION_ERROR",
-        message: "Header Idempotency-Key không đúng định dạng UUID v4.",
-        details: {
-          fields: [
-            { field: "Idempotency-Key", message: "Phải là UUID v4 hợp lệ" },
-          ],
-        },
-      });
-    }
+    assertValidIdempotencyKey(idempotencyKey);
 
     const userObjId = resolveObjectId(userId);
 
@@ -122,7 +97,7 @@ export class ReadingsService {
       }
 
       return {
-        reading: this.formatReading(existing),
+        reading: formatReading(existing),
         creditBalance: currentBalance,
         idempotentReplayed: true,
       };
@@ -247,7 +222,7 @@ export class ReadingsService {
         const user = await this.userModel.findById(userObjId).lean();
         const updated = await this.readingModel.findById(readingId).lean();
         return {
-          reading: this.formatReading(updated!),
+          reading: formatReading(updated!),
           creditBalance: user?.creditBalance ?? 0,
           idempotentReplayed: false,
         };
@@ -269,7 +244,7 @@ export class ReadingsService {
       const user = await this.userModel.findById(userObjId).lean();
       const updated = await this.readingModel.findById(readingId).lean();
       return {
-        reading: this.formatReading(updated!),
+        reading: formatReading(updated!),
         creditBalance: user?.creditBalance ?? 0,
         idempotentReplayed: false,
       };
@@ -493,17 +468,323 @@ export class ReadingsService {
     }
   }
 
-  private formatReading(doc: any): Record<string, unknown> {
+  private async validateGuestInput(
+    body: any,
+    file?: Express.Multer.File,
+    idempotencyKey?: string,
+  ) {
+    assertValidIdempotencyKey(idempotencyKey);
+
+    if (!file) {
+      throw new BadRequestException({
+        code: "VALIDATION_ERROR",
+        message: "Vui lòng chọn ảnh bàn tay để tiếp tục.",
+        details: {
+          fields: [{ field: "image", message: "Ảnh bàn tay là bắt buộc." }],
+        },
+      });
+    }
+
+    try {
+      const validated = await guestReadingRequestSchema.validate(body, {
+        abortEarly: false,
+      });
+      const topics = normalizeReadingTopics(validated.school, validated.topics);
+      return { validated, topics };
+    } catch (err: any) {
+      throw new BadRequestException({
+        code: "VALIDATION_ERROR",
+        message: "Dữ liệu yêu cầu không hợp lệ.",
+        details: {
+          fields: (err.inner || []).map((e: any) => ({
+            field: e.path,
+            message: e.message,
+          })),
+        },
+      });
+    }
+  }
+
+  private async checkGuestIdempotency(idempotencyKey: string) {
+    const existing = await this.readingModel.findOne({
+      idempotencyKey,
+      isGuest: true,
+    });
+    if (!existing) return null;
+
+    if (existing.status === ReadingStatus.PROCESSING) {
+      throw new ConflictException({
+        code: "READING_IN_PROGRESS",
+        message: "Lần xem bói trước vẫn đang xử lý.",
+      });
+    }
+
+    if (existing.status === ReadingStatus.GUEST_PREVIEW) {
+      const truncated = truncatePalmResultForGuest(existing.result as any);
+      return {
+        reading: buildGuestPreviewResponse(existing, truncated),
+        claimToken: null,
+        isRejected: false,
+        idempotentReplayed: true,
+      };
+    }
+
+    if (existing.status === ReadingStatus.REJECTED) {
+      return {
+        reading: {
+          id: existing._id.toString(),
+          status: ReadingStatus.REJECTED,
+          rejectReason: existing.rejectReason ?? null,
+        },
+        claimToken: null,
+        isRejected: true,
+        idempotentReplayed: true,
+      };
+    }
+
+    if (existing.status === ReadingStatus.FAILED) {
+      throw new HttpException(
+        {
+          code: "AI_SERVICE_UNAVAILABLE",
+          message: "Hệ thống AI đang bận. Vui lòng thử lại sau ít phút!",
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+
+    return null;
+  }
+
+  async createGuestReading(
+    idempotencyKey: string | undefined,
+    body: any,
+    file: Express.Multer.File | undefined,
+    clientIp: string,
+    fingerprintHash: string,
+  ): Promise<{
+    reading:
+      | GuestReadingPreviewDto
+      | { id: string; status: ReadingStatus; rejectReason: string | null };
+    claimToken: string | null;
+    isRejected: boolean;
+    idempotentReplayed?: boolean;
+  }> {
+    const { validated, topics } = await this.validateGuestInput(
+      body,
+      file,
+      idempotencyKey,
+    );
+
+    const replayed = await this.checkGuestIdempotency(idempotencyKey!);
+    if (replayed) return replayed;
+
+    const processedImage = await this.imageProcessorService.validateAndProcess(file!);
+
+    const [reading] = await this.readingModel.create([
+      {
+        userId: null,
+        isGuest: true,
+        idempotencyKey: idempotencyKey!,
+        school: validated.school,
+        hand: validated.hand,
+        topics,
+        status: ReadingStatus.PROCESSING,
+      },
+    ]);
+
+    const { result, provider, model, latencyMs } = await this.executeGuestAi(
+      reading._id,
+      processedImage.base64,
+      {
+        school: validated.school as ReadingSchool,
+        topics,
+        hand: validated.hand as HandOrientation,
+      },
+    );
+
+    if (!result.isPalm) {
+      return this.handleGuestRejection(reading._id, result, latencyMs, provider, model);
+    }
+
+    return this.persistGuestTrialSuccess(
+      reading,
+      validated,
+      topics,
+      result,
+      latencyMs,
+      clientIp,
+      fingerprintHash,
+      provider,
+      model,
+    );
+  }
+
+  private async executeGuestAi(
+    readingId: Types.ObjectId,
+    base64: string,
+    options: { school: ReadingSchool; topics: string[]; hand: HandOrientation },
+  ) {
+    const startTime = Date.now();
+    try {
+      const output = await this.aiService.readPalm(base64, options);
+      return { ...output, latencyMs: Date.now() - startTime };
+    } catch {
+      const latencyMs = Date.now() - startTime;
+      await this.readingModel.updateOne(
+        { _id: readingId },
+        {
+          status: ReadingStatus.FAILED,
+          errorCode: "AI_SERVICE_UNAVAILABLE",
+          latencyMs,
+          completedAt: new Date(),
+        },
+      );
+      throw new HttpException(
+        {
+          code: "AI_SERVICE_UNAVAILABLE",
+          message: "Hệ thống AI đang bận. Vui lòng thử lại sau ít phút!",
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
+  }
+
+  private async handleGuestRejection(
+    readingId: Types.ObjectId,
+    aiResult: any,
+    latencyMs: number,
+    provider?: string,
+    model?: string,
+  ) {
+    const rejectReason =
+      aiResult.rejectReason ||
+      "Không nhận diện được lòng bàn tay. Vui lòng chụp rõ lòng bàn tay và thử lại!";
+
+    await this.readingModel.updateOne(
+      { _id: readingId },
+      {
+        status: ReadingStatus.REJECTED,
+        rejectReason,
+        aiProvider: provider || aiResult.aiProvider,
+        aiModel: model || aiResult.aiModel,
+        latencyMs,
+        completedAt: new Date(),
+      },
+    );
+
     return {
-      id: doc._id.toString(),
-      status: doc.status,
-      school: doc.school,
-      topics: doc.topics,
-      hand: doc.hand,
-      result: doc.result ?? null,
-      rejectReason: doc.rejectReason ?? undefined,
-      createdAt: doc.createdAt?.toISOString?.() ?? doc.createdAt,
-      completedAt: doc.completedAt?.toISOString?.() ?? doc.completedAt,
+      reading: {
+        id: readingId.toString(),
+        status: ReadingStatus.REJECTED,
+        rejectReason,
+      },
+      claimToken: null,
+      isRejected: true,
+      idempotentReplayed: false,
     };
+  }
+
+  private async persistGuestTrialSuccess(
+    reading: ReadingDocument,
+    validated: any,
+    topics: string[],
+    aiResult: any,
+    latencyMs: number,
+    clientIp: string,
+    fingerprintHash: string,
+    provider?: string,
+    model?: string,
+  ) {
+    const claimToken = crypto.randomUUID();
+    const guestTokenHash = crypto.createHash("sha256").update(claimToken).digest("hex");
+    const ipHash = crypto.createHash("sha256").update(clientIp).digest("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const session = await this.connection.startSession();
+    session.startTransaction();
+    try {
+      await this.readingModel.updateOne(
+        { _id: reading._id },
+        {
+          guestTokenHash,
+          status: ReadingStatus.GUEST_PREVIEW,
+          result: aiResult,
+          aiProvider: provider || aiResult.aiProvider,
+          aiModel: model || aiResult.aiModel,
+          latencyMs,
+          previewExpiresAt: expiresAt,
+          completedAt: new Date(),
+        },
+        { session },
+      );
+
+      await this.guestTrialModel.create(
+        [
+          {
+            fingerprintHash,
+            ipHash,
+            guestTokenHash,
+            readingId: reading._id,
+            isClaimed: false,
+            expiresAt,
+          },
+        ],
+        { session },
+      );
+
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      await session.endSession();
+    }
+
+    const truncated = truncatePalmResultForGuest(aiResult);
+    const readingPreview = buildGuestPreviewResponse(
+      {
+        _id: reading._id,
+        school: validated.school,
+        hand: validated.hand,
+        topics,
+        status: ReadingStatus.GUEST_PREVIEW,
+        previewExpiresAt: expiresAt,
+        createdAt: reading.createdAt,
+      },
+      truncated,
+      claimToken,
+    );
+
+    return {
+      reading: readingPreview,
+      claimToken,
+      isRejected: false,
+      idempotentReplayed: false,
+    };
+  }
+
+  async getGuestReadingPreview(claimToken: string): Promise<GuestReadingPreviewDto> {
+    if (!claimToken || !UUID_V4_REGEX.test(claimToken)) {
+      throw new NotFoundException({
+        code: "NOT_FOUND",
+        message: "Bài bói thử nghiệm không tồn tại hoặc đã hết hạn lưu trữ.",
+      });
+    }
+
+    const guestTokenHash = crypto.createHash("sha256").update(claimToken).digest("hex");
+    const reading = await this.readingModel.findOne({
+      guestTokenHash,
+      previewExpiresAt: { $gt: new Date() },
+    });
+
+    if (!reading || !reading.result) {
+      throw new NotFoundException({
+        code: "NOT_FOUND",
+        message: "Bài bói thử nghiệm không tồn tại hoặc đã hết hạn lưu trữ.",
+      });
+    }
+
+    const truncated = truncatePalmResultForGuest(reading.result as any);
+    return buildGuestPreviewResponse(reading, truncated, claimToken);
   }
 }

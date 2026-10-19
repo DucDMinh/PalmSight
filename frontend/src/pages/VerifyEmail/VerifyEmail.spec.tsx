@@ -198,4 +198,43 @@ describe('VerifyEmailPage (Stitch Screen 1d106024adaa426eadcacab751819351)', () 
       ).toBeInTheDocument();
     });
   });
+
+  it('should forward claimToken, show 2 credits celebration banner, and redirect to claimed reading (US-GUEST-001)', async () => {
+    sessionStorage.setItem('ps_claim_token', 'claim-uuid-456');
+    const postVerifySpy = vi.spyOn(authService, 'postVerifyEmail').mockResolvedValue({
+      accessToken: 'claimed-jwt-token',
+      expiresIn: 900,
+      isNewUser: true,
+      user: {
+        id: '6710a1b2c3d4e5f6a7b8c9d0',
+        displayName: 'Guest Claimer',
+        username: 'guestclaimer',
+        avatarUrl: null,
+        creditBalance: 2,
+        referralCode: 'CLAIMED1',
+      },
+      claimedReadingId: '67139f7e-c885-4463-a62a-3a5e1fb83001',
+    });
+
+    renderComponent('?token=VERIFY_TOKEN_777');
+
+    await waitFor(() => {
+      expect(postVerifySpy).toHaveBeenCalledWith({
+        token: 'VERIFY_TOKEN_777',
+        claimToken: 'claim-uuid-456',
+      });
+      expect(screen.getByTestId('claim-success-celebration')).toBeInTheDocument();
+      expect(screen.getByText('2 credits')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Tự động chuyển tiếp đến bài đọc sau/)
+      ).toBeInTheDocument();
+    });
+
+    // Verify storage cleared
+    expect(sessionStorage.getItem('ps_claim_token')).toBeNull();
+
+    // Click "Bỏ qua chờ đợi" redirects to /readings/:id
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ qua chờ đợi' }));
+    expect(mockedNavigate).toHaveBeenCalledWith('/readings/67139f7e-c885-4463-a62a-3a5e1fb83001');
+  });
 });

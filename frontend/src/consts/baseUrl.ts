@@ -19,6 +19,7 @@ const BaseUrl = {
   Terms: "/terms",
   Privacy: "/privacy",
   Logout: "/logout",
+  GuestReadingPreview: "/guest/reading/:token",
 };
 
 export default BaseUrl;

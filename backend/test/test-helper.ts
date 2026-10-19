@@ -137,7 +137,7 @@ export async function createTestApp(
   const moduleRef: TestingModule = await moduleBuilder.compile();
 
   const app = moduleRef.createNestApplication();
-  app.use(cookieParser());
+  app.use(cookieParser("ps-guest-trial-test-secret"));
   app.useGlobalFilters(new ApiExceptionFilter());
   app.setGlobalPrefix("api/v1");
   await app.listen(0);
@@ -154,6 +154,7 @@ export async function createTestApp(
     "credit_transactions",
     "deleted_identities",
     "readings",
+    "guest_trials",
   ];
   for (const col of collectionNames) {
     try {

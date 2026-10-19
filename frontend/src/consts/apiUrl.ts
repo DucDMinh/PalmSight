@@ -20,3 +20,4 @@ export const ME_URL = `${API_V1_URL}/me`;
 export const ME_REFERRALS_URL = `${API_V1_URL}/me/referrals`;
 export const ME_CREDIT_TRANSACTIONS_URL = `${API_V1_URL}/me/credit-transactions`;
 export const READINGS_URL = `${API_V1_URL}/readings`;
+export const READINGS_GUEST_URL = `${READINGS_URL}/guest`;

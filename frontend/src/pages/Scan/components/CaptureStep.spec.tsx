@@ -318,4 +318,43 @@ describe("CaptureStep Component", () => {
     fireEvent.click(screen.getByTestId("retake-button"));
     expect(onImageChange).toHaveBeenCalledWith(null, null);
   });
+
+  it("should render limit-reached banner with buttons to register and login when status is LIMIT_REACHED", () => {
+    renderComponent({
+      status: "LIMIT_REACHED",
+      errorMessage: "Bạn đã sử dụng hết 1 lượt bói thử miễn phí.",
+    });
+
+    expect(screen.getByTestId("limit-reached-banner")).toBeInTheDocument();
+    expect(
+      screen.getByText("Bạn đã sử dụng hết 1 lượt bói thử miễn phí.")
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Đăng ký tài khoản" })).toHaveAttribute(
+      "href",
+      "/register"
+    );
+    expect(screen.getByRole("link", { name: "Đăng nhập" })).toHaveAttribute(
+      "href",
+      "/login"
+    );
+  });
+
+  it("should render rate-limited banner with button to register when status is RATE_LIMITED", () => {
+    renderComponent({
+      status: "RATE_LIMITED",
+      errorMessage:
+        "Địa chỉ IP đã đạt tối đa 5 lượt bói thử hôm nay. Đăng ký tài khoản để tiếp tục bói không giới hạn.",
+    });
+
+    expect(screen.getByTestId("rate-limited-banner")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Địa chỉ IP đã đạt tối đa 5 lượt bói thử hôm nay. Đăng ký tài khoản để tiếp tục bói không giới hạn."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Đăng ký tài khoản" })).toHaveAttribute(
+      "href",
+      "/register"
+    );
+  });
 });

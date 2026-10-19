@@ -120,7 +120,11 @@ async function bootstrap() {
     maxAge: 86400,
   });
 
-  app.use(cookieParser());
+  const cookieSecret = configService.get<string>(
+    "GUEST_TRIAL_SECRET",
+    "palmsight-guest-trial-secret-2026"
+  );
+  app.use(cookieParser(cookieSecret));
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

@@ -314,4 +314,30 @@ describe("Homepage (Landing Page)", () => {
       behavior: "smooth",
     });
   });
+
+  it("should display Terminal Minimalist guest trial CTA linking to /scan when unauthenticated", async () => {
+    const { unmount } = renderHomepage(["/"], false);
+
+    const guestCtas = screen.getAllByRole("link", {
+      name: /Bói thử 1 lần/,
+    });
+    expect(guestCtas.length).toBeGreaterThan(0);
+    guestCtas.forEach((link) => {
+      expect(link).toHaveAttribute("href", "/scan");
+    });
+
+    unmount();
+
+    // When logged in, guest trial CTA should not appear
+    renderHomepage(["/"], true);
+    await act(async () => {
+      screen.getByTestId("auth-setter").click();
+    });
+
+    expect(
+      screen.queryByRole("link", {
+        name: /Bói thử 1 lần/,
+      })
+    ).not.toBeInTheDocument();
+  });
 });

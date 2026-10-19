@@ -40,6 +40,7 @@ import Referral from "./pages/Referral";
 import Scan from "./pages/Scan";
 import ReadingDetail from "./pages/ReadingDetail";
 import ReadingsHistory from "./pages/ReadingsHistory";
+import GuestReadingPreview from "./pages/GuestReadingPreview";
 
 const ErrorFallback = ({ error, resetErrorBoundary }: any) => {
   return (
@@ -89,6 +90,11 @@ const App = () => {
               path={BaseUrl.ReferralRedirect}
               element={<ReferralRedirect />}
             />
+            <Route path={BaseUrl.Scan} element={<Scan />} />
+            <Route
+              path={BaseUrl.GuestReadingPreview}
+              element={<GuestReadingPreview />}
+            />
 
             {/* Protected screens */}
             <Route
@@ -123,10 +129,6 @@ const App = () => {
               <Route
                 path={BaseUrl.Referral}
                 element={<Referral />}
-              />
-              <Route
-                path={BaseUrl.Scan}
-                element={<Scan />}
               />
               <Route
                 path={BaseUrl.Readings}
