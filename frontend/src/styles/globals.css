@@ -3,11 +3,9 @@
 @tailwind utilities;
 
 @layer utilities {
-  /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  /* Hide scrollbar for IE, Edge and Firefox */
   .no-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
@@ -15,70 +13,37 @@
 }
 
 @layer base {
-  :root {
-    /* PalmSight Terminal Minimalist Light Tokens (Default) */
-    --background: 0 0% 99.2%;      /* #fdfcfc canvas */
-    --foreground: 0 5% 12%;        /* #201d1d ink */
-
-    --card: 0 7% 94.1%;            /* #f1eeee surface-card */
-    --card-foreground: 0 5% 12%;   /* #201d1d ink */
-
-    --popover: 0 0% 99.2%;         /* #fdfcfc canvas */
-    --popover-foreground: 0 5% 12%;
-
-    --primary: 0 5% 12%;           /* #201d1d ink */
-    --primary-foreground: 0 0% 99.2%; /* #fdfcfc on-primary */
-
-    --secondary: 0 5% 97.5%;       /* #f8f7f7 surface-soft */
-    --secondary-foreground: 0 5% 12%;
-
-    --muted: 0 7% 94.1%;           /* #f1eeee surface-card */
-    --muted-foreground: 0 1% 38.6%; /* #646262 mute */
-
-    --accent: 0 5% 97.5%;          /* #f8f7f7 surface-soft */
-    --accent-foreground: 0 5% 12%;
-
-    --destructive: 0 75.5% 41.6%;  /* #ba1a1a danger (WCAG AA compliant) */
-    --destructive-foreground: 0 0% 99.2%;
-
-    --border: 0 0% 88%;            /* hairline simulation */
-    --input: 0 0% 88%;
-    --ring: 0 5% 12%;              /* #201d1d */
-
-    --radius: 4px;
-  }
-
+  :root,
   .dark {
-    /* PalmSight Inversion Tier / Dark Tokens */
-    --background: 0 5% 12%;        /* #201d1d surface-dark */
-    --foreground: 0 0% 99.2%;      /* #fdfcfc on-dark */
+    --background: 256 52% 6%;        /* #0b0716 cosmic night */
+    --foreground: 40 71% 87%;        /* #f5e6c8 sacred parchment */
 
-    --card: 0 5% 18%;              /* #302c2c surface-dark-elevated */
-    --card-foreground: 0 0% 99.2%;
+    --card: 256 48% 14%;             /* #1b1233 arcana card */
+    --card-foreground: 40 71% 87%;
 
-    --popover: 0 5% 12%;
-    --popover-foreground: 0 0% 99.2%;
+    --popover: 256 50% 10%;          /* #140d26 velvet popover */
+    --popover-foreground: 40 71% 87%;
 
-    --primary: 0 0% 99.2%;         /* #fdfcfc */
-    --primary-foreground: 0 5% 12%; /* #201d1d */
+    --primary: 46 65% 52%;           /* #d4af37 imperial gold */
+    --primary-foreground: 256 52% 6%; /* #0b0716 */
 
-    --secondary: 0 5% 18%;
-    --secondary-foreground: 0 0% 99.2%;
+    --secondary: 256 48% 18%;        /* #241842 astral secondary */
+    --secondary-foreground: 40 71% 87%;
 
-    --muted: 0 5% 18%;
-    --muted-foreground: 0 1% 60%;  /* #9a9898 ash */
+    --muted: 256 40% 16%;
+    --muted-foreground: 265 25% 64%; /* #9e8cb8 mystic lavender */
 
-    --accent: 0 5% 18%;
-    --accent-foreground: 0 0% 99.2%;
+    --accent: 270 91% 65%;           /* #a855f7 mystic purple */
+    --accent-foreground: 40 71% 95%;
 
-    --destructive: 3.5 100% 59.4%;
-    --destructive-foreground: 0 0% 99.2%;
+    --destructive: 351 95% 71%;      /* #fb7185 mystic rose-crimson */
+    --destructive-foreground: 256 52% 6%;
 
-    --border: 0 1% 38.6%;          /* #646262 hairline-strong */
-    --input: 0 1% 38.6%;
-    --ring: 0 0% 99.2%;
+    --border: 46 65% 52% / 0.25;     /* golden filigree border */
+    --input: 46 65% 52% / 0.3;
+    --ring: 46 65% 52%;              /* #d4af37 */
 
-    --radius: 4px;
+    --radius: 10px;
   }
 }
 
@@ -86,23 +51,28 @@
   * {
     @apply border-border;
     box-sizing: border-box;
-    letter-spacing: 0;
   }
 
   html,
   body {
-    @apply bg-background text-foreground;
-    font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Berkeley Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    @apply bg-canvas text-ink;
+    font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
-    letter-spacing: 0;
+    background-color: #0b0716;
+    color: #f5e6c8;
+  }
+
+  h1,
+  h2,
+  .font-display {
+    font-family: 'Cormorant Garamond', Georgia, serif;
   }
 
   pre,
   code,
   kbd,
   samp {
-    font-family: inherit;
-    letter-spacing: 0;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 
   .invalid-text {
@@ -119,106 +89,170 @@
   }
 }
 
-/* Hairline border utilities (1px solid rgba(15, 0, 0, 0.12) / #646262 in dark) */
 .hairline-border {
-  border: 1px solid rgba(15, 0, 0, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.26);
 }
 
 .hairline-top {
-  border-top: 1px solid rgba(15, 0, 0, 0.12);
+  border-top: 1px solid rgba(212, 175, 55, 0.26);
 }
 
 .hairline-bottom {
-  border-bottom: 1px solid rgba(15, 0, 0, 0.12);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.26);
 }
 
 .hairline-right {
-  border-right: 1px solid rgba(15, 0, 0, 0.12);
+  border-right: 1px solid rgba(212, 175, 55, 0.26);
 }
 
 .hairline-left {
-  border-left: 1px solid rgba(15, 0, 0, 0.12);
+  border-left: 1px solid rgba(212, 175, 55, 0.26);
 }
 
 .dark .hairline-border {
-  border-color: #646262;
+  border-color: rgba(212, 175, 55, 0.26);
 }
 
 .dark .hairline-top {
-  border-top-color: #646262;
+  border-top-color: rgba(212, 175, 55, 0.26);
 }
 
 .dark .hairline-bottom {
-  border-bottom-color: #646262;
+  border-bottom-color: rgba(212, 175, 55, 0.26);
 }
 
 .dark .hairline-right {
-  border-right-color: #646262;
+  border-right-color: rgba(212, 175, 55, 0.26);
 }
 
 .dark .hairline-left {
-  border-left-color: #646262;
+  border-left-color: rgba(212, 175, 55, 0.26);
 }
 
-/* Terminal Minimalist Button Classes */
+.mystic-card {
+  background: linear-gradient(
+    145deg,
+    rgba(31, 20, 56, 0.85) 0%,
+    rgba(19, 12, 36, 0.92) 100%
+  );
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  box-shadow:
+    0 12px 36px -6px rgba(4, 2, 10, 0.75),
+    inset 0 1px 0 0 rgba(247, 231, 180, 0.18);
+  backdrop-filter: blur(12px);
+}
+
+.mystic-card-interactive {
+  background: linear-gradient(
+    145deg,
+    rgba(31, 20, 56, 0.82) 0%,
+    rgba(19, 12, 36, 0.9) 100%
+  );
+  border: 1px solid rgba(212, 175, 55, 0.26);
+  box-shadow:
+    0 10px 30px -5px rgba(4, 2, 10, 0.7),
+    inset 0 1px 0 0 rgba(247, 231, 180, 0.14);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mystic-card-interactive:hover {
+  border-color: rgba(212, 175, 55, 0.65);
+  box-shadow:
+    0 16px 40px -6px rgba(4, 2, 10, 0.85),
+    0 0 25px -4px rgba(212, 175, 55, 0.28),
+    inset 0 1px 0 0 rgba(247, 231, 180, 0.35);
+  transform: translateY(-2px);
+}
+
+.text-gold-gradient {
+  background: linear-gradient(
+    135deg,
+    #fff3d1 0%,
+    #f5d77f 35%,
+    #d4af37 70%,
+    #aa7c11 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .btn-primary {
-  background-color: #201d1d;
-  color: #fdfcfc;
-  font-size: 16px;
-  font-weight: 500;
-  height: 36px;
-  padding: 4px 20px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #f3dc99 0%, #d4af37 50%, #b38728 100%);
+  color: #0b0716;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 42px;
+  padding: 8px 24px;
+  border-radius: 9999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-decoration: none;
-  transition: background-color 0.15s ease;
-  border: none;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  border: 1px solid rgba(255, 243, 209, 0.55);
+  box-shadow:
+    0 4px 20px rgba(212, 175, 55, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
   cursor: pointer;
+  letter-spacing: 0.02em;
 }
 
 .btn-primary:hover {
-  background-color: #302c2c;
+  background: linear-gradient(135deg, #fff0be 0%, #e5c148 50%, #c49731 100%);
+  box-shadow:
+    0 6px 28px rgba(212, 175, 55, 0.55),
+    0 0 15px rgba(168, 85, 247, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  background-color: #0f0000;
+  transform: translateY(0px);
+  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.3);
 }
 
 .btn-secondary {
-  background-color: #fdfcfc;
-  color: #201d1d;
-  font-size: 16px;
+  background: rgba(27, 18, 51, 0.75);
+  color: #f5e6c8;
+  font-size: 15px;
   font-weight: 500;
-  height: 36px;
-  padding: 4px 20px;
-  border-radius: 4px;
-  border: 1px solid #646262;
+  min-height: 42px;
+  padding: 8px 24px;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-decoration: none;
-  transition: background-color 0.15s ease;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(212, 175, 55, 0.15);
   cursor: pointer;
 }
 
 .btn-secondary:hover {
-  background-color: #f8f7f7;
+  background: rgba(44, 29, 79, 0.9);
+  border-color: rgba(212, 175, 55, 0.85);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+  transform: translateY(-1px);
 }
 
 .content-container {
   @apply w-full;
-  @apply pt-8;
+  @apply pt-6;
 }
 
 .is-hover:hover {
   @apply bg-surface-soft;
-  @apply rounded;
+  @apply rounded-lg;
   @apply cursor-pointer;
 }
 
 .is-link {
   text-decoration: underline;
-  @apply hover:cursor-pointer;
+  @apply hover:cursor-pointer text-mystic-gold hover:text-mystic-gold-light;
 }

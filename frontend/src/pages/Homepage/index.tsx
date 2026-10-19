@@ -22,7 +22,7 @@ export const Homepage = () => {
   }, [location.hash]);
 
   return (
-    <div className="component:Homepage w-full flex flex-col font-mono text-ink bg-canvas pb-24">
+    <div className="component:Homepage relative w-full flex flex-col text-ink pb-28">
       <HeroSection />
       <HowItWorksSection />
       <SchoolsSection />

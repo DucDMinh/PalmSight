@@ -1,8 +1,13 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Camera, Upload, RotateCcw, Sparkles, Eye } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
-import { ReadingSchool, HandOrientation, READING_SCHOOLS } from "@palmsight/shared";
+import {
+  ReadingSchool,
+  HandOrientation,
+  READING_SCHOOLS,
+} from "@palmsight/shared";
 import { ScanStatus } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +59,6 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
   const isOutOfCredits = creditBalance <= 0;
   const canEnterCode = Boolean(user?.referral?.canEnterCode);
 
-  // Stop camera stream on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current) {
@@ -74,7 +78,9 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     setCameraError(null);
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
-        setCameraError("Trình duyệt không hỗ trợ camera. Vui lòng chọn ảnh có sẵn.");
+        setCameraError(
+          "Trình duyệt không hỗ trợ camera. Vui lòng chọn ảnh có sẵn."
+        );
         return;
       }
 
@@ -88,7 +94,6 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
           },
         });
       } catch {
-        // Fallback for laptops/desktops without environment camera constraint support
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
 
@@ -99,7 +104,9 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         videoRef.current.play()?.catch?.(() => {});
       }
     } catch {
-      setCameraError("Không thể truy cập camera. Vui lòng cấp quyền hoặc chọn ảnh có sẵn.");
+      setCameraError(
+        "Không thể truy cập camera. Vui lòng cấp quyền hoặc chọn ảnh có sẵn."
+      );
       setIsCameraActive(false);
     }
   };
@@ -127,7 +134,10 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       (blob) => {
         if (!blob) return;
         const file = new File([blob], "palm.jpg", { type: "image/jpeg" });
-        const preview = typeof URL.createObjectURL === "function" ? URL.createObjectURL(blob) : "";
+        const preview =
+          typeof URL.createObjectURL === "function"
+            ? URL.createObjectURL(blob)
+            : "";
         stopCamera();
         onImageChange(file, preview);
       },
@@ -140,7 +150,10 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     stopCamera();
-    const preview = typeof URL.createObjectURL === "function" ? URL.createObjectURL(file) : "";
+    const preview =
+      typeof URL.createObjectURL === "function"
+        ? URL.createObjectURL(file)
+        : "";
     onImageChange(file, preview);
   };
 
@@ -162,80 +175,125 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     status !== "ANALYZING";
 
   return (
-    <section className="w-full md:w-[520px] shrink-0 flex flex-col justify-start">
-      {/* Header */}
+    <section className="w-full flex flex-col justify-start">
       <div className="flex items-center justify-between mb-4 pb-2 border-b border-hairline">
         <div className="flex items-center gap-3">
-          <h2 className="font-heading-md text-heading-md text-ink m-0 font-bold">
+          <Eye aria-hidden="true" className="h-4 w-4 text-[#d4af37]" />
+          <h2 className="font-display text-xl text-[#f7e7b4] m-0 font-bold">
             4. Chụp ảnh
           </h2>
-          <span className="font-code-sm text-code-sm text-success inline-flex items-center gap-1.5 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
-            {imageFile ? "IMAGE_LOADED" : isCameraActive ? "CAMERA_ACTIVE" : "READY"}
+          <span className="text-xs text-success inline-flex items-center gap-1.5 font-rune bg-[#0b0716]/70 px-2.5 py-0.5 rounded-full border border-success/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+            {imageFile
+              ? "IMAGE_LOADED"
+              : isCameraActive
+              ? "CAMERA_ACTIVE"
+              : "READY"}
           </span>
         </div>
-        <span className="font-code-sm text-code-sm text-mute font-mono">INPUT::DEV_0</span>
+        <span className="text-xs text-[#d4af37]/70 font-rune">
+          INPUT::DEV_0
+        </span>
       </div>
 
-      {/* Summary Selection */}
-      <div className="font-body-sm text-body-sm text-mute mb-4 select-none" data-testid="selection-summary">
-        {schoolConfig.name.replace("Chỉ tay ", "")} · {handLabel} · {topicsSummary}
-      </div>
-
-      {/* Viewfinder Box */}
       <div
-        className="relative w-full h-[360px] sm:h-[390px] bg-surface-dark overflow-hidden flex items-center justify-center select-none rounded-[4px]"
+        className="text-xs sm:text-sm text-[#f7e7b4] mb-4 select-none bg-[#0b0716]/60 border border-[#d4af37]/30 rounded-lg px-3.5 py-2 inline-flex items-center gap-2 self-start"
+        data-testid="selection-summary"
+      >
+        <span aria-hidden="true" className="text-[#d4af37]">
+          ✦
+        </span>
+        <span>
+          {schoolConfig.name.replace("Chỉ tay ", "")} · {handLabel} ·{" "}
+          {topicsSummary}
+        </span>
+      </div>
+
+      <div
+        className="relative w-full h-[360px] sm:h-[390px] bg-gradient-to-b from-[#0b0716] via-[#160e2c] to-[#0b0716] border border-[#d4af37]/45 overflow-hidden flex items-center justify-center select-none rounded-2xl shadow-[inset_0_0_50px_rgba(0,0,0,0.85),0_0_25px_rgba(212,175,55,0.12)]"
         id="viewfinder"
         data-testid="viewfinder"
       >
-        {/* ASCII Corner Brackets */}
-        <div className="absolute top-4 left-4 font-mono text-xl text-on-dark leading-none pointer-events-none select-none">
+        {!imagePreviewUrl && (
+          <svg
+            aria-hidden="true"
+            className="absolute w-72 h-72 text-[#d4af37]/15 animate-spin-slow pointer-events-none"
+            viewBox="0 0 300 300"
+            fill="none"
+          >
+            <circle
+              cx="150"
+              cy="150"
+              r="140"
+              stroke="currentColor"
+              strokeWidth="1"
+              strokeDasharray="4 6"
+            />
+            <circle
+              cx="150"
+              cy="150"
+              r="118"
+              stroke="currentColor"
+              strokeWidth="1"
+            />
+            <polygon
+              points="150,20 185,115 280,150 185,185 150,280 115,185 20,150 115,115"
+              stroke="currentColor"
+              strokeWidth="0.75"
+            />
+          </svg>
+        )}
+
+        {!imagePreviewUrl && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-[#d4af37]/70 to-transparent shadow-[0_0_15px_2px_rgba(212,175,55,0.6)] animate-scan-beam z-20"
+          />
+        )}
+
+        <div className="absolute top-4 left-4 font-rune text-xl text-[#d4af37] leading-none pointer-events-none select-none z-20">
           ┌
         </div>
-        <div className="absolute top-4 right-4 font-mono text-xl text-on-dark leading-none pointer-events-none select-none">
+        <div className="absolute top-4 right-4 font-rune text-xl text-[#d4af37] leading-none pointer-events-none select-none z-20">
           ┐
         </div>
-        <div className="absolute bottom-4 left-4 font-mono text-xl text-on-dark leading-none pointer-events-none select-none">
+        <div className="absolute bottom-4 left-4 font-rune text-xl text-[#d4af37] leading-none pointer-events-none select-none z-20">
           └
         </div>
-        <div className="absolute bottom-4 right-4 font-mono text-xl text-on-dark leading-none pointer-events-none select-none">
+        <div className="absolute bottom-4 right-4 font-rune text-xl text-[#d4af37] leading-none pointer-events-none select-none z-20">
           ┘
         </div>
 
-        {/* Framing Guides */}
-        <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none select-none">
-          <span className="font-code-sm text-code-sm text-ash tracking-widest text-[10px] font-mono">
+        <div className="absolute top-4 inset-x-0 flex justify-center pointer-events-none select-none z-20">
+          <span className="text-[#f5d77f]/80 tracking-widest text-[10px] font-rune bg-[#0b0716]/70 px-3 py-0.5 rounded-full border border-[#d4af37]/25">
             SCAN AREA // 1080P
           </span>
         </div>
 
-        {/* Live Video */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
           className={cn(
-            "absolute inset-0 w-full h-full object-cover",
+            "absolute inset-0 w-full h-full object-cover z-10",
             !isCameraActive && "hidden"
           )}
           data-testid="camera-video"
         />
 
-        {/* Image Preview */}
         {imagePreviewUrl && (
           <img
             src={imagePreviewUrl}
             alt="Palm preview"
-            className="absolute inset-0 w-full h-full object-contain bg-surface-dark"
+            className="absolute inset-0 w-full h-full object-contain bg-[#0b0716] z-10"
             data-testid="image-preview"
           />
         )}
 
-        {/* Minimal Palm Silhouette Wireframe when no image */}
         {!imagePreviewUrl && (
           <svg
-            className="w-[180px] h-[240px] pointer-events-none relative z-10"
+            className="w-[180px] h-[240px] pointer-events-none relative z-10 drop-shadow-[0_0_12px_rgba(212,175,55,0.4)]"
             fill="none"
             viewBox="0 0 180 240"
             xmlns="http://www.w3.org/2000/svg"
@@ -261,45 +319,60 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
                  C 135 195 126 230 118 238
                  L 60 238
                  C 52 230 48 200 46 175 Z"
-              stroke="#9a9898"
+              stroke="#f5d77f"
               strokeDasharray="4 4"
-              strokeWidth="1.2"
+              strokeWidth="1.5"
               vectorEffect="non-scaling-stroke"
             />
             <path
+              d="M 132 138 C 112 136 86 128 66 118"
+              stroke="#fb7185"
+              strokeOpacity="0.6"
+              strokeDasharray="2 3"
+              strokeWidth="1.2"
+            />
+            <path
+              d="M 60 136 C 84 138 106 148 124 162"
+              stroke="#c084fc"
+              strokeOpacity="0.6"
+              strokeDasharray="2 3"
+              strokeWidth="1.2"
+            />
+            <path
+              d="M 59 132 C 78 148 84 178 76 212"
+              stroke="#f5d77f"
+              strokeOpacity="0.6"
+              strokeDasharray="2 3"
+              strokeWidth="1.2"
+            />
+            <path
               d="M 85 155 L 95 155 M 90 150 L 90 160"
-              stroke="#9a9898"
-              strokeWidth="1"
+              stroke="#d4af37"
+              strokeWidth="1.2"
             />
           </svg>
         )}
 
-        {/* Telemetry overlay status bar */}
-        <div className="absolute bottom-4 inset-x-4 flex justify-between items-center pointer-events-none select-none font-mono z-10">
-          <span className="font-code-sm text-code-sm text-ash text-[10px]">
-            FPS: 30.0
-          </span>
-          <span className="font-code-sm text-code-sm text-ash text-[10px]">
-            ALIGN_CENTER
-          </span>
-          <span className="font-code-sm text-code-sm text-ash text-[10px]">
-            ISO_AUTO
-          </span>
+        <div className="absolute bottom-4 inset-x-6 flex justify-between items-center pointer-events-none select-none font-rune z-20">
+          <span className="text-[#d4af37]/75 text-[10px]">FPS: 30.0</span>
+          <span className="text-[#f7e7b4]/85 text-[10px]">ALIGN_CENTER</span>
+          <span className="text-[#d4af37]/75 text-[10px]">ISO_AUTO</span>
         </div>
       </div>
 
-      {/* Hint under viewfinder */}
-      <p className="font-body-md text-body-md text-body mt-4 mb-4 leading-relaxed">
+      <p className="text-sm sm:text-base text-body mt-4 mb-4 leading-relaxed">
         Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera.
       </p>
 
       {cameraError && (
-        <p className="text-danger font-body-sm text-sm mb-4" data-testid="camera-error">
+        <p
+          className="text-danger text-sm mb-4 p-3 rounded-xl bg-[#4c0519]/40 border border-danger/40"
+          data-testid="camera-error"
+        >
           [!] {cameraError}
         </p>
       )}
 
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -310,31 +383,32 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         data-testid="file-input"
       />
 
-      {/* Buttons row */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         {imageFile ? (
           <button
             type="button"
             onClick={handleRetake}
-            className="h-9 px-5 bg-canvas text-ink border border-hairline-strong font-button-md text-sm rounded hover:bg-surface-soft transition-colors flex items-center justify-center cursor-pointer"
+            className="btn-secondary !min-h-[38px] !px-5 text-sm"
             data-testid="retake-button"
           >
-            Chụp lại / Chọn lại
+            <RotateCcw aria-hidden="true" className="h-4 w-4 text-[#d4af37]" />
+            <span>Chụp lại / Chọn lại</span>
           </button>
         ) : isCameraActive ? (
           <>
             <button
               type="button"
               onClick={capturePhoto}
-              className="h-9 px-5 bg-ink text-on-dark font-button-md text-sm rounded hover:bg-charcoal transition-colors flex items-center justify-center cursor-pointer"
+              className="btn-primary !min-h-[38px] !px-5 text-sm"
               data-testid="shutter-button"
             >
-              Chụp ảnh
+              <Camera aria-hidden="true" className="h-4 w-4" />
+              <span>Chụp ảnh</span>
             </button>
             <button
               type="button"
               onClick={stopCamera}
-              className="h-9 px-5 bg-canvas text-ink border border-hairline-strong font-button-md text-sm rounded hover:bg-surface-soft transition-colors flex items-center justify-center cursor-pointer"
+              className="btn-secondary !min-h-[38px] !px-5 text-sm"
             >
               Đóng camera
             </button>
@@ -344,64 +418,64 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
             <button
               type="button"
               onClick={startCamera}
-              className="h-9 px-5 bg-ink text-on-dark font-button-md text-sm rounded hover:bg-charcoal transition-colors flex items-center justify-center cursor-pointer"
+              className="btn-primary !min-h-[38px] !px-5 text-sm"
               data-testid="open-camera-button"
             >
-              Bật camera
+              <Camera aria-hidden="true" className="h-4 w-4" />
+              <span>Bật camera</span>
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="h-9 px-5 bg-canvas text-ink border border-hairline-strong font-button-md text-sm rounded hover:bg-surface-soft transition-colors flex items-center justify-center cursor-pointer"
+              className="btn-secondary !min-h-[38px] !px-5 text-sm"
               data-testid="upload-button"
             >
-              Chọn ảnh có sẵn
+              <Upload aria-hidden="true" className="h-4 w-4 text-[#d4af37]" />
+              <span>Chọn ảnh có sẵn</span>
             </button>
           </>
         )}
       </div>
 
-      {/* Checkbox consent */}
-      <div className="mb-6">
+      <div className="mb-6 p-3.5 rounded-xl bg-[#0b0716]/50 border border-hairline">
         <label className="flex items-start gap-2.5 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={aiConsent}
             onChange={(e) => onConsentChange(e.target.checked)}
-            className="mt-1 accent-ink"
+            className="mt-1 accent-[#d4af37] h-4 w-4 rounded"
             data-testid="ai-consent-checkbox"
           />
-          <span className="font-body-sm text-body-sm text-ink leading-relaxed">
+          <span className="text-sm text-body leading-relaxed">
             Tôi đồng ý gửi ảnh lòng bàn tay cho hệ thống AI phân tích
           </span>
         </label>
       </div>
 
-      {/* Error & Credit warning banners */}
       {isOutOfCredits && (
         <div
-          className="mb-6 p-4 border border-warning/50 bg-surface-card rounded text-sm text-ink space-y-2"
+          className="mb-6 p-4 border border-warning/60 bg-[#241842]/80 rounded-xl text-sm text-ink space-y-2"
           data-testid="insufficient-credits-banner"
         >
           <div className="font-bold flex items-center gap-1.5 text-warning">
             <span>[!]</span>
             <span>Hết credits</span>
           </div>
-          <p className="m-0 text-mute">
+          <p className="m-0 text-body">
             Mời bạn bè nhập mã để nhận 2 credits:{" "}
             <Link
               to={BaseUrl.Referral}
-              className="text-ink underline hover:text-charcoal font-medium"
+              className="text-[#f7e7b4] underline hover:text-[#d4af37] font-medium"
             >
               Trang giới thiệu
             </Link>
           </p>
           {canEnterCode && (
-            <p className="m-0 text-mute">
+            <p className="m-0 text-body">
               Có mã của bạn bè?{" "}
               <Link
                 to={BaseUrl.ReferralEnter}
-                className="text-ink underline hover:text-charcoal font-medium"
+                className="text-[#f7e7b4] underline hover:text-[#d4af37] font-medium"
               >
                 Nhập để nhận 1 credit
               </Link>
@@ -412,18 +486,22 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
 
       {status === "REJECTED" && (
         <div
-          className="mb-6 p-4 border border-danger/40 bg-error-container/20 rounded text-sm text-ink space-y-2"
+          className="mb-6 p-4 border border-danger/50 bg-[#4c0519]/35 rounded-xl text-sm text-ink space-y-2"
           data-testid="rejected-banner"
         >
           <div className="font-bold text-danger flex items-center gap-1">
             <span>[!] Không nhìn rõ lòng bàn tay</span>
           </div>
-          <p className="m-0 text-mute">{rejectReason || "Hãy chụp lại nơi đủ sáng, xoè thẳng bàn tay."}</p>
-          <p className="m-0 text-success text-xs font-mono">[+] Đã hoàn 1 credit</p>
+          <p className="m-0 text-body">
+            {rejectReason || "Hãy chụp lại nơi đủ sáng, xoè thẳng bàn tay."}
+          </p>
+          <p className="m-0 text-success text-xs font-rune">
+            [+] Đã hoàn 1 credit
+          </p>
           <button
             type="button"
             onClick={handleRetake}
-            className="mt-2 text-xs font-mono underline text-ink hover:text-charcoal cursor-pointer"
+            className="mt-2 text-xs font-rune underline text-[#f7e7b4] hover:text-[#d4af37] cursor-pointer"
           >
             &gt; Chụp lại ảnh
           </button>
@@ -432,16 +510,16 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
 
       {status === "AI_UNAVAILABLE" && (
         <div
-          className="mb-6 p-4 border border-warning/50 bg-surface-card rounded text-sm text-ink space-y-2"
+          className="mb-6 p-4 border border-warning/50 bg-[#241842]/80 rounded-xl text-sm text-ink space-y-2"
           data-testid="ai-unavailable-banner"
         >
-          <div className="font-bold text-ink">
+          <div className="font-bold text-[#f7e7b4]">
             [!] Hệ thống bận, đã hoàn 1 credit. Thử lại sau ít phút.
           </div>
           <button
             type="button"
             onClick={onRetry}
-            className="mt-1 text-xs font-mono underline text-ink hover:text-charcoal cursor-pointer"
+            className="mt-1 text-xs font-rune underline text-[#f7e7b4] hover:text-[#d4af37] cursor-pointer"
             data-testid="retry-ai-button"
           >
             &gt; Thử lại lần xem mới
@@ -451,17 +529,19 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
 
       {status === "NETWORK_ERROR" && (
         <div
-          className="mb-6 p-4 border border-danger/40 bg-error-container/20 rounded text-sm text-ink space-y-2"
+          className="mb-6 p-4 border border-danger/50 bg-[#4c0519]/35 rounded-xl text-sm text-ink space-y-2"
           data-testid="network-error-banner"
         >
           <div className="font-bold text-danger">
             [!] Mất kết nối hoặc quá thời gian chờ.
           </div>
-          {errorMessage && <p className="m-0 text-mute text-xs">{errorMessage}</p>}
+          {errorMessage && (
+            <p className="m-0 text-body text-xs">{errorMessage}</p>
+          )}
           <button
             type="button"
             onClick={onRetry}
-            className="mt-1 text-xs font-mono underline text-ink hover:text-charcoal cursor-pointer"
+            className="mt-1 text-xs font-rune underline text-[#f7e7b4] hover:text-[#d4af37] cursor-pointer"
             data-testid="retry-network-button"
           >
             &gt; Thử lại (cùng mã yêu cầu)
@@ -469,20 +549,20 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         </div>
       )}
 
-      {/* Submit button */}
       <div>
         <button
           type="button"
           disabled={!canSubmit}
           onClick={onSubmit}
-          className={`w-full py-2.5 px-4 font-button-md text-button-md rounded transition-all text-center flex items-center justify-center font-mono ${
+          className={`w-full py-3.5 px-6 text-base font-bold rounded-full transition-all text-center flex items-center justify-center gap-2 ${
             canSubmit
-              ? "bg-ink text-on-dark hover:bg-charcoal cursor-pointer shadow-sm active:scale-[0.99]"
-              : "bg-surface-card text-mute border border-hairline cursor-not-allowed opacity-60"
+              ? "btn-primary cursor-pointer"
+              : "bg-[#1b1233] text-mute border border-hairline cursor-not-allowed opacity-55"
           }`}
           data-testid="submit-reading-button"
         >
-          Xem bói (−1 credit)
+          <Sparkles aria-hidden="true" className="h-4 w-4" />
+          <span>Xem bói (−1 credit)</span>
         </button>
       </div>
     </section>

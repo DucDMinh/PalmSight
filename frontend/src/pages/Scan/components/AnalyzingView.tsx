@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 
 export const AnalyzingView: React.FC = () => {
   const [seconds, setSeconds] = useState(0);
@@ -21,36 +23,48 @@ export const AnalyzingView: React.FC = () => {
 
   return (
     <div
-      className="w-full max-w-[560px] mx-auto py-16 px-6 flex flex-col items-center justify-center text-center font-mono select-none"
+      className="relative w-full max-w-[600px] mx-auto py-16 px-8 mystic-card rounded-2xl flex flex-col items-center justify-center text-center select-none overflow-hidden"
       data-testid="analyzing-view"
     >
-      <div className="w-16 h-16 border-2 border-hairline border-t-ink rounded-full animate-spin mb-8" />
+      <TarotCorners />
 
-      <div className="text-xs uppercase tracking-widest text-mute mb-2">
+      <div className="relative w-28 h-28 flex items-center justify-center mb-8">
+        <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#d4af37]/60 animate-spin-slow" />
+        <div className="absolute inset-2 rounded-full border-2 border-[#a855f7]/50 border-t-[#f7e7b4] animate-spin" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#2c1d4f] border border-[#d4af37] shadow-[0_0_25px_rgba(212,175,55,0.45)]">
+          <Sparkles className="h-6 w-6 text-[#f5d77f] animate-pulse" />
+        </div>
+      </div>
+
+      <div className="text-xs uppercase tracking-[0.25em] text-[#d4af37] font-rune mb-2">
         SYS::ANALYZING_PALM // PID_{Math.min(9999, 1000 + seconds * 13)}
       </div>
 
-      <h2 className="font-heading-lg text-heading-lg text-ink font-bold mb-3">
+      <h2 className="font-display text-3xl text-[#f7e7b4] font-bold mb-3">
         Đang đọc đường chỉ tay{dots}
       </h2>
 
-      <p className="font-body-md text-body-md text-mute max-w-[420px] mb-8 leading-relaxed">
+      <p className="text-base text-body max-w-[440px] mb-8 leading-relaxed">
         Vui lòng đợi trong giây lát (có thể mất tới 40 giây). Hệ thống đang phân tích chi tiết các đặc điểm lòng bàn tay của bạn.
       </p>
 
-      {/* Terminal progress bar */}
-      <div className="w-full bg-surface-card border border-hairline p-4 rounded text-left text-xs font-mono text-ink space-y-1.5 shadow-sm">
-        <div className="flex justify-between text-mute">
+      <div className="w-full bg-[#0b0716]/80 border border-[#d4af37]/35 p-5 rounded-xl text-left text-xs font-rune text-ink space-y-2 shadow-inner">
+        <div className="flex justify-between text-[#f5d77f]">
           <span>TASK: NEURAL_VISION_DECODE</span>
           <span>{Math.min(45, seconds)}s / 45s</span>
         </div>
-        <div className="w-full bg-surface-container h-2 rounded overflow-hidden">
+        <div className="w-full bg-[#1b1233] h-2.5 rounded-full overflow-hidden border border-[#d4af37]/30">
           <div
-            className="bg-ink h-full transition-all duration-1000"
-            style={{ width: `${Math.min(95, Math.max(5, (seconds / 40) * 100))}%` }}
+            className="h-full transition-all duration-1000 rounded-full"
+            style={{
+              width: `${Math.min(95, Math.max(8, (seconds / 40) * 100))}%`,
+              background:
+                "linear-gradient(90deg, #a855f7 0%, #d4af37 50%, #fff3d1 100%)",
+              boxShadow: "0 0 12px rgba(212, 175, 55, 0.7)",
+            }}
           />
         </div>
-        <div className="text-ash text-[11px] pt-1">
+        <div className="text-mute text-[11px] pt-1">
           &gt; EXIF_STRIP: OK · AI_INFERENCE_START · PROCESSING_BLOCKS...
         </div>
       </div>

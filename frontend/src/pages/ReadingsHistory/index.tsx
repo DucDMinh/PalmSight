@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { ScrollText, Sparkles } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import useReadingsQuery from "./hooks/useReadingsQuery";
 import ReadingHistoryItem from "./components/ReadingHistoryItem";
 import Loading from "@/components/ui/loading";
@@ -13,99 +15,107 @@ export const ReadingsHistory: React.FC = () => {
   const nextCursor = data?.nextCursor;
 
   return (
-    <main className="w-full bg-canvas min-h-[calc(100vh-56px)] py-8 text-ink font-body-md">
-      <div className="max-w-[960px] mx-auto px-4">
-        {/* Header */}
-        <div className="w-full pb-3 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="font-heading-md text-heading-md text-ink font-bold tracking-tight text-left m-0">
-            Lịch sử xem bói
-          </h1>
+    <main className="w-full min-h-[calc(100vh-72px)] py-8 sm:py-12 text-ink">
+      <div className="max-w-[1100px] mx-auto px-4">
+        <div className="w-full pb-4 mb-6 border-b border-hairline flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <span
+              aria-hidden="true"
+              className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.25em] text-[#d4af37] font-semibold mb-1"
+            >
+              <ScrollText className="h-3.5 w-3.5" />
+              Sổ Thiên Mệnh · Lưu Trữ Quẻ Bói
+            </span>
+            <h1 className="font-display text-3xl sm:text-4xl text-[#f7e7b4] font-bold tracking-tight text-left m-0">
+              Lịch sử xem bói
+            </h1>
+          </div>
           <div className="flex items-center gap-4">
             <Link
               to={BaseUrl.Scan}
-              className="px-3 py-1.5 bg-ink text-on-dark rounded font-button-md text-xs hover:bg-charcoal transition-colors cursor-pointer font-mono inline-flex items-center gap-1"
+              className="btn-primary !min-h-[38px] !px-5 text-xs sm:text-sm"
               data-testid="new-reading-btn"
             >
-              + Xem bói mới
+              <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />
+              <span>+ Xem bói mới</span>
             </Link>
-            <span className="font-code-sm text-code-sm text-mute uppercase tracking-widest font-mono">
+            <span className="text-xs text-[#d4af37]/75 uppercase tracking-widest font-rune hidden sm:inline">
               RECORD_LOG :: {String(items.length).padStart(2, "0")}_ENTRIES
             </span>
           </div>
         </div>
 
-        <div className="w-full h-px bg-hairline mb-6" />
-
         {isLoading ? (
-          <div className="py-16 flex items-center justify-center font-mono">
-            <Loading />
+          <div className="py-16 flex items-center justify-center">
+            <Loading className="h-8 w-8 text-[#d4af37]" />
           </div>
         ) : isError ? (
-          <div className="py-12 text-center font-mono text-danger">
+          <div className="py-12 text-center font-rune text-danger mystic-card rounded-2xl">
             [!] Không thể tải lịch sử xem bói. Vui lòng thử lại sau.
           </div>
         ) : items.length === 0 ? (
           <div
-            className="w-full py-16 text-center border border-dashed border-hairline rounded my-6 font-mono"
+            className="relative w-full py-16 px-6 text-center mystic-card rounded-2xl my-6"
             data-testid="empty-readings"
           >
-            <p className="text-mute text-sm mb-4">
+            <TarotCorners />
+            <p className="text-body text-base mb-5">
               Chưa có lần xem bói nào trong lịch sử.
             </p>
-            <Link
-              to={BaseUrl.Scan}
-              className="inline-block px-4 py-2 bg-ink text-on-dark rounded font-button-md text-sm hover:bg-charcoal transition-colors cursor-pointer"
-            >
-              Bắt đầu xem bói
+            <Link to={BaseUrl.Scan} className="btn-primary text-sm">
+              <Sparkles aria-hidden="true" className="h-4 w-4" />
+              <span>Bắt đầu xem bói</span>
             </Link>
           </div>
         ) : (
-          <div className="w-full overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left border-collapse table-fixed">
-              <thead>
-                <tr className="h-11">
-                  <th className="w-[72px] font-caption-md text-caption-md text-mute font-normal p-0 align-middle text-left font-mono">
-                    Trường phái
-                  </th>
-                  <th className="w-[220px] font-caption-md text-caption-md text-mute font-normal p-0 align-middle text-left font-mono">
-                    Lần xem
-                  </th>
-                  <th className="w-[340px] font-caption-md text-caption-md text-mute font-normal p-0 align-middle text-left font-mono">
-                    Tóm tắt
-                  </th>
-                  <th className="w-[150px] font-caption-md text-caption-md text-mute font-normal p-0 align-middle text-left font-mono">
-                    Ngày
-                  </th>
-                  <th className="w-[178px] font-caption-md text-caption-md text-mute font-normal p-0 align-middle text-left font-mono">
-                    Trạng thái
-                  </th>
-                </tr>
-                <tr>
-                  <td className="p-0" colSpan={5}>
-                    <div className="w-full h-px bg-hairline" />
-                  </td>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <ReadingHistoryItem key={item.id} item={item} />
-                ))}
-              </tbody>
-            </table>
+          <div className="relative mystic-card rounded-2xl p-4 sm:p-6 overflow-hidden">
+            <TarotCorners />
+            <div className="w-full overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left border-collapse table-fixed">
+                <thead>
+                  <tr className="h-11">
+                    <th className="w-[80px] text-xs uppercase tracking-wider text-[#d4af37] font-semibold p-0 align-middle text-left font-rune">
+                      Trường phái
+                    </th>
+                    <th className="w-[220px] text-xs uppercase tracking-wider text-[#d4af37] font-semibold p-0 align-middle text-left font-rune">
+                      Lần xem
+                    </th>
+                    <th className="w-[340px] text-xs uppercase tracking-wider text-[#d4af37] font-semibold p-0 align-middle text-left font-rune">
+                      Tóm tắt
+                    </th>
+                    <th className="w-[150px] text-xs uppercase tracking-wider text-[#d4af37] font-semibold p-0 align-middle text-left font-rune">
+                      Ngày
+                    </th>
+                    <th className="w-[178px] text-xs uppercase tracking-wider text-[#d4af37] font-semibold p-0 align-middle text-left font-rune">
+                      Trạng thái
+                    </th>
+                  </tr>
+                  <tr>
+                    <td className="p-0" colSpan={5}>
+                      <div className="w-full h-px bg-hairline" />
+                    </td>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <ReadingHistoryItem key={item.id} item={item} />
+                  ))}
+                </tbody>
+              </table>
 
-            {/* Pagination */}
-            {nextCursor && (
-              <div className="mt-6 text-left">
-                <button
-                  type="button"
-                  onClick={() => setCursor(nextCursor)}
-                  className="font-body-strong text-body-strong text-ink underline hover:text-mute transition-colors inline-block cursor-pointer font-mono text-sm"
-                  data-testid="load-more-btn"
-                >
-                  Tải thêm
-                </button>
-              </div>
-            )}
+              {nextCursor && (
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setCursor(nextCursor)}
+                    className="btn-secondary !min-h-[36px] !px-6 text-sm"
+                    data-testid="load-more-btn"
+                  >
+                    Tải thêm
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

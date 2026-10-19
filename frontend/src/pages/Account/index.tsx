@@ -93,31 +93,35 @@ export const Account = () => {
 
   return (
     <PageWrapper>
-      <div className="component:Account w-full max-w-[960px] mx-auto pt-8 md:pt-12 pb-36 md:pb-48 px-4 font-mono text-ink">
+      <div className="component:Account w-full max-w-[1000px] mx-auto pt-8 md:pt-12 pb-36 md:pb-48 px-4 font-sans text-ink">
         <div className="flex flex-col md:flex-row items-start">
-          {/* LEFT SUB-MENU: Sticky on desktop */}
-          <aside className="w-full md:w-[200px] shrink-0 md:sticky md:top-20 self-start mb-8 md:mb-0">
+          <aside className="w-full md:w-[220px] shrink-0 md:sticky md:top-24 self-start mb-8 md:mb-0">
+            <div className="hidden md:flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-gold-dim mb-4 px-2">
+              <span>✦</span>
+              <span>Định Danh Chiêm Tinh</span>
+            </div>
             <nav
               id="sub-nav"
               aria-label="Sub navigation"
-              className="flex flex-row md:flex-col gap-4 md:gap-0 text-sm overflow-x-auto pb-2 md:pb-0"
+              className="flex flex-row md:flex-col gap-3 md:gap-1 text-sm overflow-x-auto pb-2 md:pb-0 p-1.5 rounded-xl bg-surface-soft/50 border border-gold/15 backdrop-blur-md"
             >
               {NAV_ITEMS.map((item) => {
                 const isActive = activeSection === item.id;
                 return (
-                  <div key={item.id} className="py-1.5 md:py-2 shrink-0">
+                  <div key={item.id} className="shrink-0">
                     <a
                       href={`#${item.id}`}
                       onClick={(e) => handleNavClick(item.id, e)}
                       data-testid={`sub-nav-${item.id}`}
                       aria-current={isActive ? "true" : undefined}
-                      className={`sub-nav-link inline-block transition-all cursor-pointer select-none ${
+                      className={`sub-nav-link flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer select-none ${
                         isActive
-                          ? "font-bold text-ink border-b-2 border-ink"
-                          : "text-mute hover:text-ink border-b-2 border-transparent"
+                          ? "font-bold text-ink bg-gold/15 border-b-2 border-ink shadow-gold-glow"
+                          : "text-mute hover:text-gold-light hover:bg-surface-card/60 border-b-2 border-transparent"
                       }`}
                     >
-                      {item.label}
+                      <span className="text-[10px] text-gold/70">✦</span>
+                      <span>{item.label}</span>
                     </a>
                   </div>
                 );
@@ -125,18 +129,16 @@ export const Account = () => {
             </nav>
           </aside>
 
-          {/* 1px vertical hairline rule on desktop */}
           <div
             aria-hidden="true"
-            className="hidden md:block w-px bg-hairline self-stretch shrink-0 mx-8"
+            className="hidden md:block w-px bg-gradient-to-b from-transparent via-gold/25 to-transparent self-stretch shrink-0 mx-8"
           />
 
-          {/* RIGHT CONTENT COLUMN */}
-          <div className="w-full md:max-w-[680px] shrink-0 flex flex-col">
+          <div className="w-full md:max-w-[700px] shrink-0 flex flex-col">
             {isError && !user ? (
               <div
                 role="alert"
-                className="p-4 border border-terminal-danger rounded-[4px] text-sm text-ink flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="p-5 border border-terminal-danger/50 bg-error-container/30 rounded-xl text-sm text-ink flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <span>
                   <span className="font-bold text-terminal-danger mr-2">[!]</span>
@@ -145,13 +147,13 @@ export const Account = () => {
                 <button
                   type="button"
                   onClick={() => refetch()}
-                  className="h-8 px-3 rounded-[4px] bg-canvas text-ink border border-hairline hover:bg-surface-soft text-xs font-medium self-start sm:self-auto"
+                  className="btn-secondary h-8 px-3 text-xs self-start sm:self-auto"
                 >
                   Thử lại
                 </button>
               </div>
             ) : isLoading || !user ? (
-              <div className="p-8 text-center text-sm text-mute">
+              <div className="p-10 mystic-card rounded-2xl text-center text-sm text-mute font-mono">
                 Đang tải thông tin tài khoản...
               </div>
             ) : (

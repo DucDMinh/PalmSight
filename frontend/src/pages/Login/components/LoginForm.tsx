@@ -1,9 +1,11 @@
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Formik, Form, FormikHelpers } from "formik";
+import { Sparkles } from "lucide-react";
 import { loginSchema } from "@palmsight/shared";
 import FormikField from "@/components/customFieldsFormik/FormikField";
 import InputField from "@/components/customFieldsFormik/InputField";
 import SocialLoginButtons from "@/components/SocialLoginButtons";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import { useToast } from "@/components/ui/use-toast";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
@@ -11,7 +13,7 @@ import useLoginMutation from "../hooks/useLoginMutation";
 import type { LoginFormValues } from "../types";
 
 const inputClassName =
-  "w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50";
+  "w-full h-11 bg-[#0b0716]/75 border border-hairline rounded-xl px-3.5 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-[#0b0716] focus:border-[#d4af37] focus:shadow-[0_0_15px_rgba(212,175,55,0.2)] transition-all disabled:opacity-50";
 
 export const LoginForm = () => {
   const navigate = useNavigate();
@@ -41,7 +43,9 @@ export const LoginForm = () => {
         user: data.user,
       });
 
-      const destination = data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Scan;
+      const destination = data.isNewUser
+        ? BaseUrl.ReferralEnter
+        : BaseUrl.Scan;
       navigate(destination);
     } catch (error: any) {
       const message =
@@ -58,8 +62,16 @@ export const LoginForm = () => {
   };
 
   return (
-    <section className="w-full max-w-sm">
-      <h1 className="text-[28px] md:text-[32px] font-bold text-ink leading-tight tracking-normal">
+    <section className="relative w-full max-w-md mystic-card rounded-2xl p-7 sm:p-9">
+      <TarotCorners />
+      <div
+        aria-hidden="true"
+        className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.25em] text-[#d4af37] font-semibold mb-2"
+      >
+        <Sparkles className="h-3.5 w-3.5" />
+        <span>Cổng Huyền Môn</span>
+      </div>
+      <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#f7e7b4] leading-tight tracking-normal">
         Đăng nhập
       </h1>
       <p className="text-sm text-body mt-1 mb-6">
@@ -69,10 +81,12 @@ export const LoginForm = () => {
       {isResetSuccess && (
         <div
           role="status"
-          className="mb-5 p-3 bg-surface-card border border-terminal-success rounded text-sm text-ink flex items-start gap-2"
+          className="mb-5 p-3.5 bg-[#0b0716]/80 border border-terminal-success rounded-xl text-sm text-ink flex items-start gap-2"
         >
           <span className="font-bold text-terminal-success">[✓]</span>
-          <span>Đã đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.</span>
+          <span>
+            Đã đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.
+          </span>
         </div>
       )}
 
@@ -109,7 +123,7 @@ export const LoginForm = () => {
               />
               <Link
                 to={BaseUrl.ForgotPassword}
-                className="absolute right-0 top-0 text-sm text-mute underline hover:text-ink"
+                className="absolute right-0 top-0 text-xs sm:text-sm text-[#d4af37] underline hover:text-[#f7e7b4]"
               >
                 Quên mật khẩu?
               </Link>
@@ -118,7 +132,7 @@ export const LoginForm = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="mt-1 w-full h-9 bg-ink text-canvas rounded font-medium text-base px-5 flex items-center justify-center cursor-pointer transition-colors hover:bg-ink-deep active:bg-ink-deep disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-2 w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "[...] Đang đăng nhập..." : "Đăng nhập"}
             </button>
@@ -128,9 +142,12 @@ export const LoginForm = () => {
 
       <SocialLoginButtons />
 
-      <p className="mt-5 text-sm text-mute">
+      <p className="mt-6 text-center text-sm text-mute">
         Chưa có tài khoản?{" "}
-        <Link to={BaseUrl.Register} className="text-ink underline hover:text-charcoal">
+        <Link
+          to={BaseUrl.Register}
+          className="text-[#f7e7b4] underline hover:text-[#d4af37] font-medium"
+        >
           Tạo tài khoản mới
         </Link>
       </p>

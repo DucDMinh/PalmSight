@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { Sparkles, ScrollText, Compass } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import {
   READING_SCHOOLS,
   ImageQuality,
   getTopicLabel,
 } from "@palmsight/shared";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import ReadingHeader from "./components/ReadingHeader";
 import SectionBlock from "./components/SectionBlock";
 import AspectsBlock from "./components/AspectsBlock";
@@ -31,14 +33,14 @@ export const ReadingDetail: React.FC = () => {
       setIsDeleteOpen(false);
       navigate(BaseUrl.Readings);
     } catch {
-      // Handled by global/query error handling
+      return;
     }
   };
 
   if (isLoading) {
     return (
-      <main className="w-full bg-canvas min-h-[calc(100vh-56px)] flex items-center justify-center p-8 font-mono">
-        <Loading />
+      <main className="w-full min-h-[calc(100vh-72px)] flex items-center justify-center p-8">
+        <Loading className="h-8 w-8 text-[#d4af37]" />
       </main>
     );
   }
@@ -46,20 +48,18 @@ export const ReadingDetail: React.FC = () => {
   if (isError || !reading) {
     const is404 = (error as any)?.response?.status === 404;
     return (
-      <main className="w-full bg-canvas min-h-[calc(100vh-56px)] py-16 px-4 font-mono text-center">
-        <div className="max-w-[480px] mx-auto border border-hairline p-8 rounded bg-surface-card">
-          <h2 className="font-heading-md text-heading-md text-danger font-bold mb-2">
+      <main className="w-full min-h-[calc(100vh-72px)] py-16 px-4 text-center">
+        <div className="relative max-w-[480px] mx-auto mystic-card p-8 rounded-2xl">
+          <TarotCorners />
+          <h2 className="font-display text-2xl text-danger font-bold mb-2">
             [!] {is404 ? "Không tìm thấy lần xem bói" : "Lỗi tải dữ liệu"}
           </h2>
-          <p className="font-body-md text-mute mb-6">
+          <p className="text-body mb-6">
             {is404
               ? "Lần xem bói này không tồn tại hoặc đã bị xoá."
               : "Đã có lỗi xảy ra khi tải kết quả xem bói."}
           </p>
-          <Link
-            to={BaseUrl.Readings}
-            className="inline-block px-4 py-2 bg-ink text-on-dark rounded font-button-md text-sm hover:bg-charcoal transition-colors"
-          >
+          <Link to={BaseUrl.Readings} className="btn-primary text-sm">
             Quay lại Lịch sử
           </Link>
         </div>
@@ -78,44 +78,48 @@ export const ReadingDetail: React.FC = () => {
     reading.topics.length >= totalSections + 6;
 
   return (
-    <main className="w-full bg-canvas min-h-[calc(100vh-56px)] py-12 text-ink font-body-md">
-      <div className="max-w-[960px] mx-auto px-4">
-        <div className="flex flex-col md:flex-row gap-10 items-start">
-          {/* LEFT SIDEBAR: Meta & actions (no palm photo per ADR-0010) */}
+    <main className="w-full min-h-[calc(100vh-72px)] py-10 sm:py-12 text-ink">
+      <div className="max-w-[1100px] mx-auto px-4">
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-start">
           <ReadingHeader
             reading={reading}
             onOpenDelete={() => setIsDeleteOpen(true)}
           />
 
-          {/* RIGHT COLUMN: Reading Content */}
-          <div className="w-full md:w-[640px] flex flex-col text-left">
-            {/* Top Bar */}
-            <div className="font-body-sm text-body-sm text-mute pb-4 border-b border-hairline flex justify-between items-baseline select-none font-mono">
-              <span>PALMSIGHT(1)</span>
-              <span>{schoolName}</span>
+          <div className="relative w-full flex-1 mystic-card rounded-2xl p-6 sm:p-9 flex flex-col text-left">
+            <TarotCorners />
+
+            <div className="text-xs sm:text-sm text-[#d4af37] pb-4 border-b border-hairline flex justify-between items-center select-none font-rune">
+              <span className="inline-flex items-center gap-2 font-bold">
+                <ScrollText aria-hidden="true" className="h-4 w-4" />
+                <span>PALMSIGHT(1)</span>
+              </span>
+              <span className="px-3 py-0.5 rounded-full bg-[#241842] border border-[#d4af37]/40 text-[#f7e7b4]">
+                {schoolName}
+              </span>
             </div>
 
-            {/* Quality warning banner */}
             {isPoorQuality && (
               <div
-                className="mt-4 p-3 bg-surface-card border border-warning/60 text-warning text-xs font-mono rounded"
+                className="mt-5 p-3.5 bg-[#241842]/90 border border-warning/60 text-warning text-xs sm:text-sm font-rune rounded-xl"
                 data-testid="poor-quality-warning"
               >
                 [!] Ảnh hơi mờ, kết quả có thể chưa chính xác.
               </div>
             )}
 
-            {/* Selected topics banner */}
             {!isAll && reading.topics && reading.topics.length > 0 && (
               <div
-                className="mt-4 py-2.5 px-3 mb-6 bg-surface-card border border-hairline rounded font-mono text-xs flex flex-wrap items-center gap-2"
+                className="mt-5 py-3 px-4 mb-2 bg-[#0b0716]/60 border border-hairline rounded-xl text-xs flex flex-wrap items-center gap-2"
                 data-testid="selected-topics-banner"
               >
-                <span className="text-mute font-medium">Mục đã chọn:</span>
+                <span className="text-[#d4af37] font-semibold">
+                  Mục đã chọn:
+                </span>
                 {reading.topics.map((key) => (
                   <span
                     key={key}
-                    className="px-2 py-0.5 bg-canvas border border-hairline rounded text-ink font-sans text-xs font-medium"
+                    className="px-2.5 py-0.5 bg-[#241842] border border-[#d4af37]/35 rounded-full text-[#f7e7b4] font-sans text-xs font-medium"
                   >
                     {getTopicLabel(key, reading.school)}
                   </span>
@@ -123,47 +127,64 @@ export const ReadingDetail: React.FC = () => {
               </div>
             )}
 
-            {/* Summary */}
             {result?.summary && (
-              <section className="pt-6 pb-6 border-b border-hairline text-left" data-testid="reading-summary-section">
-                <h3 className="font-heading-md text-heading-md text-ink pb-1 mb-2 border-b border-hairline font-bold">
-                  Tóm tắt
-                </h3>
-                <p className="font-body-md text-body-md text-body leading-relaxed m-0">
+              <section
+                className="mt-6 p-5 sm:p-6 rounded-xl bg-gradient-to-br from-[#2c1d4f]/70 via-[#1b1233]/80 to-[#0b0716]/80 border border-[#d4af37]/45 text-left shadow-[0_0_25px_rgba(212,175,55,0.12)]"
+                data-testid="reading-summary-section"
+              >
+                <div className="flex items-center gap-2 pb-2 mb-3 border-b border-[#d4af37]/30">
+                  <Sparkles
+                    aria-hidden="true"
+                    className="h-4 w-4 text-[#d4af37]"
+                  />
+                  <h3 className="font-display text-xl sm:text-2xl text-[#f7e7b4] font-bold m-0">
+                    Tóm tắt
+                  </h3>
+                </div>
+                <p className="text-base sm:text-lg text-ink leading-relaxed m-0">
                   {result.summary}
                 </p>
               </section>
             )}
 
-            {/* Sections */}
             <SectionBlock sections={result?.sections} />
 
-            {/* Aspects */}
             <AspectsBlock aspects={result?.aspects} />
 
-            {/* Advice */}
             {result?.advice && (
-              <section className="pt-6 pb-6 border-b border-hairline text-left" data-testid="reading-advice-section">
-                <h3 className="font-heading-md text-heading-md text-ink pb-1 mb-2 border-b border-hairline font-bold">
-                  Lời khuyên
-                </h3>
-                <p className="font-body-md text-body-md text-body leading-relaxed m-0">
+              <section
+                className="mt-6 p-5 sm:p-6 rounded-xl bg-gradient-to-r from-[#241842]/90 to-[#140d26]/90 border border-[#d4af37]/50 text-left"
+                data-testid="reading-advice-section"
+              >
+                <div className="flex items-center gap-2 pb-2 mb-3 border-b border-hairline">
+                  <Compass
+                    aria-hidden="true"
+                    className="h-4 w-4 text-[#d4af37]"
+                  />
+                  <h3 className="font-display text-xl sm:text-2xl text-[#f7e7b4] font-bold m-0">
+                    Lời khuyên
+                  </h3>
+                </div>
+                <p className="text-base text-body leading-relaxed m-0">
                   {result.advice}
                 </p>
               </section>
             )}
 
-            {/* Disclaimer */}
-            <div className="mt-6 mb-8 border border-hairline-strong bg-transparent p-4 font-mono text-left" data-testid="reading-disclaimer">
-              <p className="font-caption-md text-caption-md text-mute m-0">
-                [i] {result?.disclaimer || "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."}
+            <div
+              className="mt-8 border border-[#d4af37]/30 bg-[#0b0716]/60 rounded-xl p-4 font-rune text-left"
+              data-testid="reading-disclaimer"
+            >
+              <p className="text-xs sm:text-sm text-mute m-0">
+                [i]{" "}
+                {result?.disclaimer ||
+                  "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."}
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Delete confirmation modal */}
       <DeleteModal
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}

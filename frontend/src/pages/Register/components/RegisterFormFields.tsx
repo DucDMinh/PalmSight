@@ -7,6 +7,9 @@ interface RegisterFormFieldsProps {
   isSubmitting: boolean;
 }
 
+const inputStyle =
+  "w-full h-11 bg-[#0b0716]/75 border border-hairline rounded-xl px-3.5 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-[#0b0716] focus:border-[#d4af37] transition-all disabled:opacity-50";
+
 export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) => {
   return (
     <>
@@ -20,7 +23,7 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           helperText="Tên hiển thị trên hồ sơ của bạn."
           showTerminalIcons
           disabled={isSubmitting}
-          className="w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50"
+          className={inputStyle}
         />
       </div>
 
@@ -35,7 +38,7 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           errorTestId="error-username"
           showTerminalIcons
           disabled={isSubmitting}
-          className="w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50"
+          className={inputStyle}
         />
       </div>
 
@@ -51,7 +54,7 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           errorTestId="error-email"
           showTerminalIcons
           disabled={isSubmitting}
-          className="w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50"
+          className={inputStyle}
         />
       </div>
 
@@ -67,7 +70,7 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           passwordToggleStyle="text"
           showTerminalIcons
           disabled={isSubmitting}
-          className="w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50"
+          className={inputStyle}
         />
       </div>
 
@@ -83,7 +86,7 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           passwordToggleStyle="text"
           showTerminalIcons
           disabled={isSubmitting}
-          className="w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50"
+          className={inputStyle}
         />
       </div>
 
@@ -93,7 +96,8 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           name="referralCode"
           label={
             <>
-              Mã giới thiệu <span className="font-normal text-mute">(không bắt buộc)</span>
+              Mã giới thiệu{" "}
+              <span className="font-normal text-mute">(không bắt buộc)</span>
             </>
           }
           maxLength={8}
@@ -101,7 +105,7 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
           helperText="Mã từ liên kết mời. Bạn có thể sửa hoặc xoá."
           showTerminalIcons
           disabled={isSubmitting}
-          className="w-full h-10 bg-surface-soft border-hairline rounded px-3 py-2 text-ink placeholder:text-ash text-base uppercase outline-none focus:bg-canvas focus:border-ink transition-colors disabled:opacity-50"
+          className={`${inputStyle} uppercase`}
         />
       </div>
 
@@ -113,11 +117,17 @@ export const RegisterFormFields = ({ isSubmitting }: RegisterFormFieldsProps) =>
         label={
           <>
             Tôi đồng ý với{" "}
-            <a href="#terms" className="text-ink underline hover:text-charcoal">
+            <a
+              href="#terms"
+              className="text-[#f7e7b4] underline hover:text-[#d4af37]"
+            >
               Điều khoản dịch vụ
             </a>{" "}
             và{" "}
-            <a href="#privacy" className="text-ink underline hover:text-charcoal">
+            <a
+              href="#privacy"
+              className="text-[#f7e7b4] underline hover:text-[#d4af37]"
+            >
               Chính sách riêng tư
             </a>
             .
