@@ -38,7 +38,8 @@ export interface TestAppInstance {
 }
 
 export interface TestAppOptions {
-  googleVerifier?: Pick<GoogleAuthVerifier, "verify">;
+  googleVerifier?: Pick<GoogleAuthVerifier, "verify"> &
+    Partial<Pick<GoogleAuthVerifier, "verifyCode">>;
   facebookVerifier?: Pick<FacebookAuthVerifier, "verify">;
 }
 

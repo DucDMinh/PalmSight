@@ -29,7 +29,7 @@ Tóm tắt các request `POST`/`PUT`:
 | `POST /auth/login` | — | — | — | `rt` (nếu có) | JSON `{ login, password }` |
 | `POST /auth/forgot-password` | — | — | — | — | JSON `{ email }` |
 | `POST /auth/reset-password` | — | — | — | — | JSON `{ token, newPassword }` |
-| `POST /auth/google` | — | — | — | `rt` (nếu có) | JSON `{ idToken }` |
+| `POST /auth/google` | — | — | — | `rt` (nếu có) | JSON `{ code }` hoặc `{ idToken }` |
 | `POST /auth/facebook` | — | — | — | `rt` (nếu có) | JSON `{ accessToken }` |
 | `POST /auth/refresh` | — | — | `Origin` | `rt` (bắt buộc) | — |
 | `POST /auth/logout` | — | — | `Origin` | `rt` (nếu có) | — |
@@ -358,7 +358,8 @@ Luồng chi tiết ở [workflow.md](workflow.md#14-đăng-nhập-google--facebo
 
 | Endpoint | Vị trí | Trường | Kiểu | Bắt buộc | Ràng buộc |
 | --- | --- | --- | --- | --- | --- |
-| `/auth/google` | body | `idToken` | string | có | Giá trị `credential` mà GIS trả về; 1–4096 ký tự |
+| `/auth/google` | body | `code` | string | có, nếu không gửi `idToken` | Authorization code từ `google.accounts.oauth2.initCodeClient` (popup); tối đa 2048 ký tự. Server đổi code lấy ID token bằng `GOOGLE_CLIENT_SECRET`. Web hiện dùng trường này |
+| `/auth/google` | body | `idToken` | string | có, nếu không gửi `code` | Giá trị `credential` mà nút GIS trả về; tối đa 4096 ký tự |
 | `/auth/facebook` | body | `accessToken` | string | có | `authResponse.accessToken` mà Facebook SDK trả về; 1–4096 ký tự |
 | cả hai | cookie | `rt` | — | không | Nếu đang có phiên cũ trên trình duyệt này, server thu hồi phiên đó trước khi cấp phiên mới |
 
@@ -366,7 +367,7 @@ Luồng chi tiết ở [workflow.md](workflow.md#14-đăng-nhập-google--facebo
 POST /api/v1/auth/google
 Content-Type: application/json
 
-{ "idToken": "eyJhbGciOiJSUzI1NiIs..." }
+{ "code": "4/0AeanS0..." }
 ```
 
 ```http
