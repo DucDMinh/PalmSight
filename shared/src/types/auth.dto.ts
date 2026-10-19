@@ -37,8 +37,10 @@ export interface ResetPasswordRequestDto {
   newPassword: string;
 }
 
+// Send exactly one: `code` from the OAuth code client, or `idToken` from the GIS button
 export interface GoogleAuthRequestDto {
-  idToken: string;
+  idToken?: string;
+  code?: string;
   claimToken?: string;
 }
 

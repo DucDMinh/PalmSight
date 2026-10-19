@@ -92,7 +92,8 @@ describe("FacebookLoginButton", () => {
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith(expect.any(Function), {
-        scope: "public_profile",
+        scope: "public_profile,email",
+        auth_type: "rerequest",
       });
       expect(authService.postFacebookLogin).toHaveBeenCalledWith({
         accessToken: "fb-access-token-123",

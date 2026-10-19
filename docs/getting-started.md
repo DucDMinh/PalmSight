@@ -109,6 +109,7 @@ Gmail ghi đè địa chỉ người gửi bằng `SMTP_USER`, nên `MAIL_FROM` 
 2. **Credentials → Create credentials → OAuth client ID**, loại *Web application*.
 3. **Authorized JavaScript origins**: `http://localhost:5173` và domain ngrok của từng thành viên.
 4. Điền client ID vào `GOOGLE_CLIENT_ID` (`backend/.env`) và `VITE_GOOGLE_CLIENT_ID` (`frontend/.env`).
+5. Điền client secret của cùng OAuth client vào `GOOGLE_CLIENT_SECRET` (`backend/.env`). Secret **chỉ** nằm ở backend: nút Google gửi authorization code lên API, API dùng secret đổi code lấy ID token. Không cần khai báo redirect URI vì luồng popup dùng `postmessage`.
 
 ### Facebook
 

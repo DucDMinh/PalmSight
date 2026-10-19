@@ -176,7 +176,9 @@ export class AuthController {
     const validated = await googleAuthSchema.validate(body, {
       abortEarly: false,
     });
-    const profile = await this.googleAuthVerifier.verify(validated.idToken);
+    const profile = validated.code
+      ? await this.googleAuthVerifier.verifyCode(validated.code)
+      : await this.googleAuthVerifier.verify(validated.idToken as string);
 
     const claimToken = validated.claimToken
       ? String(validated.claimToken).trim()

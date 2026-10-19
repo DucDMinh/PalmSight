@@ -58,6 +58,8 @@ const fakeGoogleVerifier = {
     }
     return profile;
   },
+  verifyCode: async (code: string): Promise<GoogleProfile> =>
+    fakeGoogleVerifier.verify(code.replace(/^code-/, 'token-')),
 };
 
 describe('POST /api/v1/auth/google', () => {
@@ -203,6 +205,23 @@ describe('POST /api/v1/auth/google', () => {
 
   it('rejects an invalid Google token with 401 OAUTH_INVALID_TOKEN', async () => {
     const res = await postGoogle({ idToken: 'forged-token' });
+    expect(res.status).toBe(401);
+
+    const body = (await res.json()) as any;
+    expect(body.error.code).toBe('OAUTH_INVALID_TOKEN');
+  });
+
+  it('logs in with an authorization code from the custom Google button', async () => {
+    const res = await postGoogle({ code: 'code-new' });
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as any;
+    expect(body.isNewUser).toBe(false);
+    expect(body.accessToken).toBeTruthy();
+  });
+
+  it('rejects an invalid authorization code with 401 OAUTH_INVALID_TOKEN', async () => {
+    const res = await postGoogle({ code: 'code-forged' });
     expect(res.status).toBe(401);
 
     const body = (await res.json()) as any;
