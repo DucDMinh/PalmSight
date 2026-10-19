@@ -13,7 +13,9 @@
     "test:watch": "vitest",
     "db:sync-indexes": "tsx scripts/sync-indexes.ts",
     "db:check": "tsx scripts/db-check.ts",
-    "generate:secrets": "tsx scripts/generate-secrets.ts"
+    "generate:secrets": "tsx scripts/generate-secrets.ts",
+    "users:delete": "tsx scripts/users-delete.ts",
+    "credits:reconcile": "tsx scripts/credits-reconcile.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.2.7",
