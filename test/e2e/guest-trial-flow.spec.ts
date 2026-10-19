@@ -320,7 +320,7 @@ test.describe("T033 [US1]: Playwright E2E Happy Path Flow", () => {
     // Verify unlocked sections and locked sections
     const lockedBadges = page.locator('[data-testid="locked-badge"]');
     await expect(lockedBadges.first()).toBeVisible();
-    await expect(lockedBadges.first()).toContainText("LOCKED CONTENT");
+    await expect(lockedBadges.first()).toContainText("NỘI DUNG ĐÃ KHÓA");
 
     // Click Unlock Now button
     const unlockBtn = page.locator('[data-testid="unlock-now-button"]');

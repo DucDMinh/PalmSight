@@ -68,7 +68,7 @@ test.describe("T034 [US2]: Playwright E2E Anti-Abuse Tests", () => {
 
     // 5. Verify error notification / message appears
     await expect(
-      page.getByText("Bạn đã sử dụng hết 1 lượt bói thử miễn phí")
+      page.getByTestId("limit-reached-banner")
     ).toBeVisible();
 
     // Verify user is not redirected to preview page
@@ -128,7 +128,7 @@ test.describe("T034 [US2]: Playwright E2E Anti-Abuse Tests", () => {
 
     // Assert blocked with warning
     await expect(
-      page.getByText("Bạn đã sử dụng hết 1 lượt bói thử miễn phí")
+      page.getByTestId("limit-reached-banner")
     ).toBeVisible();
 
     await incognitoContext.close();

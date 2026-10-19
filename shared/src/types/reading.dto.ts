@@ -3,8 +3,8 @@ import {
   HandOrientation,
   ImageQuality,
   ReadingStatus,
-} from '../enums';
-import { PaginatedResponseDto } from './common.dto';
+} from "../enums";
+import { PaginatedResponseDto } from "./common.dto";
 
 export interface ReadingSectionResult {
   key: string;
@@ -97,7 +97,7 @@ export interface GuestReadingPreviewDto {
   disclaimer: string;
   previewExpiresAt: string;
   createdAt: string;
-  claimToken: string;
+  claimToken?: string;
   rejectReason?: string | null;
 }
 
