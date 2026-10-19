@@ -117,18 +117,15 @@ describe("ReadingsHistory Page (/readings)", () => {
     expect(screen.getByRole("heading", { name: "Lịch sử xem bói" })).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText("RECORD_LOG :: 05_ENTRIES")).toBeInTheDocument();
-      // Items rendered
+      expect(screen.getByText("✦ 5 quẻ đã lưu")).toBeInTheDocument();
       expect(screen.getByText(/Phương Đông · Tay trái · 3 mục/)).toBeInTheDocument();
       expect(screen.getByText("Dáng tay ngũ hành, Thiên văn, Nhân văn")).toBeInTheDocument();
       expect(screen.getByText(/Phương Tây · Tay phải · Toàn bộ/)).toBeInTheDocument();
 
-      // Summaries
       expect(
         screen.getByText("Tay Thổ, thực tế và đáng tin cậy. Tình cảm chân thành, chậm mà chắc.")
       ).toBeInTheDocument();
 
-      // Status badges
       expect(screen.getAllByText("[+] Xong").length).toBe(2);
       expect(screen.getByText("[!] Hệ thống bận · đã hoàn 1 credit")).toBeInTheDocument();
       expect(screen.getByText("[!] Ảnh không rõ · đã hoàn 1 credit")).toBeInTheDocument();

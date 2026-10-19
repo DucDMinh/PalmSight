@@ -37,7 +37,7 @@ export const AnalyzingView: React.FC = () => {
       </div>
 
       <div className="text-xs uppercase tracking-[0.25em] text-[#d4af37] font-rune mb-2">
-        SYS::ANALYZING_PALM // PID_{Math.min(9999, 1000 + seconds * 13)}
+        ✦ Thiên Cơ Luận Giải ✦
       </div>
 
       <h2 className="font-display text-3xl text-[#f7e7b4] font-bold mb-3">
@@ -50,7 +50,7 @@ export const AnalyzingView: React.FC = () => {
 
       <div className="w-full bg-[#0b0716]/80 border border-[#d4af37]/35 p-5 rounded-xl text-left text-xs font-rune text-ink space-y-2 shadow-inner">
         <div className="flex justify-between text-[#f5d77f]">
-          <span>TASK: NEURAL_VISION_DECODE</span>
+          <span>Luận giải tướng tay &amp; vận mệnh</span>
           <span>{Math.min(45, seconds)}s / 45s</span>
         </div>
         <div className="w-full bg-[#1b1233] h-2.5 rounded-full overflow-hidden border border-[#d4af37]/30">
@@ -65,7 +65,7 @@ export const AnalyzingView: React.FC = () => {
           />
         </div>
         <div className="text-mute text-[11px] pt-1">
-          &gt; EXIF_STRIP: OK · AI_INFERENCE_START · PROCESSING_BLOCKS...
+          ✦ Đang soi đường Sinh Đạo · Trí Đạo · Tâm Đạo...
         </div>
       </div>
     </div>

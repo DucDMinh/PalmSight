@@ -135,13 +135,13 @@ export const ReadingHeader: React.FC<ReadingHeaderProps> = ({
           </svg>
 
           <span className="relative z-10 text-[11px] font-rune text-[#d4af37] tracking-[0.2em] uppercase">
-            ✦ SYS::READING_LOG ✦
+            ✦ Ấn Chứng Thiên Mệnh ✦
           </span>
           <span className="relative z-10 font-display text-lg font-bold text-[#f7e7b4] mt-2">
             [{schoolConfig?.name ?? reading.school}]
           </span>
           <span className="relative z-10 text-xs font-rune text-body mt-1">
-            {handLabel} // 1080P
+            ✦ {handLabel} ✦
           </span>
           <span className="relative z-10 text-[10px] text-mute mt-3 font-rune border border-[#d4af37]/30 bg-[#0b0716]/80 px-2.5 py-0.5 rounded-full">
             NO_IMAGE_STORED // ADR-0010

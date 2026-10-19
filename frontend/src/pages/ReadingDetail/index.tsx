@@ -92,7 +92,7 @@ export const ReadingDetail: React.FC = () => {
             <div className="text-xs sm:text-sm text-[#d4af37] pb-4 border-b border-hairline flex justify-between items-center select-none font-rune">
               <span className="inline-flex items-center gap-2 font-bold">
                 <ScrollText aria-hidden="true" className="h-4 w-4" />
-                <span>PALMSIGHT(1)</span>
+                <span>Luận Giải Chi Tiết</span>
               </span>
               <span className="px-3 py-0.5 rounded-full bg-[#241842] border border-[#d4af37]/40 text-[#f7e7b4]">
                 {schoolName}

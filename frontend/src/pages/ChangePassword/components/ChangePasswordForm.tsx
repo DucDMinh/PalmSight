@@ -6,6 +6,7 @@ import FormikField from "@/components/customFieldsFormik/FormikField";
 import InputField from "@/components/customFieldsFormik/InputField";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import useChangePasswordMutation from "../hooks/useChangePasswordMutation";
 import type { ChangePasswordFormValues } from "../types";
 import type { ApiErrorPayload } from "@/services/authService";
@@ -73,7 +74,8 @@ export const ChangePasswordForm = () => {
       onSubmit={onSubmit}
     >
       {({ isSubmitting }) => (
-        <Form className="flex max-w-lg flex-col gap-4 mystic-card rounded-2xl p-6 sm:p-8">
+        <Form className="relative flex max-w-lg flex-col gap-4 mystic-card rounded-2xl p-6 sm:p-8 overflow-hidden">
+          <TarotCorners />
           {success && (
             <div className="p-3.5 bg-terminal-success/10 border border-terminal-success/40 rounded-xl text-sm text-ink flex items-center gap-2">
               <span className="font-bold text-terminal-success">[✓]</span>
