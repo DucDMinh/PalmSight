@@ -1,5 +1,5 @@
 import { NestFactory } from "@nestjs/core";
-import { Logger, ValidationPipe } from "@nestjs/common";
+import { ForbiddenException, Logger, ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
@@ -16,7 +16,10 @@ export function createCorsOriginValidator(
   nodeEnv: string,
   publicBaseUrl: string
 ) {
-  const normalizedPublic = publicBaseUrl.replace(/\/+$/, "");
+  const allowedOrigins = (publicBaseUrl || "")
+    .split(",")
+    .map((url) => url.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
 
   return (
     origin: string | undefined,
@@ -27,26 +30,34 @@ export function createCorsOriginValidator(
     }
 
     if (nodeEnv === "production") {
-      if (normalizedPublic === "*" || !normalizedPublic) {
+      if (publicBaseUrl === "*" || !publicBaseUrl) {
         return callback(
           new Error("CORS wildcard * is strictly forbidden in production")
         );
       }
-      if (origin.replace(/\/+$/, "") === normalizedPublic) {
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+      if (
+        allowedOrigins.includes(normalizedOrigin) ||
+        /^https:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(normalizedOrigin)
+      ) {
         return callback(null, true);
       }
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      return callback(
+        new ForbiddenException(`Origin ${origin} not allowed by CORS`)
+      );
     }
 
     if (
       DEV_ORIGINS.includes(origin) ||
-      origin.replace(/\/+$/, "") === normalizedPublic ||
+      allowedOrigins.includes(origin.replace(/\/+$/, "")) ||
       /^https?:\/\/([a-zA-Z0-9-]+\.)*ngrok-free\.app(?::\d+)?$/.test(origin)
     ) {
       return callback(null, true);
     }
 
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+    return callback(
+      new ForbiddenException(`Origin ${origin} not allowed by CORS`)
+    );
   };
 }
 

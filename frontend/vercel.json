@@ -1,7 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "cleanUrls": true,
   "rewrites": [
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms.html"
+    },
+    {
+      "source": "/data-deletion",
+      "destination": "/data-deletion.html"
+    },
     {
       "source": "/api/v1/:path*",
       "destination": "https://palmsight-backend.onrender.com/api/v1/:path*"
@@ -15,10 +26,6 @@
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin-allow-popups"
-        },
         {
           "key": "X-Frame-Options",
           "value": "DENY"
