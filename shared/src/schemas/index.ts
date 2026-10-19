@@ -81,13 +81,18 @@ export const loginSchema = yup.object({
     .max(128, "Mật khẩu tối đa 128 ký tự"),
 });
 
-export const googleAuthSchema = yup.object({
-  idToken: yup
-    .string()
-    .trim()
-    .required("Thiếu mã đăng nhập Google")
-    .max(4096, "Mã đăng nhập Google không hợp lệ"),
-});
+//! Accepts either a GIS ID token or an OAuth authorization code from the custom button
+export const googleAuthSchema = yup
+  .object({
+    idToken: yup.string().trim().max(4096, "Mã đăng nhập Google không hợp lệ"),
+    code: yup.string().trim().max(2048, "Mã đăng nhập Google không hợp lệ"),
+  })
+  .test("google-credential", "Thiếu mã đăng nhập Google", function (value) {
+    return (
+      Boolean(value?.idToken || value?.code) ||
+      this.createError({ path: "code", message: "Thiếu mã đăng nhập Google" })
+    );
+  });
 
 export const facebookAuthSchema = yup.object({
   accessToken: yup

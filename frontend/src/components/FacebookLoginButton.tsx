@@ -10,6 +10,8 @@ type ButtonStatus = "ready" | "submitting" | "unavailable";
 
 const DEFAULT_FACEBOOK_APP_ID = "2628413500931399";
 const FB_OAUTH_MESSAGE_TYPE = "PALMSIGHT_FB_OAUTH_RESULT";
+// `email` lets the API link this login to an existing account with the same email
+const FB_SCOPES = "public_profile,email";
 
 const parseOAuthParams = (hash: string, search: string) => {
   const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
@@ -148,7 +150,8 @@ export const FacebookLoginButton = () => {
           }
           void submitAccessToken(accessToken);
         },
-        { scope: "public_profile" }
+        //! rerequest asks again for email if the user unticked it on a previous login
+        { scope: FB_SCOPES, auth_type: "rerequest" }
       );
       return;
     }
@@ -159,7 +162,8 @@ export const FacebookLoginButton = () => {
       `?client_id=${encodeURIComponent(appId)}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&response_type=token` +
-      `&scope=${encodeURIComponent("public_profile")}` +
+      `&scope=${encodeURIComponent(FB_SCOPES)}` +
+      `&auth_type=rerequest` +
       `&display=popup`;
 
     const width = 600;

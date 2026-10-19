@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface FacebookProfile {
@@ -30,6 +30,8 @@ interface FacebookMeResponse {
 
 @Injectable()
 export class FacebookAuthVerifier {
+  private readonly logger = new Logger(FacebookAuthVerifier.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   async verify(accessToken: string): Promise<FacebookProfile> {
@@ -44,7 +46,8 @@ export class FacebookAuthVerifier {
 
         const debugRes = await fetch(debugUrl.toString());
         if (!debugRes.ok) {
-          throw new Error('Failed to debug Facebook token');
+          // Graph API explains config problems here (e.g. app set as "Native or desktop app")
+          throw new Error(`Failed to debug Facebook token: ${await debugRes.text()}`);
         }
         const debugBody = (await debugRes.json()) as FacebookDebugTokenResponse;
         if (
@@ -61,7 +64,7 @@ export class FacebookAuthVerifier {
 
       const meRes = await fetch(meUrl.toString());
       if (!meRes.ok) {
-        throw new Error('Failed to fetch Facebook user profile');
+        throw new Error(`Failed to fetch Facebook user profile: ${await meRes.text()}`);
       }
 
       const payload = (await meRes.json()) as FacebookMeResponse;
@@ -78,7 +81,8 @@ export class FacebookAuthVerifier {
         name: payload.name ?? null,
         picture: payload.picture?.data?.url ?? null,
       };
-    } catch {
+    } catch (error: any) {
+      this.logger.warn(`Facebook token verification failed: ${error?.message ?? error}`);
       throw new UnauthorizedException({
         code: 'OAUTH_INVALID_TOKEN',
         message: 'Không xác minh được tài khoản Facebook. Vui lòng thử lại.',

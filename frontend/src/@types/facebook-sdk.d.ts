@@ -19,6 +19,7 @@ interface FacebookInitOptions {
 
 interface FacebookLoginOptions {
   scope?: string;
+  auth_type?: "rerequest" | "reauthenticate" | "reauthorize";
 }
 
 interface Window {

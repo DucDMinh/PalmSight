@@ -24,6 +24,24 @@ interface GoogleButtonConfiguration {
   locale?: string;
 }
 
+interface GoogleCodeResponse {
+  code?: string;
+  error?: string;
+  error_description?: string;
+}
+
+interface GoogleCodeClientConfig {
+  client_id: string;
+  scope: string;
+  ux_mode?: "popup" | "redirect";
+  callback: (response: GoogleCodeResponse) => void;
+  error_callback?: (error: { type: string; message?: string }) => void;
+}
+
+interface GoogleCodeClient {
+  requestCode: () => void;
+}
+
 interface Window {
   google?: {
     accounts: {
@@ -31,6 +49,9 @@ interface Window {
         initialize: (config: GoogleIdConfiguration) => void;
         renderButton: (parent: HTMLElement, options: GoogleButtonConfiguration) => void;
         disableAutoSelect: () => void;
+      };
+      oauth2?: {
+        initCodeClient: (config: GoogleCodeClientConfig) => GoogleCodeClient;
       };
     };
   };

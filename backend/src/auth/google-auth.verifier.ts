@@ -16,6 +16,31 @@ export class GoogleAuthVerifier {
 
   constructor(private readonly configService: ConfigService) {}
 
+  //! Exchange an authorization code from initCodeClient (popup mode) for an ID token, then verify it
+  async verifyCode(code: string): Promise<GoogleProfile> {
+    const clientId = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
+    const clientSecret = this.configService.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
+    // Popup-mode codes are bound to the special "postmessage" redirect URI
+    const codeClient = new OAuth2Client({ clientId, clientSecret, redirectUri: 'postmessage' });
+
+    let idToken: string | null | undefined;
+    try {
+      const { tokens } = await codeClient.getToken(code);
+      idToken = tokens.id_token;
+    } catch {
+      idToken = null;
+    }
+
+    if (!idToken) {
+      throw new UnauthorizedException({
+        code: 'OAUTH_INVALID_TOKEN',
+        message: 'Không xác minh được tài khoản Google. Vui lòng thử lại.',
+      });
+    }
+
+    return this.verify(idToken);
+  }
+
   async verify(idToken: string): Promise<GoogleProfile> {
     const audience = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
 

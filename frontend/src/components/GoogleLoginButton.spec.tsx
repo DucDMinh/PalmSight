@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import GoogleLoginButton from "./GoogleLoginButton";
 import authService from "@/services/authService";
@@ -16,11 +16,14 @@ vi.mock("react-router-dom", async () => {
 });
 
 describe("GoogleLoginButton", () => {
-  let gsiCallback: ((response: GoogleCredentialResponse) => void) | undefined;
-  const initialize = vi.fn((config: GoogleIdConfiguration) => {
-    gsiCallback = config.callback;
+  let codeCallback: ((response: GoogleCodeResponse) => void) | undefined;
+  let errorCallback: ((error: { type: string }) => void) | undefined;
+  const requestCode = vi.fn();
+  const initCodeClient = vi.fn((config: GoogleCodeClientConfig) => {
+    codeCallback = config.callback;
+    errorCallback = config.error_callback;
+    return { requestCode };
   });
-  const renderButton = vi.fn();
 
   const renderComponent = () =>
     render(
@@ -31,15 +34,21 @@ describe("GoogleLoginButton", () => {
       </MemoryRouter>
     );
 
+  const getButton = () => screen.getByRole("button", { name: /Đăng nhập bằng Google/ });
+
   beforeEach(() => {
     vi.restoreAllMocks();
     mockedNavigate.mockReset();
-    initialize.mockClear();
-    renderButton.mockClear();
-    gsiCallback = undefined;
+    initCodeClient.mockClear();
+    requestCode.mockClear();
+    codeCallback = undefined;
+    errorCallback = undefined;
     vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "test-client-id.apps.googleusercontent.com");
     window.google = {
-      accounts: { id: { initialize, renderButton, disableAutoSelect: vi.fn() } },
+      accounts: {
+        id: { initialize: vi.fn(), renderButton: vi.fn(), disableAutoSelect: vi.fn() },
+        oauth2: { initCodeClient },
+      },
     };
   });
 
@@ -48,17 +57,24 @@ describe("GoogleLoginButton", () => {
     delete window.google;
   });
 
-  it("renders the official Google button with the configured client ID", async () => {
+  it("opens the Google code popup from the custom styled button", async () => {
     renderComponent();
 
-    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
-    expect(initialize).toHaveBeenCalledWith(
-      expect.objectContaining({ client_id: "test-client-id.apps.googleusercontent.com" })
+    await waitFor(() => expect(getButton()).toBeEnabled());
+    expect(initCodeClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client_id: "test-client-id.apps.googleusercontent.com",
+        scope: "openid email profile",
+        ux_mode: "popup",
+      })
     );
-    expect(renderButton.mock.calls[0][1]).toMatchObject({ text: "signin_with", locale: "vi" });
+    expect(getButton()).toHaveClass("btn-secondary");
+
+    fireEvent.click(getButton());
+    expect(requestCode).toHaveBeenCalledTimes(1);
   });
 
-  it("sends the Google credential to the API and routes a new user to referral entry", async () => {
+  it("sends the authorization code to the API and routes a new user to referral entry", async () => {
     vi.spyOn(authService, "postGoogleLogin").mockResolvedValue({
       accessToken: "access-token",
       expiresIn: 900,
@@ -74,23 +90,37 @@ describe("GoogleLoginButton", () => {
     });
 
     renderComponent();
-    await waitFor(() => expect(gsiCallback).toBeDefined());
+    await waitFor(() => expect(getButton()).toBeEnabled());
+    fireEvent.click(getButton());
 
     await act(async () => {
-      gsiCallback?.({ credential: "google-id-token" });
+      codeCallback?.({ code: "google-auth-code" });
     });
 
     await waitFor(() => {
-      expect(authService.postGoogleLogin).toHaveBeenCalledWith({ idToken: "google-id-token" });
+      expect(authService.postGoogleLogin).toHaveBeenCalledWith({ code: "google-auth-code" });
       expect(mockedNavigate).toHaveBeenCalledWith(BaseUrl.ReferralEnter);
     });
+  });
+
+  it("re-enables the button when the user closes the popup", async () => {
+    renderComponent();
+    await waitFor(() => expect(getButton()).toBeEnabled());
+
+    fireEvent.click(getButton());
+    expect(screen.getByRole("button", { name: /Đang đăng nhập bằng Google/ })).toBeDisabled();
+
+    act(() => {
+      errorCallback?.({ type: "popup_closed" });
+    });
+    expect(getButton()).toBeEnabled();
   });
 
   it("shows a disabled fallback when no client ID is configured", () => {
     vi.stubEnv("VITE_GOOGLE_CLIENT_ID", "");
     renderComponent();
 
-    expect(screen.getByRole("button", { name: /Đăng nhập bằng Google/ })).toBeDisabled();
-    expect(initialize).not.toHaveBeenCalled();
+    expect(getButton()).toBeDisabled();
+    expect(initCodeClient).not.toHaveBeenCalled();
   });
 });

@@ -8,32 +8,38 @@ import authService from "@/services/authService";
 
 type ButtonStatus = "loading" | "ready" | "submitting" | "unavailable";
 
-const MAX_GOOGLE_BUTTON_WIDTH = 400;
+const GOOGLE_SCOPES = "openid email profile";
 
 export const GoogleLoginButton = () => {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const navigate = useNavigate();
   const { toast } = useToast();
   const { setAuthSession } = useAuth();
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const codeClientRef = useRef<GoogleCodeClient | null>(null);
   const [status, setStatus] = useState<ButtonStatus>(clientId ? "loading" : "unavailable");
 
-  //! Google calls this with the ID token after the user picks an account
-  // Kept in a ref so the GIS callback registered once always sees the latest navigate/toast
-  const handleCredentialRef = useRef<(response: GoogleCredentialResponse) => void>();
-  handleCredentialRef.current = async ({ credential }: GoogleCredentialResponse) => {
-    setStatus("submitting");
+  //! Google calls this with an authorization code after the user picks an account in the popup
+  // Kept in a ref so the code client created once always sees the latest navigate/toast
+  const handleCodeRef = useRef<(response: GoogleCodeResponse) => void>();
+  handleCodeRef.current = async ({ code, error }: GoogleCodeResponse) => {
+    if (!code) {
+      setStatus("ready");
+      if (error && error !== "access_denied") {
+        toast({ variant: "destructive", description: "Đăng nhập Google thất bại. Vui lòng thử lại." });
+      }
+      return;
+    }
+
     try {
-      const data = await authService.postGoogleLogin({ idToken: credential });
+      const data = await authService.postGoogleLogin({ code });
       setAuthSession({ accessToken: data.accessToken, user: data.user });
       navigate(data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Scan);
-    } catch (error: any) {
+    } catch (err: any) {
       setStatus("ready");
       toast({
         variant: "destructive",
         description:
-          error?.response?.data?.error?.message || "Đăng nhập Google thất bại. Vui lòng thử lại.",
+          err?.response?.data?.error?.message || "Đăng nhập Google thất bại. Vui lòng thử lại.",
       });
     }
   };
@@ -44,25 +50,20 @@ export const GoogleLoginButton = () => {
 
     loadGoogleIdentityScript()
       .then(() => {
-        const gsi = window.google?.accounts?.id;
-        if (cancelled || !gsi || !googleButtonRef.current) return;
+        const oauth2 = window.google?.accounts?.oauth2;
+        if (cancelled) return;
+        if (!oauth2) {
+          setStatus("unavailable");
+          return;
+        }
 
-        gsi.initialize({
+        codeClientRef.current = oauth2.initCodeClient({
           client_id: clientId,
-          callback: (response) => handleCredentialRef.current?.(response),
+          scope: GOOGLE_SCOPES,
           ux_mode: "popup",
-        });
-
-        const wrapperWidth = wrapperRef.current?.offsetWidth || MAX_GOOGLE_BUTTON_WIDTH;
-        gsi.renderButton(googleButtonRef.current, {
-          type: "standard",
-          theme: document.documentElement.classList.contains("dark") ? "filled_black" : "outline",
-          size: "large",
-          text: "signin_with",
-          shape: "rectangular",
-          logo_alignment: "center",
-          width: Math.min(wrapperWidth, MAX_GOOGLE_BUTTON_WIDTH),
-          locale: "vi",
+          callback: (response) => handleCodeRef.current?.(response),
+          // Fired when the popup is closed or blocked before an account is picked
+          error_callback: () => setStatus("ready"),
         });
         setStatus("ready");
       })
@@ -75,27 +76,26 @@ export const GoogleLoginButton = () => {
     };
   }, [clientId]);
 
-  const placeholderText =
+  const handleGoogleClick = () => {
+    if (status !== "ready" || !codeClientRef.current) return;
+    setStatus("submitting");
+    codeClientRef.current.requestCode();
+  };
+
+  const labelText =
     status === "submitting" ? "[...] Đang đăng nhập bằng Google..." : "Đăng nhập bằng Google";
 
   return (
-    <div ref={wrapperRef} className="w-full">
-      <div
-        ref={googleButtonRef}
-        className={status === "ready" ? "flex justify-center min-h-[44px]" : "hidden"}
-      />
-      {status !== "ready" && (
-        <button
-          type="button"
-          disabled
-          title={status === "unavailable" ? "Đăng nhập Google hiện chưa khả dụng" : undefined}
-          className="w-full h-9 bg-canvas text-ink border border-hairline-strong rounded font-medium text-base px-5 flex items-center justify-center opacity-60 cursor-not-allowed"
-        >
-          {status !== "submitting" && <span className="font-bold mr-2">[G]</span>}
-          {placeholderText}
-        </button>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={handleGoogleClick}
+      disabled={status !== "ready"}
+      title={status === "unavailable" ? "Đăng nhập Google hiện chưa khả dụng" : undefined}
+      className="w-full btn-secondary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      {status !== "submitting" && <span className="font-bold text-[#d4af37] mr-1">[G]</span>}
+      {labelText}
+    </button>
   );
 };
 

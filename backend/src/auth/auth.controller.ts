@@ -157,8 +157,10 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
-    const { idToken } = await googleAuthSchema.validate(body, { abortEarly: false });
-    const profile = await this.googleAuthVerifier.verify(idToken);
+    const { idToken, code } = await googleAuthSchema.validate(body, { abortEarly: false });
+    const profile = code
+      ? await this.googleAuthVerifier.verifyCode(code)
+      : await this.googleAuthVerifier.verify(idToken as string);
 
     const { authResponse, rawRefreshToken } = await this.authService.googleLogin(
       profile,
