@@ -6,6 +6,9 @@ import {
   normalizeReadingTopics,
 } from "../constants";
 
+export const UUID_V4_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const registerSchema = yup.object({
   displayName: yup
     .string()
@@ -59,6 +62,14 @@ export const registerSchema = yup.object({
       excludeEmptyString: true,
     })
     .optional(),
+  claimToken: yup
+    .string()
+    .trim()
+    .matches(UUID_V4_REGEX, {
+      message: "Mã nhận bài bói phải là UUID v4 hợp lệ",
+      excludeEmptyString: true,
+    })
+    .optional(),
 });
 
 export const registerFormSchema = registerSchema.shape({
@@ -87,6 +98,14 @@ export const googleAuthSchema = yup.object({
     .trim()
     .required("Thiếu mã đăng nhập Google")
     .max(4096, "Mã đăng nhập Google không hợp lệ"),
+  claimToken: yup
+    .string()
+    .trim()
+    .matches(UUID_V4_REGEX, {
+      message: "Mã nhận bài bói phải là UUID v4 hợp lệ",
+      excludeEmptyString: true,
+    })
+    .optional(),
 });
 
 export const forgotPasswordSchema = yup.object({
@@ -296,3 +315,64 @@ export const createReadingSchema = createReadingRequestSchema;
 export type CreateReadingRequestInput = yup.InferType<
   typeof createReadingRequestSchema
 >;
+
+export const guestReadingRequestSchema = yup
+  .object({
+    school: yup
+      .mixed<ReadingSchool>()
+      .oneOf(Object.values(ReadingSchool), "Trường phái bói không hợp lệ.")
+      .required("Vui lòng chọn trường phái bói."),
+    hand: yup
+      .mixed<HandOrientation>()
+      .oneOf(Object.values(HandOrientation), "Hướng bàn tay không hợp lệ.")
+      .required("Vui lòng chọn hướng bàn tay."),
+    topics: yup
+      .string()
+      .trim()
+      .optional()
+      .test(
+        "valid-topics",
+        "Mục bói không hợp lệ theo trường phái đã chọn",
+        function (val) {
+          const school = this.parent.school as ReadingSchool;
+          if (!val || !school || !Object.values(ReadingSchool).includes(school))
+            return true;
+          try {
+            normalizeReadingTopics(school, val);
+            return true;
+          } catch {
+            return false;
+          }
+        }
+      ),
+    fingerprint: yup
+      .string()
+      .trim()
+      .min(16, "Dấu vân tay trình duyệt không hợp lệ.")
+      .required("Thiếu thông tin nhận diện thiết bị."),
+    aiConsent: yup
+      .mixed()
+      .test(
+        "is-true",
+        "Bạn phải đồng ý với điều khoản phân tích AI.",
+        (val) => val === true || val === "true"
+      )
+      .required("Bạn phải đồng ý với điều khoản phân tích AI."),
+  })
+  .noUnknown();
+
+export type GuestReadingRequestInput = yup.InferType<
+  typeof guestReadingRequestSchema
+>;
+
+export const claimReadingSchema = yup
+  .object({
+    claimToken: yup
+      .string()
+      .trim()
+      .matches(UUID_V4_REGEX, "Mã nhận bài bói phải là UUID v4 hợp lệ.")
+      .required("Thiếu mã nhận bài bói."),
+  })
+  .noUnknown();
+
+export type ClaimReadingInput = yup.InferType<typeof claimReadingSchema>;

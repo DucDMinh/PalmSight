@@ -18,6 +18,7 @@ export enum ReadingStatus {
   DONE = "DONE",
   FAILED = "FAILED",
   REJECTED = "REJECTED",
+  GUEST_PREVIEW = "GUEST_PREVIEW",
 }
 
 export enum CreditTransactionType {

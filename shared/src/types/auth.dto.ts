@@ -6,6 +6,7 @@ export interface RegisterRequestDto {
   email: string;
   password: string;
   referralCode?: string;
+  claimToken?: string;
 }
 
 export interface RegisterResponseDto {
@@ -15,6 +16,7 @@ export interface RegisterResponseDto {
 
 export interface VerifyEmailRequestDto {
   token: string;
+  claimToken?: string;
 }
 
 export interface ResendVerificationRequestDto {
@@ -37,6 +39,7 @@ export interface ResetPasswordRequestDto {
 
 export interface GoogleAuthRequestDto {
   idToken: string;
+  claimToken?: string;
 }
 
 export interface FacebookAuthRequestDto {
@@ -53,6 +56,8 @@ export interface AuthResponseDto {
   expiresIn: number;
   isNewUser: boolean;
   user: UserSummaryDto;
+  claimedReadingId?: string | null;
+  claimFailed?: boolean;
 }
 
 export interface ErrorDetailField {
