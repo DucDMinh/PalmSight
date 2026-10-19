@@ -22,9 +22,9 @@ describe("GoogleLoginButton", () => {
   });
   const renderButton = vi.fn();
 
-  const renderComponent = () =>
+  const renderComponent = (initialEntries = ["/"]) =>
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <AuthenticationProvider skipInitialRefresh>
           <GoogleLoginButton />
         </AuthenticationProvider>
@@ -33,6 +33,8 @@ describe("GoogleLoginButton", () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
     mockedNavigate.mockReset();
     initialize.mockClear();
     renderButton.mockClear();
@@ -83,6 +85,71 @@ describe("GoogleLoginButton", () => {
     await waitFor(() => {
       expect(authService.postGoogleLogin).toHaveBeenCalledWith({ idToken: "google-id-token" });
       expect(mockedNavigate).toHaveBeenCalledWith(BaseUrl.ReferralEnter);
+    });
+  });
+
+  it("sends claimToken from sessionStorage and redirects to claimed reading on success", async () => {
+    sessionStorage.setItem("ps_claim_token", "claim-token-xyz");
+    vi.spyOn(authService, "postGoogleLogin").mockResolvedValue({
+      accessToken: "access-token",
+      expiresIn: 900,
+      isNewUser: true,
+      user: {
+        id: "u1",
+        displayName: "Google User",
+        username: null,
+        avatarUrl: null,
+        creditBalance: 2,
+        referralCode: "ABCDEFGH",
+      },
+      claimedReadingId: "claimed-reading-123",
+    });
+
+    renderComponent();
+    await waitFor(() => expect(gsiCallback).toBeDefined());
+
+    await act(async () => {
+      gsiCallback?.({ credential: "google-id-token" });
+    });
+
+    await waitFor(() => {
+      expect(authService.postGoogleLogin).toHaveBeenCalledWith({
+        idToken: "google-id-token",
+        claimToken: "claim-token-xyz",
+      });
+      expect(mockedNavigate).toHaveBeenCalledWith("/readings/claimed-reading-123");
+      expect(sessionStorage.getItem("ps_claim_token")).toBeNull();
+    });
+  });
+
+  it("sends claimToken from URL query when present", async () => {
+    vi.spyOn(authService, "postGoogleLogin").mockResolvedValue({
+      accessToken: "access-token",
+      expiresIn: 900,
+      isNewUser: false,
+      user: {
+        id: "u1",
+        displayName: "Google User",
+        username: "googleuser",
+        avatarUrl: null,
+        creditBalance: 3,
+        referralCode: "ABCDEFGH",
+      },
+    });
+
+    renderComponent(["/login?claimToken=query-claim-token"]);
+    await waitFor(() => expect(gsiCallback).toBeDefined());
+
+    await act(async () => {
+      gsiCallback?.({ credential: "google-id-token" });
+    });
+
+    await waitFor(() => {
+      expect(authService.postGoogleLogin).toHaveBeenCalledWith({
+        idToken: "google-id-token",
+        claimToken: "query-claim-token",
+      });
+      expect(mockedNavigate).toHaveBeenCalledWith(BaseUrl.Scan);
     });
   });
 

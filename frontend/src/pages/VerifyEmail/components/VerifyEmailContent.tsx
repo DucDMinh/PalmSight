@@ -11,6 +11,9 @@ import type { ApiErrorPayload } from "@/services/authService";
 
 const getDestination = (data: AuthResponseDto | null): string => {
   if (!data) return BaseUrl.Homepage;
+  if (data.claimedReadingId) {
+    return `/readings/${data.claimedReadingId}`;
+  }
   if (
     data.user.creditBalance === 4 ||
     data.isNewUser === false ||
@@ -32,6 +35,7 @@ export const VerifyEmailContent = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number>(3);
   const redirectTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasVerifiedRef = useRef(false);
 
   const handleNavigateNow = useCallback(() => {
     if (redirectTimerRef.current) {
@@ -42,8 +46,15 @@ export const VerifyEmailContent = () => {
 
   useEffect(() => {
     const rawToken = searchParams.get("token");
-    if (rawToken && typeof window !== "undefined") {
-      window.history.replaceState({}, document.title, window.location.pathname || "/verify-email");
+    let claimToken = searchParams.get("claimToken");
+    if (!claimToken) {
+      try {
+        claimToken =
+          sessionStorage.getItem("ps_claim_token") ||
+          localStorage.getItem("ps_claim_token");
+      } catch {
+        // Storage fallback
+      }
     }
 
     if (!rawToken) {
@@ -52,12 +63,35 @@ export const VerifyEmailContent = () => {
       return;
     }
 
+    if (hasVerifiedRef.current) {
+      return;
+    }
+    hasVerifiedRef.current = true;
+
     setStatus("loading");
     let isCancelled = false;
 
-    verifyEmailAsync({ token: rawToken })
+    verifyEmailAsync({
+      token: rawToken,
+      ...(claimToken ? { claimToken } : {}),
+    })
       .then((data) => {
         if (isCancelled) return;
+        if (typeof window !== "undefined") {
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname || "/verify-email"
+          );
+        }
+        if (data.claimedReadingId) {
+          try {
+            sessionStorage.removeItem("ps_claim_token");
+            localStorage.removeItem("ps_claim_token");
+          } catch {
+            // Storage fallback
+          }
+        }
         setAuthData(data);
         setStatus("success");
         setAuthSession({

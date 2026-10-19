@@ -37,8 +37,8 @@ module.exports = {
           "sans-serif",
         ],
         mono: [
-          '"Be Vietnam Pro"',
           '"JetBrains Mono"',
+          '"Be Vietnam Pro"',
           "ui-sans-serif",
           "system-ui",
           "sans-serif",
@@ -54,6 +54,8 @@ module.exports = {
         ],
       },
       colors: {
+        gold: "#d4af37",
+        "gold-light": "#f7e7b4",
         canvas: "#0b0716",
         ink: {
           DEFAULT: "#f5e6c8",

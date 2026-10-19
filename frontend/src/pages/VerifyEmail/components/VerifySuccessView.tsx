@@ -28,7 +28,17 @@ export const VerifySuccessView = ({
       </div>
 
       <div className="text-base text-body mb-6 relative z-10">
-        {authData.user.creditBalance === 4 ? (
+        {authData.claimedReadingId ? (
+          <div data-testid="claim-success-celebration" className="space-y-2">
+            <p className="text-[#f7e7b4] font-bold text-lg font-display">
+              🎉 Đã mở khóa 100% bài bói vận mệnh của bạn!
+            </p>
+            <p className="leading-relaxed">
+              Hệ thống đã tặng 3 credits chào mừng và sử dụng 1 credit để mở khóa bài bói thử. Số dư ví hiện tại là{" "}
+              <span className="font-bold text-gold-light">2 credits</span>.
+            </p>
+          </div>
+        ) : authData.user.creditBalance === 4 ? (
           <p>
             Chúc mừng! Bạn đã nhận{" "}
             <span className="font-bold text-gold-light">4 credits</span> miễn phí (3
@@ -49,7 +59,9 @@ export const VerifySuccessView = ({
       <div className="text-sm text-mute mb-8 flex items-center gap-2 relative z-10">
         <span className="text-gold font-mono">[i]</span>
         <span>
-          Tự động chuyển tiếp sau{" "}
+          {authData.claimedReadingId
+            ? "Tự động chuyển tiếp đến bài đọc sau "
+            : "Tự động chuyển tiếp sau "}
           <span className="font-bold text-gold-light font-mono">{countdown}s</span>...
         </span>
       </div>

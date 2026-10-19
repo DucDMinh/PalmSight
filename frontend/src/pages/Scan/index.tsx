@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import {
@@ -9,7 +9,6 @@ import {
   LIFE_ASPECTS,
   ReadingDto,
 } from "@palmsight/shared";
-import { useAuth } from "@/providers/AuthenticationProvider";
 import { TarotCorners } from "@/components/mystic/MysticDivider";
 import SchoolStep from "./components/SchoolStep";
 import TopicsStep from "./components/TopicsStep";
@@ -18,13 +17,13 @@ import CaptureStep from "./components/CaptureStep";
 import AnalyzingView from "./components/AnalyzingView";
 import useCreateReadingMutation from "./hooks/useCreateReadingMutation";
 import useReadingPoll from "./hooks/useReadingPoll";
+import useScanSubmit from "./hooks/useScanSubmit";
 import { ScanStatus } from "./types";
 
 const LAST_SCHOOL_STORAGE_KEY = "palmsight_last_school";
 
 export const Scan: React.FC = () => {
   const navigate = useNavigate();
-  const { updateUser } = useAuth();
 
   const [school, setSchool] = useState<ReadingSchool>(() => {
     try {
@@ -52,7 +51,6 @@ export const Scan: React.FC = () => {
   );
 
   const [hand, setHand] = useState<HandOrientation>(HandOrientation.LEFT);
-
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [aiConsent, setAiConsent] = useState(false);
@@ -62,9 +60,22 @@ export const Scan: React.FC = () => {
   const [rejectReason, setRejectReason] = useState<string | null>(null);
   const [pollingReadingId, setPollingReadingId] = useState<string | null>(null);
 
-  const idempotencyKeyRef = useRef<string | null>(null);
-
   const { mutateAsync: createReading } = useCreateReadingMutation();
+
+  const { doSubmit, resetIdempotencyKey } = useScanSubmit({
+    school,
+    hand,
+    isAllTopics,
+    selectedSections,
+    selectedAspects,
+    imageFile,
+    aiConsent,
+    setStatus,
+    setErrorMessage,
+    setRejectReason,
+    setPollingReadingId,
+    createReading,
+  });
 
   const handleSelectSchool = useCallback((newSchool: ReadingSchool) => {
     setSchool(newSchool);
@@ -94,10 +105,10 @@ export const Scan: React.FC = () => {
         setStatus("IDLE");
         setRejectReason(null);
         setErrorMessage(null);
-        idempotencyKeyRef.current = null;
+        resetIdempotencyKey();
       }
     },
-    []
+    [resetIdempotencyKey]
   );
 
   const selectedCount = isAllTopics
@@ -132,102 +143,6 @@ export const Scan: React.FC = () => {
     onError: handlePollError,
     enabled: Boolean(pollingReadingId),
   });
-
-  const doSubmit = useCallback(
-    async (reuseKey = false) => {
-      if (!imageFile) return;
-
-      if (!reuseKey || !idempotencyKeyRef.current) {
-        idempotencyKeyRef.current = crypto.randomUUID();
-      }
-      const key = idempotencyKeyRef.current;
-
-      setStatus("ANALYZING");
-      setErrorMessage(null);
-      setRejectReason(null);
-
-      const topicsParam = isAllTopics
-        ? undefined
-        : [...selectedSections, ...selectedAspects];
-
-      try {
-        const response = await createReading({
-          school,
-          hand,
-          topics: topicsParam,
-          aiConsent,
-          image: imageFile,
-          idempotencyKey: key,
-        });
-
-        if (response.creditBalance !== undefined) {
-          updateUser({ creditBalance: response.creditBalance });
-        }
-
-        if (response.reading.status === ReadingStatus.DONE) {
-          setStatus("IDLE");
-          navigate(`/readings/${response.reading.id}`);
-        } else if (response.reading.status === ReadingStatus.REJECTED) {
-          setStatus("REJECTED");
-          setRejectReason(response.reading.rejectReason);
-        }
-      } catch (err: any) {
-        const statusCode = err?.response?.status;
-        const errCode = err?.response?.data?.error?.code;
-        const errDetails = err?.response?.data?.error?.details;
-
-        if (errDetails?.creditBalance !== undefined) {
-          updateUser({ creditBalance: errDetails.creditBalance });
-        }
-
-        if (statusCode === 402 || errCode === "INSUFFICIENT_CREDITS") {
-          setStatus("INSUFFICIENT_CREDITS");
-          updateUser({ creditBalance: 0 });
-        } else if (statusCode === 409 || errCode === "READING_IN_PROGRESS") {
-          const readingId = errDetails?.readingId;
-          if (readingId) {
-            setPollingReadingId(readingId);
-          } else {
-            setStatus("NETWORK_ERROR");
-            setErrorMessage("Lần xem bói trước đang xử lý.");
-          }
-        } else if (statusCode === 503 || errCode === "AI_UNAVAILABLE") {
-          setStatus("AI_UNAVAILABLE");
-          idempotencyKeyRef.current = null;
-        } else {
-          setStatus("NETWORK_ERROR");
-          setErrorMessage(
-            err?.response?.data?.error?.message ||
-              "Không thể kết nối đến máy chủ. Vui lòng thử lại."
-          );
-        }
-      }
-    },
-    [
-      imageFile,
-      isAllTopics,
-      selectedSections,
-      selectedAspects,
-      school,
-      hand,
-      aiConsent,
-      createReading,
-      navigate,
-      updateUser,
-    ]
-  );
-
-  const handleSubmit = () => {
-    doSubmit(false);
-  };
-
-  const handleRetrySameKey = () => {
-    doSubmit(true);
-  };
-
-  const handleRetryNewKey = () => {
-    doSubmit(false);
-  };
 
   return (
     <main className="w-full min-h-[calc(100vh-72px)] text-ink py-8 sm:py-12">
@@ -282,11 +197,9 @@ export const Scan: React.FC = () => {
                 aiConsent={aiConsent}
                 onConsentChange={setAiConsent}
                 onImageChange={handleImageChange}
-                onSubmit={handleSubmit}
-                onRetry={
-                  status === "AI_UNAVAILABLE"
-                    ? handleRetryNewKey
-                    : handleRetrySameKey
+                onSubmit={() => doSubmit(false)}
+                onRetry={() =>
+                  status === "AI_UNAVAILABLE" ? doSubmit(false) : doSubmit(true)
                 }
                 status={status}
                 errorMessage={errorMessage}

@@ -17,7 +17,9 @@ export type ScanStatus =
   | "REJECTED"
   | "AI_UNAVAILABLE"
   | "NETWORK_ERROR"
-  | "INSUFFICIENT_CREDITS";
+  | "INSUFFICIENT_CREDITS"
+  | "LIMIT_REACHED"
+  | "RATE_LIMITED";
 
 export interface ScanResultError {
   status: ScanStatus;
