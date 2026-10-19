@@ -44,7 +44,7 @@ export const ProfileSection = ({ user }: ProfileSectionProps) => {
   };
 
   return (
-    <section id="ho-so" className="scroll-mt-24 font-sans text-ink">
+    <section id="ho-so" className="scroll-mt-32 md:scroll-mt-24 font-sans text-ink">
       <div className="pb-3 border-b border-gold/25 flex items-center gap-2">
         <span className="text-gold text-sm">✦</span>
         <h2 className="text-2xl font-display font-bold text-gold-gradient">Hồ sơ</h2>

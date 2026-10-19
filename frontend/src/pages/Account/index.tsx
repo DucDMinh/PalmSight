@@ -48,12 +48,14 @@ export const Account = () => {
         return;
       }
 
-      const scrollPos = window.scrollY + 120;
       let current = "";
       for (const item of NAV_ITEMS) {
         const el = document.getElementById(item.id);
-        if (el && el.offsetTop <= scrollPos) {
-          current = item.id;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 180) {
+            current = item.id;
+          }
         }
       }
       if (current) {
@@ -95,7 +97,7 @@ export const Account = () => {
     <PageWrapper>
       <div className="component:Account w-full max-w-[1000px] mx-auto pt-8 md:pt-12 pb-36 md:pb-48 px-4 font-sans text-ink">
         <div className="flex flex-col md:flex-row items-start">
-          <aside className="w-full md:w-[220px] shrink-0 md:sticky md:top-24 self-start mb-8 md:mb-0">
+          <aside className="w-full md:w-[220px] shrink-0 sticky top-[72px] md:top-24 z-30 self-start mb-6 md:mb-0 bg-canvas/90 md:bg-transparent backdrop-blur-md md:backdrop-blur-none py-2 md:py-0">
             <div className="hidden md:flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-gold-dim mb-4 px-2">
               <span>✦</span>
               <span>Định Danh Chiêm Tinh</span>
@@ -103,7 +105,7 @@ export const Account = () => {
             <nav
               id="sub-nav"
               aria-label="Sub navigation"
-              className="flex flex-row md:flex-col gap-3 md:gap-1 text-sm overflow-x-auto pb-2 md:pb-0 p-1.5 rounded-xl bg-surface-soft/50 border border-gold/15 backdrop-blur-md"
+              className="flex flex-row md:flex-col gap-3 md:gap-1 text-sm overflow-x-auto no-scrollbar pb-2 md:pb-0 p-1.5 rounded-xl bg-surface-soft/50 border border-gold/15 backdrop-blur-md"
             >
               {NAV_ITEMS.map((item) => {
                 const isActive = activeSection === item.id;
@@ -114,7 +116,7 @@ export const Account = () => {
                       onClick={(e) => handleNavClick(item.id, e)}
                       data-testid={`sub-nav-${item.id}`}
                       aria-current={isActive ? "true" : undefined}
-                      className={`sub-nav-link flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer select-none ${
+                      className={`sub-nav-link flex items-center gap-2 px-3.5 py-2 rounded-lg transition-all cursor-pointer select-none whitespace-nowrap ${
                         isActive
                           ? "font-bold text-ink bg-gold/15 border-b-2 border-ink shadow-gold-glow"
                           : "text-mute hover:text-gold-light hover:bg-surface-card/60 border-b-2 border-transparent"

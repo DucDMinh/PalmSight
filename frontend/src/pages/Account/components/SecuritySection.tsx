@@ -25,7 +25,7 @@ export const SecuritySection = ({ user }: SecuritySectionProps) => {
     | null;
 
   return (
-    <section id="bao-mat" className="mt-16 scroll-mt-24 font-sans text-ink">
+    <section id="bao-mat" className="mt-16 scroll-mt-32 md:scroll-mt-24 font-sans text-ink">
       <div className="pb-3 border-b border-gold/25 flex items-center gap-2">
         <span className="text-gold text-sm">✦</span>
         <h2 className="text-2xl font-display font-bold text-gold-gradient">Bảo mật</h2>

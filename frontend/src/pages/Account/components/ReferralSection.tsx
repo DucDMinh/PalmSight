@@ -48,7 +48,7 @@ export const ReferralSection = ({ user }: ReferralSectionProps) => {
   };
 
   return (
-    <section id="gioi-thieu" className="mt-16 pb-12 scroll-mt-24 font-sans text-ink">
+    <section id="gioi-thieu" className="mt-16 pb-12 scroll-mt-32 md:scroll-mt-24 font-sans text-ink">
       <div className="pb-3 border-b border-gold/25 flex items-center gap-2">
         <span className="text-gold text-sm">✦</span>
         <h2 className="text-2xl font-display font-bold text-gold-gradient">Giới thiệu</h2>

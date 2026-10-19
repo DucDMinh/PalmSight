@@ -9,7 +9,7 @@ interface DefaultLayoutProps {
 
 const DefaultLayout = ({ children }: DefaultLayoutProps) => {
   return (
-    <div className="component:DefaultLayout relative min-h-screen bg-canvas text-ink font-sans flex flex-col selection:bg-mystic-gold/30 overflow-x-hidden">
+    <div className="component:DefaultLayout relative min-h-screen bg-canvas text-ink font-sans flex flex-col selection:bg-mystic-gold/30 overflow-x-clip">
       <MysticBackground />
       <Navbar />
       <main className="relative z-10 flex-1 w-full flex flex-col">
