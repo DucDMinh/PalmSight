@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Post,
   Put,
   Query,
   Req,
@@ -14,6 +15,9 @@ import type {
   MeResponseDto,
   CreditTransactionListResponseDto,
   ChangePasswordRequestDto,
+  EnterReferralRequestDto,
+  EnterReferralResponseDto,
+  ReferralListResponseDto,
 } from "@palmsight/shared";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import type { AuthenticatedRequest } from "../auth/guards/jwt-auth.guard";
@@ -23,6 +27,8 @@ import { PasswordService } from "../auth/password.service";
 import { UserDocument } from "../schemas/user.schema";
 import { UsersService } from "./users.service";
 import { CreditLedgerService } from "../credits/credit-ledger.service";
+import { ReferralsService } from "../referrals/referrals.service";
+import { enterReferralBodySchema } from "../referrals/schemas";
 
 @Controller("me")
 @UseGuards(JwtAuthGuard)
@@ -30,7 +36,8 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly creditLedgerService: CreditLedgerService,
-    private readonly passwordService: PasswordService
+    private readonly passwordService: PasswordService,
+    private readonly referralsService: ReferralsService
   ) {}
 
   @Get()
@@ -48,6 +55,32 @@ export class UsersController {
       cursor,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
+  }
+
+  @Get("referrals")
+  getReferrals(
+    @CurrentUser() user: UserDocument,
+    @Query("cursor") cursor?: string,
+    @Query("limit") limit?: string
+  ): Promise<ReferralListResponseDto> {
+    return this.referralsService.getReferrals(user._id, {
+      cursor,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+  }
+
+  @Post("referral")
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(UserRateLimitGuard)
+  @UserRateLimit({ limit: 5, windowMs: 60 * 60 * 1000 })
+  async enterReferral(
+    @CurrentUser() user: UserDocument,
+    @Body() body: EnterReferralRequestDto
+  ): Promise<EnterReferralResponseDto> {
+    const validated = await enterReferralBodySchema.validate(body, {
+      abortEarly: false,
+    });
+    return this.referralsService.enterReferral(user, validated.code);
   }
 
   @Put("password")
