@@ -105,6 +105,24 @@ describe('httpService token refresh', () => {
     expect(onSessionExpired).toHaveBeenCalledTimes(1);
   });
 
+  it('refreshes and retries a request sent before any token was available', async () => {
+    httpService.setInMemoryToken(null);
+    const server = fakeServer((config) => {
+      if (config.url === '/api/v1/auth/refresh') {
+        return { status: 200, data: { accessToken: 'fresh-token', expiresIn: 900 } };
+      }
+      return authHeader(config) === 'Bearer fresh-token'
+        ? { status: 200, data: { ok: config.url } }
+        : apiError(401, 'UNAUTHENTICATED');
+    });
+
+    const res = await httpService.get('/api/v1/me');
+
+    expect(res.data).toEqual({ ok: '/api/v1/me' });
+    expect(server.refreshCalls()).toBe(1);
+    expect(onSessionExpired).not.toHaveBeenCalled();
+  });
+
   it('does not loop when the retried request is rejected again', async () => {
     const server = fakeServer((config) =>
       config.url === '/api/v1/auth/refresh'

@@ -51,7 +51,7 @@ class Services {
       return config;
     });
 
-    //! Interceptor response: refresh once on TOKEN_EXPIRED, end the session on UNAUTHENTICATED
+    //! Interceptor response: refresh once on TOKEN_EXPIRED (or a token-less request), end the session on UNAUTHENTICATED
     this.axios.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
@@ -61,7 +61,9 @@ class Services {
           return Promise.reject(error);
         }
 
-        if (errorCodeOf(error) === "TOKEN_EXPIRED" && !config._retry) {
+        // A request sent before the session restore finished (cached user, no token yet) also deserves one refresh
+        const sentWithoutToken = !config.headers?.Authorization;
+        if ((errorCodeOf(error) === "TOKEN_EXPIRED" || sentWithoutToken) && !config._retry) {
           config._retry = true;
           try {
             await this.refreshAccessToken();
