@@ -13,8 +13,10 @@ erDiagram
     users ||--o{ password_resets : "1 : N"
     users ||--o{ referrals : "referrerId 1 : N"
     users ||--o| referrals : "refereeId 1 : 1"
-    users ||--o{ readings : "1 : N"
+    users ||--o{ readings : "1 : N (userId null khi bói thử)"
+    users ||--o{ guest_trials : "claimedByUserId 1 : 0..N"
     users ||--o{ credit_transactions : "1 : N"
+    readings ||--o| guest_trials : "1 : 0..1"
     readings ||--o{ credit_transactions : "1 : 0..2"
     referrals ||--o| credit_transactions : "1 : 0..1"
 
@@ -37,6 +39,7 @@ erDiagram
         string displayName
         string passwordHash
         string tokenHash UK
+        string claimToken "null"
         Date expiresAt "TTL"
     }
     password_resets {
@@ -68,14 +71,31 @@ erDiagram
     }
     readings {
         ObjectId _id PK
-        ObjectId userId FK
+        ObjectId userId FK "null"
+        boolean isGuest
+        string guestTokenHash "null"
         string idempotencyKey
         string school
         array topics
         string hand
-        string status
+        string status "GUEST_PREVIEW | PROCESSING | DONE | FAILED | REJECTED"
         object result
+        Date previewExpiresAt "TTL"
+        Date claimedAt "null"
+        ObjectId claimedByUserId FK "null"
         Date deletedAt
+    }
+    guest_trials {
+        ObjectId _id PK
+        string fingerprintHash UK
+        string ipHash
+        string guestTokenHash UK
+        ObjectId readingId FK
+        boolean isClaimed
+        ObjectId claimedByUserId FK "null"
+        Date claimedAt "null"
+        Date expiresAt "TTL"
+        Date createdAt
     }
     credit_transactions {
         ObjectId _id PK
@@ -150,6 +170,7 @@ User đã xoá có `email` và `username` là `null`, nên không chiếm chỗ 
 | `passwordHash` | string | bắt buộc | argon2id |
 | `referralCode` | string \| null | | Mã giới thiệu nhập lúc đăng ký; áp dụng khi xác minh |
 | `tokenHash` | string | bắt buộc, unique | SHA-256 của token trong link; không lưu token thô |
+| `claimToken` | string \| null | | UUID v4 của bài bói thử khách vãng lai mang theo khi đăng ký |
 | `expiresAt` | Date | bắt buộc | 24 giờ sau lần gửi email gần nhất |
 | `lastSentAt` | Date | | Dùng cho giới hạn gửi lại |
 | `createdAt` | Date | | |
@@ -213,26 +234,56 @@ Index:
 | Field | Kiểu | Ràng buộc | Ghi chú |
 | --- | --- | --- | --- |
 | `_id` | ObjectId | | |
-| `userId` | ObjectId | bắt buộc, ref `users` | |
-| `idempotencyKey` | string | bắt buộc, UUID v4 (36 ký tự) | Header `Idempotency-Key` của `POST /readings` |
+| `userId` | ObjectId \| null | nullable khi bói thử | Bắt buộc đối với người dùng đăng nhập; `null` đối với khách vãng lai (`isGuest = true`) |
+| `isGuest` | boolean | bắt buộc, mặc định `false` | `true` đối với bài bói thử của khách vãng lai |
+| `guestTokenHash` | string \| null | | SHA-256 của `claimToken` dùng để khách xem lại hoặc mở khóa bài bói |
+| `idempotencyKey` | string | bắt buộc, UUID v4 (36 ký tự) | Header `Idempotency-Key` của `POST /readings` hoặc `POST /readings/guest` |
 | `school` | `WESTERN` \| `EASTERN` \| `VEDIC` | bắt buộc | Trường phái người dùng chọn, xem [ai-integration.md](ai-integration.md) |
-| `topics` | string[] | bắt buộc, ≥ 1 phần tử | Các mục được bói (đã điền đủ khi người dùng chọn "Bói toàn bộ"), theo thứ tự chuẩn của trường phái |
+| `topics` | string[] | bắt buộc, ≥ 1 phần tử | Các mục được bói (đã điền đủ khi chọn "Bói toàn bộ"), theo thứ tự chuẩn của trường phái |
 | `hand` | `LEFT` \| `RIGHT` | bắt buộc | Người dùng chọn; AI không được đổi |
-| `status` | `PROCESSING` \| `DONE` \| `FAILED` \| `REJECTED` | bắt buộc | `REJECTED` = ảnh không phải lòng bàn tay |
+| `status` | `GUEST_PREVIEW` \| `PROCESSING` \| `DONE` \| `FAILED` \| `REJECTED` | bắt buộc | `GUEST_PREVIEW` = bài bói thử chờ claim; `REJECTED` = ảnh không phải lòng bàn tay |
 | `result` | object \| null | | `PalmResult`, theo schema ở [ai-integration.md](ai-integration.md) |
 | `rejectReason` | string \| null | | |
 | `aiProvider`, `aiModel` | string \| null | | Phục vụ debug, đổi model |
 | `errorCode` | string \| null | | |
 | `latencyMs` | int \| null | | |
+| `previewExpiresAt` | Date \| null | | Hạn 7 ngày cho bài bói thử khách vãng lai. Xóa về `null` sau khi được claim |
+| `claimedAt` | Date \| null | | Thời điểm người dùng kích hoạt tài khoản và nhận lại bài bói |
+| `claimedByUserId` | ObjectId \| null | ref `users` | Tài khoản đã mở khóa bài bói |
 | `createdAt`, `completedAt` | Date | | |
 | `deletedAt` | Date \| null | | Người dùng xoá reading: ẩn khỏi API. Document được giữ vì sổ cái tham chiếu tới nó; `result` về `null` |
 
 Reading không có field ảnh: server không lưu ảnh lòng bàn tay ([ADR-0010](adr/0010-no-image-storage.md)).
 
 Index:
-- `{ userId: 1, idempotencyKey: 1 }` unique. Reading đã xoá vẫn giữ key, nên gửi lại key đó trả `404`.
+- `{ userId: 1, idempotencyKey: 1 }` unique, `partialFilterExpression: { userId: { $type: "objectId" } }`.
+- `{ guestTokenHash: 1 }`: tra cứu nhanh bài bói thử khách vãng lai.
+- TTL `{ previewExpiresAt: 1 }, { expireAfterSeconds: 0 }`: tự động dọn dẹp các bài bói thử không được claim sau 7 ngày.
 - `{ userId: 1, createdAt: -1 }`: trang lịch sử; truy vấn luôn lọc `deletedAt: null`.
 - `{ status: 1, createdAt: 1 }`: tìm reading kẹt ở `PROCESSING`.
+
+### guest_trials
+
+Bản ghi dấu vết phiên bói thử của khách vãng lai nhằm kiểm soát tần suất, chống lạm dụng gọi AI và hỗ trợ claim khi đăng ký.
+
+| Field | Kiểu | Ràng buộc | Ghi chú |
+| --- | --- | --- | --- |
+| `_id` | ObjectId | | |
+| `fingerprintHash` | string | bắt buộc, unique | SHA-256 của FingerprintJS chuỗi nhận diện thiết bị |
+| `ipHash` | string | bắt buộc | SHA-256 của địa chỉ IP client |
+| `guestTokenHash` | string | bắt buộc, unique | SHA-256 của `claimToken` |
+| `readingId` | ObjectId | bắt buộc, ref `readings` | Bài bói thử tương ứng |
+| `isClaimed` | boolean | bắt buộc, mặc định `false` | Đánh dấu đã được mở khóa qua đăng ký hay chưa |
+| `claimedByUserId` | ObjectId \| null | ref `users` | Tài khoản đã nhận bài bói |
+| `claimedAt` | Date \| null | | Thời điểm mở khóa |
+| `expiresAt` | Date | bắt buộc | 7 ngày sau khi bói thử |
+| `createdAt` | Date | | |
+
+Index:
+- `{ fingerprintHash: 1 }` unique: mỗi thiết bị chỉ được 1 lượt bói thử miễn phí.
+- `{ guestTokenHash: 1 }` unique.
+- `{ ipHash: 1, createdAt: -1 }`: kiểm tra giới hạn trượt (tối đa 5 lượt/IP/24h).
+- TTL `{ expiresAt: 1 }, { expireAfterSeconds: 0 }`: MongoDB tự động xóa bản ghi sau 7 ngày.
 
 ### credit_transactions
 
