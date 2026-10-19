@@ -56,7 +56,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
   const topicsSummary = isAllTopics ? "Toàn bộ" : `${selectedCount} mục`;
 
   const creditBalance = user?.creditBalance ?? 0;
-  const isOutOfCredits = creditBalance <= 0;
+  const isOutOfCredits = user ? creditBalance <= 0 : false;
   const canEnterCode = Boolean(user?.referral?.canEnterCode);
 
   useEffect(() => {
@@ -172,7 +172,9 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     aiConsent &&
     !isOutOfCredits &&
     selectedCount > 0 &&
-    status !== "ANALYZING";
+    status !== "ANALYZING" &&
+    status !== "LIMIT_REACHED" &&
+    status !== "RATE_LIMITED";
 
   return (
     <section className="w-full flex flex-col justify-start">
@@ -549,6 +551,60 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         </div>
       )}
 
+      {status === "LIMIT_REACHED" && (
+        <div
+          className="mb-6 p-4 border border-warning/60 bg-[#241842]/80 rounded-xl text-sm text-ink space-y-3"
+          data-testid="limit-reached-banner"
+        >
+          <div className="font-bold flex items-center gap-1.5 text-warning">
+            <span>[!]</span>
+            <span>Hết lượt bói thử miễn phí</span>
+          </div>
+          <p className="m-0 text-body">
+            {errorMessage ||
+              "Bạn đã sử dụng hết 1 lượt bói thử miễn phí. Hãy đăng ký tài khoản để tiếp tục trải nghiệm!"}
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Link
+              to={BaseUrl.Register}
+              className="btn-primary !min-h-[34px] !px-4 text-xs font-semibold"
+            >
+              Đăng ký tài khoản
+            </Link>
+            <Link
+              to={BaseUrl.Login}
+              className="btn-secondary !min-h-[34px] !px-4 text-xs font-semibold"
+            >
+              Đăng nhập
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {status === "RATE_LIMITED" && (
+        <div
+          className="mb-6 p-4 border border-warning/60 bg-[#241842]/80 rounded-xl text-sm text-ink space-y-3"
+          data-testid="rate-limited-banner"
+        >
+          <div className="font-bold flex items-center gap-1.5 text-warning">
+            <span>[!]</span>
+            <span>Đạt giới hạn lượt bói thử theo IP</span>
+          </div>
+          <p className="m-0 text-body">
+            {errorMessage ||
+              "Địa chỉ IP đã đạt tối đa 5 lượt bói thử hôm nay. Đăng ký tài khoản để tiếp tục bói không giới hạn."}
+          </p>
+          <div className="pt-1">
+            <Link
+              to={BaseUrl.Register}
+              className="btn-primary !min-h-[34px] !px-4 text-xs font-semibold inline-flex items-center"
+            >
+              Đăng ký tài khoản
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div>
         <button
           type="button"
@@ -562,7 +618,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
           data-testid="submit-reading-button"
         >
           <Sparkles aria-hidden="true" className="h-4 w-4" />
-          <span>Xem bói (−1 credit)</span>
+          <span>{user ? "Xem bói (−1 credit)" : "Bói thử miễn phí"}</span>
         </button>
       </div>
     </section>

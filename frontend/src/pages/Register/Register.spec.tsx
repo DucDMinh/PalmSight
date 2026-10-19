@@ -438,4 +438,43 @@ describe('RegisterPage (Stitch Screen 59bf8c4b91a04c18a0afbf3139812e0d)', () => 
       expect(usernameInput).toHaveAttribute('aria-describedby', 'username-error');
     });
   });
+
+  it('should extract claimToken from query and pass it in registration payload', async () => {
+    const postRegisterSpy = vi.spyOn(authService, 'postRegister').mockResolvedValueOnce({
+      email: 'guest@example.com',
+      verificationExpiresAt: '2026-10-26T12:00:00Z',
+    });
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/register?claimToken=e4b8a21f-82df-4db3-9824-7128cf4291f0']}>
+          <RegisterPage />
+          <Toaster />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(screen.getByTestId('claim-token-banner')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Tên hiển thị'), { target: { value: 'Guest User' } });
+    fireEvent.change(screen.getByLabelText('Tên đăng nhập'), { target: { value: 'guestuser' } });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'guest@example.com' } });
+    fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'ValidPassword123!' } });
+    fireEvent.change(screen.getByLabelText('Xác nhận mật khẩu'), { target: { value: 'ValidPassword123!' } });
+    fireEvent.click(screen.getByLabelText(/Tôi đồng ý với/));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+
+    await waitFor(() => {
+      expect(postRegisterSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          claimToken: 'e4b8a21f-82df-4db3-9824-7128cf4291f0',
+        })
+      );
+      expect(mockedNavigate).toHaveBeenCalledWith(
+        expect.stringContaining('claimToken=e4b8a21f-82df-4db3-9824-7128cf4291f0'),
+        expect.anything()
+      );
+    });
+  });
 });

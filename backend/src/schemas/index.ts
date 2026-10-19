@@ -6,3 +6,4 @@ export * from './referral.schema';
 export * from './reading.schema';
 export * from './credit-transaction.schema';
 export * from './deleted-identity.schema';
+export * from './guest-trial.schema';

@@ -70,6 +70,20 @@ export const RegisterForm = () => {
     return (fromQuery || fromCookie || "").trim().toUpperCase();
   }, [searchParams]);
 
+  const claimToken = useMemo(() => {
+    const fromQuery = searchParams.get("claimToken");
+    let fromStorage: string | null = null;
+    try {
+      fromStorage =
+        sessionStorage.getItem("ps_claim_token") ||
+        localStorage.getItem("ps_claim_token");
+    } catch {
+      // Storage unavailable fallback
+    }
+    const token = (fromQuery || fromStorage || "").trim();
+    return token || undefined;
+  }, [searchParams]);
+
   const initialValues: RegisterFormValues = {
     displayName: "",
     username: "",
@@ -94,12 +108,18 @@ export const RegisterForm = () => {
         ...(values.referralCode?.trim()
           ? { referralCode: values.referralCode.trim().toUpperCase() }
           : {}),
+        ...(claimToken ? { claimToken } : {}),
       };
 
       const result = await registerMutation.mutateAsync(payload);
+      const queryParams = new URLSearchParams();
+      queryParams.set("email", result.email || values.email);
+      if (claimToken) {
+        queryParams.set("claimToken", claimToken);
+      }
       navigate(
-        `${BaseUrl.CheckEmail}?email=${encodeURIComponent(result.email || values.email)}`,
-        { state: { email: result.email || values.email } }
+        `${BaseUrl.CheckEmail}?${queryParams.toString()}`,
+        { state: { email: result.email || values.email, claimToken } }
       );
     } catch (err: any) {
       handleSubmissionError(err, setErrors, setGeneralError);
@@ -110,6 +130,18 @@ export const RegisterForm = () => {
 
   return (
     <section className="w-full md:w-[480px] md:pl-12">
+      {claimToken && (
+        <div
+          data-testid="claim-token-banner"
+          className="mb-6 p-3.5 bg-[#140d26]/85 border border-[#d4af37]/60 text-ink rounded text-xs sm:text-sm flex items-center gap-2 font-rune"
+        >
+          <span className="font-bold text-[#f5d77f]">[#]</span>
+          <span>
+            Bạn đang có 1 bài bói thử. Tài khoản sẽ tự động mở khóa 100% sau khi xác thực email!
+          </span>
+        </div>
+      )}
+
       {generalError && (
         <div
           role="alert"

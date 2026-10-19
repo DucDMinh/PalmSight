@@ -2,7 +2,10 @@ import 'reflect-metadata';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as crypto from 'crypto';
 import { UnauthorizedException } from '@nestjs/common';
-import { AuthProvider, CreditTransactionType, DeletedIdentityKind } from '@palmsight/shared';
+import {
+  AuthProvider, CreditTransactionType, DeletedIdentityKind,
+  ReadingStatus, ReadingSchool, HandOrientation,
+} from '@palmsight/shared';
 import { createTestApp, closeTestApp, TestAppInstance } from './test-helper';
 import type { GoogleProfile } from '../src/auth/google-auth.verifier';
 
@@ -33,6 +36,13 @@ const profiles: Record<string, GoogleProfile> = {
     email: 'recycled.google@example.com',
     emailVerified: true,
     name: 'Recycled',
+    picture: null,
+  },
+  'token-claim': {
+    sub: 'google-sub-claim',
+    email: 'claim.google@example.com',
+    emailVerified: true,
+    name: 'Google Claim User',
     picture: null,
   },
 };
@@ -224,5 +234,51 @@ describe('POST /api/v1/auth/google', () => {
 
     const body = (await res.json()) as any;
     expect(body.error.code).toBe('VALIDATION_ERROR');
+  });
+
+  it('claims a guest trial reading when valid claimToken is provided with Google login', async () => {
+    const claimToken = crypto.randomUUID();
+    const guestTokenHash = crypto.createHash('sha256').update(claimToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const readingInsert = await testApp.connection.collection('readings').insertOne({
+      userId: null,
+      isGuest: true,
+      idempotencyKey: crypto.randomUUID(),
+      guestTokenHash,
+      school: ReadingSchool.WESTERN,
+      topics: ['lifeLine'],
+      hand: HandOrientation.LEFT,
+      status: ReadingStatus.GUEST_PREVIEW,
+      previewExpiresAt: expiresAt,
+      createdAt: new Date(),
+    });
+
+    await testApp.connection.collection('guest_trials').insertOne({
+      fingerprintHash: crypto.randomBytes(32).toString('hex'),
+      ipHash: crypto.randomBytes(32).toString('hex'),
+      guestTokenHash,
+      readingId: readingInsert.insertedId,
+      isClaimed: false,
+      expiresAt,
+      createdAt: new Date(),
+    });
+
+    const res = await postGoogle({ idToken: 'token-claim', claimToken });
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as any;
+    expect(body.claimedReadingId).toBe(readingInsert.insertedId.toString());
+    expect(body.claimFailed).toBeUndefined();
+    expect(body.user.creditBalance).toBe(2); // 3 welcome bonus - 1 spent for reading = 2
+
+    // Verify reading was updated to DONE
+    const updatedReading = await testApp.connection.collection('readings').findOne({ _id: readingInsert.insertedId });
+    expect(updatedReading?.status).toBe(ReadingStatus.DONE);
+    expect(updatedReading?.claimedAt).toBeDefined();
+
+    // Verify guest trial was marked isClaimed
+    const updatedTrial = await testApp.connection.collection('guest_trials').findOne({ guestTokenHash });
+    expect(updatedTrial?.isClaimed).toBe(true);
   });
 });

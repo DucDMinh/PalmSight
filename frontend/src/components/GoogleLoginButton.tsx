@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import BaseUrl from "@/consts/baseUrl";
 import { loadGoogleIdentityScript } from "@/helpers/googleIdentity";
@@ -13,6 +13,7 @@ const GOOGLE_SCOPES = "openid email profile";
 export const GoogleLoginButton = () => {
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { setAuthSession } = useAuth();
   const codeClientRef = useRef<GoogleCodeClient | null>(null);
@@ -30,10 +31,36 @@ export const GoogleLoginButton = () => {
       return;
     }
 
+    let claimToken = searchParams.get("claimToken");
+    if (!claimToken) {
+      try {
+        claimToken =
+          sessionStorage.getItem("ps_claim_token") ||
+          localStorage.getItem("ps_claim_token");
+      } catch {
+        // Storage fallback
+      }
+    }
+
     try {
-      const data = await authService.postGoogleLogin({ code });
+      const data = await authService.postGoogleLogin({
+        code,
+        ...(claimToken ? { claimToken } : {}),
+      });
+      if (data.claimedReadingId) {
+        try {
+          sessionStorage.removeItem("ps_claim_token");
+          localStorage.removeItem("ps_claim_token");
+        } catch {
+          // Storage fallback
+        }
+      }
       setAuthSession({ accessToken: data.accessToken, user: data.user });
-      navigate(data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Scan);
+      if (data.claimedReadingId) {
+        navigate(`/readings/${data.claimedReadingId}`);
+      } else {
+        navigate(data.isNewUser ? BaseUrl.ReferralEnter : BaseUrl.Scan);
+      }
     } catch (err: any) {
       setStatus("ready");
       toast({

@@ -54,6 +54,16 @@ export const HeroSection = () => {
                 <Sparkles aria-hidden="true" className="h-4 w-4" />
                 <span>Bắt đầu xem bói</span>
               </Link>
+              {!isLogged && (
+                <Link
+                  to={BaseUrl.Scan}
+                  data-testid="hero-guest-trial-cta"
+                  className="btn-secondary text-base px-6 py-3"
+                >
+                  <span className="text-[#d4af37]">[#]</span>
+                  <span>Bói thử 1 lần</span>
+                </Link>
+              )}
               <a
                 href="#vi-du-ket-qua"
                 onClick={handleScrollToSample}
