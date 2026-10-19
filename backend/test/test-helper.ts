@@ -14,6 +14,7 @@ import { HealthModule } from "../src/health/health.module";
 import { ReadingsModule } from "../src/readings/readings.module";
 import { MailService } from "../src/mail/mail.service";
 import { GoogleAuthVerifier } from "../src/auth/google-auth.verifier";
+import { FacebookAuthVerifier } from "../src/auth/facebook-auth.verifier";
 
 export interface TestAppInstance {
   app: INestApplication;
@@ -38,6 +39,7 @@ export interface TestAppInstance {
 
 export interface TestAppOptions {
   googleVerifier?: Pick<GoogleAuthVerifier, "verify">;
+  facebookVerifier?: Pick<FacebookAuthVerifier, "verify">;
 }
 
 export async function createTestApp(
@@ -96,6 +98,8 @@ export async function createTestApp(
             PUBLIC_BASE_URL: "http://localhost:5173",
             GOOGLE_CLIENT_ID:
               "test-google-client-id.apps.googleusercontent.com",
+            FACEBOOK_APP_ID: "test-facebook-app-id",
+            FACEBOOK_APP_SECRET: "test-facebook-app-secret",
             NODE_ENV: "test",
           }),
         ],
@@ -123,6 +127,12 @@ export async function createTestApp(
       .useValue(options.googleVerifier);
   }
 
+  if (options.facebookVerifier) {
+    moduleBuilder = moduleBuilder
+      .overrideProvider(FacebookAuthVerifier)
+      .useValue(options.facebookVerifier);
+  }
+
   const moduleRef: TestingModule = await moduleBuilder.compile();
 
   const app = moduleRef.createNestApplication();
@@ -135,7 +145,6 @@ export async function createTestApp(
 
   const connection = moduleRef.get<mongoose.Connection>(getConnectionToken());
 
-  // Pre-create collections for MongoDB transactions
   const collectionNames = [
     "pending_registrations",
     "users",
@@ -149,7 +158,7 @@ export async function createTestApp(
     try {
       await connection.createCollection(col);
     } catch {
-      // Ignore if already exists
+      continue;
     }
   }
 

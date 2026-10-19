@@ -23,6 +23,8 @@ import {
   loginSchema,
   GoogleAuthRequestDto,
   googleAuthSchema,
+  FacebookAuthRequestDto,
+  facebookAuthSchema,
   RefreshTokenResponseDto,
   ForgotPasswordRequestDto,
   ResetPasswordRequestDto,
@@ -34,6 +36,7 @@ import { PasswordService } from './password.service';
 import { AuthRateLimitGuard } from './guards/auth-rate-limit.guard';
 import { OriginGuard } from './guards/origin.guard';
 import { GoogleAuthVerifier } from './google-auth.verifier';
+import { FacebookAuthVerifier } from './facebook-auth.verifier';
 
 @Controller('auth')
 export class AuthController {
@@ -42,6 +45,7 @@ export class AuthController {
     private readonly passwordService: PasswordService,
     private readonly configService: ConfigService,
     private readonly googleAuthVerifier: GoogleAuthVerifier,
+    private readonly facebookAuthVerifier: FacebookAuthVerifier,
   ) {}
 
   @Post('register')
@@ -72,7 +76,6 @@ export class AuthController {
     if (!req.skipEmailDispatch) {
       await this.authService.resendVerification(body);
     }
-
   }
 
   @Post('verify-email')
@@ -166,6 +169,26 @@ export class AuthController {
     return authResponse;
   }
 
+  @Post('facebook')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthRateLimitGuard)
+  async facebook(
+    @Body() body: FacebookAuthRequestDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    const { accessToken } = await facebookAuthSchema.validate(body, { abortEarly: false });
+    const profile = await this.facebookAuthVerifier.verify(accessToken);
+
+    const { authResponse, rawRefreshToken } = await this.authService.facebookLogin(
+      profile,
+      req.cookies?.rt,
+    );
+
+    this.setRefreshCookie(res, rawRefreshToken);
+    return authResponse;
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @UseGuards(OriginGuard, AuthRateLimitGuard)
@@ -199,7 +222,6 @@ export class AuthController {
     });
   }
 
-  // Same name, path and flags as setRefreshCookie, otherwise the browser keeps the old cookie
   private clearRefreshCookie(res: Response): void {
     res.cookie('rt', '', { ...this.refreshCookieOptions(), maxAge: 0 });
   }

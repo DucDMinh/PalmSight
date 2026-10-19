@@ -89,6 +89,14 @@ export const googleAuthSchema = yup.object({
     .max(4096, "Mã đăng nhập Google không hợp lệ"),
 });
 
+export const facebookAuthSchema = yup.object({
+  accessToken: yup
+    .string()
+    .trim()
+    .required("Thiếu mã đăng nhập Facebook")
+    .max(4096, "Mã đăng nhập Facebook không hợp lệ"),
+});
+
 export const forgotPasswordSchema = yup.object({
   email: yup
     .string()

@@ -36,13 +36,13 @@ import { DeletedIdentity, DeletedIdentityDocument } from '../schemas/deleted-ide
 import { MailService } from '../mail/mail.service';
 import { CreditLedgerService } from '../credits/credit-ledger.service';
 import type { GoogleProfile } from './google-auth.verifier';
+import type { FacebookProfile } from './facebook-auth.verifier';
 import { unauthenticated } from './guards/jwt-auth.guard';
 
 const REFERRAL_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 @Injectable()
 export class AuthService {
-  // ponytail: in-memory failed login tracking per process, upgrade to Redis when scaling to multiple instances
   private readonly failedLogins = new Map<string, number[]>();
 
   constructor(
@@ -202,7 +202,7 @@ export class AuthService {
   async resendVerification(dto: ResendVerificationRequestDto): Promise<void> {
     const email = dto.email.trim().toLowerCase();
     const pending = await this.pendingModel.findOne({ email, expiresAt: { $gt: new Date() } });
-    if (!pending) return; // Anti-enumeration: Silent return
+    if (!pending) return;
 
     const { rawToken, tokenHash } = this.generateVerificationToken();
     const ttlHours = Number(this.configService.get('EMAIL_VERIFY_TTL_HOURS', 24));
@@ -287,6 +287,39 @@ export class AuthService {
     currentRefreshToken?: string,
     isRetry = false,
   ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
+    return this.socialLogin(
+      AuthProvider.GOOGLE,
+      DeletedIdentityKind.GOOGLE,
+      'Người dùng Google',
+      profile,
+      currentRefreshToken,
+      isRetry,
+    );
+  }
+
+  async facebookLogin(
+    profile: FacebookProfile,
+    currentRefreshToken?: string,
+    isRetry = false,
+  ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
+    return this.socialLogin(
+      AuthProvider.FACEBOOK,
+      DeletedIdentityKind.FACEBOOK,
+      'Người dùng Facebook',
+      profile,
+      currentRefreshToken,
+      isRetry,
+    );
+  }
+
+  private async socialLogin(
+    provider: AuthProvider,
+    deletedIdentityKind: DeletedIdentityKind,
+    defaultDisplayName: string,
+    profile: GoogleProfile | FacebookProfile,
+    currentRefreshToken?: string,
+    isRetry = false,
+  ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
     if (!isRetry) await this.revokeSession(currentRefreshToken);
 
     const session = await this.connection.startSession();
@@ -298,12 +331,11 @@ export class AuthService {
     try {
       const linkedUser = await this.userModel
         .findOne({
-          identities: { $elemMatch: { provider: AuthProvider.GOOGLE, providerUserId: profile.sub } },
+          identities: { $elemMatch: { provider, providerUserId: profile.sub } },
           deletedAt: null,
         })
         .session(session);
 
-      // Only a provider-verified email may be used to merge into an existing account
       const verifiedEmail = profile.emailVerified ? profile.email : null;
       const emailUser =
         !linkedUser && verifiedEmail
@@ -316,7 +348,7 @@ export class AuthService {
         user = linkedUser;
       } else if (emailUser) {
         emailUser.identities.push({
-          provider: AuthProvider.GOOGLE,
+          provider,
           providerUserId: profile.sub,
           email: verifiedEmail,
           linkedAt: new Date(),
@@ -325,11 +357,11 @@ export class AuthService {
         await emailUser.save({ session });
         user = emailUser;
       } else {
-        const deletedChecks = [{ kind: DeletedIdentityKind.GOOGLE, value: profile.sub }];
+        const deletedChecks = [{ kind: deletedIdentityKind, value: profile.sub }];
         if (verifiedEmail) deletedChecks.push({ kind: DeletedIdentityKind.EMAIL, value: verifiedEmail });
         const isDeleted = await this.isDeletedIdentity(deletedChecks, session);
 
-        const fallbackName = verifiedEmail?.split('@')[0] || 'Người dùng Google';
+        const fallbackName = verifiedEmail?.split('@')[0] || defaultDisplayName;
         user = await this.createUserWithBonus(
           {
             displayName: (profile.name?.trim() || fallbackName).slice(0, 50),
@@ -337,7 +369,7 @@ export class AuthService {
             avatarUrl: profile.picture,
             identities: [
               {
-                provider: AuthProvider.GOOGLE,
+                provider,
                 providerUserId: profile.sub,
                 email: verifiedEmail,
                 linkedAt: new Date(),
@@ -353,9 +385,15 @@ export class AuthService {
       await session.commitTransaction();
     } catch (error: any) {
       await session.abortTransaction();
-      // Two concurrent first logins race on the unique identity/email index: retry once to pick up the winner
       if (!isRetry && (error?.code === 11000 || error?.hasErrorLabel?.('TransientTransactionError'))) {
-        return this.googleLogin(profile, undefined, true);
+        return this.socialLogin(
+          provider,
+          deletedIdentityKind,
+          defaultDisplayName,
+          profile,
+          undefined,
+          true,
+        );
       }
       throw error;
     } finally {
@@ -372,15 +410,12 @@ export class AuthService {
     const refreshTokenHash = this.hashToken(rawRefreshToken);
     const now = new Date();
 
-    // Claim atomically: of two concurrent refreshes with the same token only one can succeed
     const claimed = await this.sessionModel.findOneAndUpdate(
       { refreshTokenHash, revokedAt: null, expiresAt: { $gt: now } },
       { $set: { revokedAt: now } },
     );
 
     if (!claimed) {
-      // Only rotation sets revokedAt (logout deletes the session), so a revoked match is a rotated token
-      // being replayed: treat it as leaked and end every session of that user
       const rotated = await this.sessionModel.findOne({ refreshTokenHash, revokedAt: { $ne: null } });
       if (rotated) await this.sessionModel.deleteMany({ userId: rotated.userId });
       throw unauthenticated();
@@ -442,7 +477,6 @@ export class AuthService {
     return newUser;
   }
 
-  // Email HMACs hash the bare address (existing data format); provider IDs use "KIND:value" as in database-erd.md
   private identityHmac(kind: DeletedIdentityKind, value: string): string {
     const secret = this.configService.get<string>('IDENTITY_HASH_SECRET', 'palmsight-identity-secret');
     const input = kind === DeletedIdentityKind.EMAIL ? value.toLowerCase() : `${kind}:${value}`;
@@ -466,7 +500,6 @@ export class AuthService {
     const referrer = await this.userModel.findOne({ referralCode }).session(session);
     if (!referrer || referrer._id.toString() === referee._id.toString()) return;
 
-    // 1. Award referee bonus
     referee.creditBalance += CREDIT_AMOUNTS.REFEREE_REWARD;
     await referee.save({ session });
     await this.creditLedgerService.recordWithSession(
@@ -479,7 +512,6 @@ export class AuthService {
       session,
     );
 
-    // 2. Check referrer daily cap
     const todayStart = new Date();
     todayStart.setUTCHours(0, 0, 0, 0);
     const todayRewarded = await this.referralModel
@@ -495,7 +527,6 @@ export class AuthService {
       return;
     }
 
-    // 3. Award referrer bonus
     referrer.creditBalance += CREDIT_AMOUNTS.REFERRAL_REWARD;
     await referrer.save({ session });
     const [referralDoc] = await this.referralModel.create(
@@ -538,7 +569,6 @@ export class AuthService {
     };
   }
 
-  // New session + access token carrying its ID (sid) + raw refresh token for the cookie
   private async issueTokens(
     user: UserDocument,
   ): Promise<{ accessToken: string; expiresIn: number; rawRefreshToken: string }> {
