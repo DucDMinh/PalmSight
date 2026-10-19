@@ -40,7 +40,7 @@ export const ReadingsHistory: React.FC = () => {
               <span>+ Xem bói mới</span>
             </Link>
             <span className="text-xs text-[#d4af37]/75 uppercase tracking-widest font-rune hidden sm:inline">
-              RECORD_LOG :: {String(items.length).padStart(2, "0")}_ENTRIES
+              ✦ {items.length} quẻ đã lưu
             </span>
           </div>
         </div>

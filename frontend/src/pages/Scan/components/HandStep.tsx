@@ -22,7 +22,7 @@ export const HandStep: React.FC<HandStepProps> = ({
             3. Tay
           </h2>
         </div>
-        <span className="text-xs text-[#d4af37]/70 font-rune">SYS::OPT_03</span>
+        <span className="text-xs text-[#d4af37]/70 font-rune">✦ Âm Dương</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-ink">

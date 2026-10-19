@@ -11,7 +11,7 @@ export const ForgotPassword = () => {
   }
 
   return (
-    <div className="component:ForgotPassword flex-1 w-full max-w-[960px] mx-auto flex items-center justify-center p-4 py-12 md:py-20 bg-canvas text-ink font-mono selection:bg-surface-card">
+    <div className="component:ForgotPassword flex-1 w-full max-w-[960px] mx-auto flex items-center justify-center p-4 py-12 md:py-20 text-ink font-sans">
       <ForgotPasswordForm />
     </div>
   );
