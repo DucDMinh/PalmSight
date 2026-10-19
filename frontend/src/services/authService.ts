@@ -7,7 +7,6 @@ import {
   AUTH_GOOGLE_URL,
   AUTH_FORGOT_PASSWORD_URL,
   AUTH_RESET_PASSWORD_URL,
-  AUTH_REFRESH_URL,
   AUTH_LOGOUT_URL,
 } from '@/consts/apiUrl';
 import type {
@@ -20,7 +19,6 @@ import type {
   ForgotPasswordRequestDto,
   ResetPasswordRequestDto,
   AuthResponseDto,
-  RefreshTokenResponseDto,
 } from '@palmsight/shared';
 
 export interface ApiFieldError {
@@ -70,9 +68,9 @@ class AuthService {
     await httpService.post(AUTH_RESET_PASSWORD_URL, data);
   }
 
-  async postRefresh(): Promise<AuthResponseDto | RefreshTokenResponseDto> {
-    const response = await httpService.post(AUTH_REFRESH_URL, {});
-    return response.data;
+  // Goes through httpService so every refresh shares its single-flight + cross-tab lock
+  postRefresh(): Promise<string> {
+    return httpService.refreshAccessToken();
   }
 
   async postLogout(): Promise<void> {

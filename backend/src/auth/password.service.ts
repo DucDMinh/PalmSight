@@ -1,9 +1,13 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { isValidObjectId, Model } from 'mongoose';
 import * as crypto from 'crypto';
-import type { ForgotPasswordRequestDto, ResetPasswordRequestDto } from '@palmsight/shared';
+import type {
+  ChangePasswordRequestDto,
+  ForgotPasswordRequestDto,
+  ResetPasswordRequestDto,
+} from '@palmsight/shared';
 
 import { User, UserDocument } from '../schemas/user.schema';
 import { Session, SessionDocument } from '../schemas/session.schema';
@@ -60,16 +64,7 @@ export class PasswordService {
     if (!user) throw resetTokenInvalid();
 
     // Checked before the token is consumed, so the user can fix the password and retry with the same link
-    const lowerPassword = dto.newPassword.toLowerCase();
-    if (lowerPassword === user.email?.toLowerCase() || lowerPassword === user.username?.toLowerCase()) {
-      throw new BadRequestException({
-        code: 'VALIDATION_ERROR',
-        message: 'Dữ liệu gửi lên không hợp lệ.',
-        details: {
-          fields: [{ field: 'newPassword', message: 'Mật khẩu không được trùng với username hoặc email' }],
-        },
-      });
-    }
+    this.assertNotEmailOrUsername(dto.newPassword, user);
 
     const passwordHash = await this.authService.hashPassword(dto.newPassword);
 
@@ -85,5 +80,47 @@ export class PasswordService {
       { $set: { passwordHash, passwordUpdatedAt: new Date() } },
     );
     await this.sessionModel.deleteMany({ userId: user._id });
+  }
+
+  // Keeps the session the request came from (sid in the access token) and ends every other one
+  async changePassword(user: UserDocument, sessionId: string, dto: ChangePasswordRequestDto): Promise<void> {
+    if (!user.passwordHash) {
+      throw new ConflictException({
+        code: 'PASSWORD_NOT_SET',
+        message: 'Tài khoản chưa có mật khẩu. Hãy dùng "Quên mật khẩu" để đặt mật khẩu.',
+      });
+    }
+
+    if (!(await this.authService.verifyPassword(dto.currentPassword, user.passwordHash))) {
+      throw new BadRequestException({
+        code: 'CURRENT_PASSWORD_INCORRECT',
+        message: 'Mật khẩu hiện tại không đúng.',
+      });
+    }
+
+    this.assertNotEmailOrUsername(dto.newPassword, user);
+
+    const passwordHash = await this.authService.hashPassword(dto.newPassword);
+    await this.userModel.updateOne(
+      { _id: user._id },
+      { $set: { passwordHash, passwordUpdatedAt: new Date() } },
+    );
+    await this.sessionModel.deleteMany({
+      userId: user._id,
+      ...(isValidObjectId(sessionId) ? { _id: { $ne: sessionId } } : {}),
+    });
+  }
+
+  private assertNotEmailOrUsername(password: string, user: UserDocument): void {
+    const lowerPassword = password.toLowerCase();
+    if (lowerPassword === user.email?.toLowerCase() || lowerPassword === user.username?.toLowerCase()) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: 'Dữ liệu gửi lên không hợp lệ.',
+        details: {
+          fields: [{ field: 'newPassword', message: 'Mật khẩu không được trùng với username hoặc email' }],
+        },
+      });
+    }
   }
 }

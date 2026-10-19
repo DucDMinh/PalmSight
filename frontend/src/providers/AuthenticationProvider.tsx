@@ -10,7 +10,9 @@ import {
 import httpService from "@/services/httpService";
 import authService from "@/services/authService";
 import useAuthStore from "@/stores/useAuthStore";
+import { ME_URL } from "@/consts/apiUrl";
 import type {
+  MeResponseDto,
   UserSummaryDto,
   UserReferralInfoDto,
   AuthProvider,
@@ -131,7 +133,6 @@ export const AuthenticationProvider = ({
         ? "test-jwt-token"
         : null;
 
-  //! State: in-memory token (no localStorage storage for access tokens per ADR-0008)
   const [accessToken, setAccessToken] = useState<string | null>(resolvedInitialToken);
   const [user, setUser] = useState<AuthUser | null>(() => {
     const inMemoryEnriched = enrichUserWithJwt(initialUser, resolvedInitialToken);
@@ -143,12 +144,26 @@ export const AuthenticationProvider = ({
   });
   const [loading, setLoading] = useState(!resolvedInitialToken && !skipInitialRefresh);
 
-  // Sync token to httpService on change
-  useEffect(() => {
-    httpService.setInMemoryToken(accessToken);
-  }, [accessToken]);
+  const clearSession = useCallback(() => {
+    httpService.clearSession();
+    setAccessToken(null);
+    setUser(null);
+    useAuthStore.getState().clearAuthSession();
+  }, []);
 
-  //! Function: set authenticated session
+  useEffect(() => {
+    if (resolvedInitialToken) httpService.setInMemoryToken(resolvedInitialToken);
+    httpService.setAuthHandlers({
+      onTokenRefreshed: (token) => {
+        setAccessToken(token);
+        useAuthStore.setState({ accessToken: token });
+      },
+      onSessionExpired: clearSession,
+    });
+    return () => httpService.setAuthHandlers({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clearSession]);
+
   const setAuthSession = useCallback(
     (session: { accessToken: string; user: AuthUser | UserSummaryDto }) => {
       const enrichedUser =
@@ -166,7 +181,6 @@ export const AuthenticationProvider = ({
     []
   );
 
-  //! Function: update user profile in state
   const updateUser = useCallback((updatedFields: Partial<AuthUser>) => {
     setUser((prev) => {
       if (!prev) return null;
@@ -177,39 +191,15 @@ export const AuthenticationProvider = ({
     useAuthStore.getState().updateUser(updatedFields);
   }, []);
 
-  //! Function: refresh session via HttpOnly rt cookie
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await authService.postRefresh();
-      if ('accessToken' in response && response.accessToken) {
-        setAccessToken(response.accessToken);
-        httpService.setInMemoryToken(response.accessToken);
-        if ('user' in response && response.user) {
-          const enrichedUser =
-            enrichUserWithJwt(response.user, response.accessToken) ||
-            (response.user as AuthUser);
-          httpService.saveUserStorage(enrichedUser);
-          setUser(enrichedUser);
-          useAuthStore.getState().setAuthSession({
-            accessToken: response.accessToken,
-            user: enrichedUser,
-          });
-        }
-        return true;
-      }
-      httpService.clearStorage();
-      return false;
+      await authService.postRefresh();
+      return true;
     } catch {
-      setAccessToken(null);
-      httpService.setInMemoryToken(null);
-      httpService.clearStorage();
-      setUser(null);
-      useAuthStore.getState().clearAuthSession();
       return false;
     }
   }, []);
 
-  //! Silent refresh on initial load (if not skipped in tests)
   useEffect(() => {
     if (skipInitialRefresh || initialAccessToken) {
       setLoading(false);
@@ -217,53 +207,24 @@ export const AuthenticationProvider = ({
     }
 
     let isMounted = true;
-    authService
-      .postRefresh()
-      .then((response) => {
+    (async () => {
+      try {
+        const token = await authService.postRefresh();
+        const { data } = await httpService.get(ME_URL);
         if (!isMounted) return;
-        if ('accessToken' in response && response.accessToken) {
-          setAccessToken(response.accessToken);
-          httpService.setInMemoryToken(response.accessToken);
-          if ('user' in response && response.user) {
-            const enrichedUser =
-              enrichUserWithJwt(response.user, response.accessToken) ||
-              (response.user as AuthUser);
-            httpService.saveUserStorage(enrichedUser);
-            setUser(enrichedUser);
-            useAuthStore.getState().setAuthSession({
-              accessToken: response.accessToken,
-              user: enrichedUser,
-            });
-          }
-        } else {
-          setAccessToken(null);
-          httpService.setInMemoryToken(null);
-          httpService.clearStorage();
-          setUser(null);
-          useAuthStore.getState().clearAuthSession();
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setAccessToken(null);
-          httpService.setInMemoryToken(null);
-          httpService.clearStorage();
-          setUser(null);
-          useAuthStore.getState().clearAuthSession();
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
+        setAuthSession({ accessToken: token, user: data as MeResponseDto });
+      } catch {
+        if (isMounted) clearSession();
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
 
     return () => {
       isMounted = false;
     };
-  }, [skipInitialRefresh, initialAccessToken]);
+  }, [skipInitialRefresh, initialAccessToken, setAuthSession, clearSession]);
 
-  //! Function: login
   const login = useCallback(
     async ({
       username,
@@ -289,20 +250,14 @@ export const AuthenticationProvider = ({
     [setAuthSession]
   );
 
-  //! Function: logout
   const logout = useCallback(() => {
     authService.postLogout().catch(() => {});
-    httpService.setInMemoryToken(null);
-    httpService.clearStorage();
     if (typeof window !== 'undefined') {
       window.sessionStorage.clear();
     }
-    setAccessToken(null);
-    setUser(null);
-    useAuthStore.getState().clearAuthSession();
-  }, []);
+    clearSession();
+  }, [clearSession]);
 
-  //! Context value
   const value = useMemo<AuthenticationContextI>(() => {
     return {
       loading,

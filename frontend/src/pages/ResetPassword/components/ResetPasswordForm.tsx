@@ -11,11 +11,13 @@ import BaseUrl from "@/consts/baseUrl";
 import useResetPasswordMutation from "../hooks/useResetPasswordMutation";
 import type { ResetPasswordFormValues } from "../types";
 import type { ApiErrorPayload } from "@/services/authService";
+import { useAuth } from "@/providers/AuthenticationProvider";
 
 export const ResetPasswordForm = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { isLogged, logout } = useAuth();
   const resetPasswordMutation = useResetPasswordMutation();
   const [generalError, setGeneralError] = useState<string | null>(null);
 
@@ -55,6 +57,9 @@ export const ResetPasswordForm = () => {
       toast({
         description: "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.",
       });
+
+      // The server just ended every session, including this browser's
+      if (isLogged) logout();
 
       navigate(`${BaseUrl.Login}?reset=1`);
     } catch (error: any) {

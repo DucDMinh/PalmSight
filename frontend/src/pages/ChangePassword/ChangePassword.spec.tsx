@@ -58,4 +58,50 @@ describe("ChangePassword Page", () => {
       expect(screen.getByText("Đổi mật khẩu thành công.")).toBeInTheDocument();
     });
   });
+
+  const fillAndSubmit = (current: string, next: string) => {
+    fireEvent.change(screen.getByLabelText(/Mật khẩu hiện tại/), { target: { value: current } });
+    fireEvent.change(screen.getByLabelText(/Mật khẩu mới/), { target: { value: next } });
+    fireEvent.change(screen.getByLabelText(/Xác nhận mật khẩu/), { target: { value: next } });
+    fireEvent.click(screen.getByRole("button", { name: "Đổi mật khẩu" }));
+  };
+
+  it("should show CURRENT_PASSWORD_INCORRECT under the current password field", async () => {
+    vi.spyOn(httpService, "put").mockRejectedValue({
+      response: {
+        status: 400,
+        data: { error: { code: "CURRENT_PASSWORD_INCORRECT", message: "Mật khẩu hiện tại không đúng." } },
+      },
+    });
+
+    renderComponent();
+    fillAndSubmit("WrongPassword1", "NewPassword123");
+
+    expect(await screen.findByText("Mật khẩu hiện tại không đúng")).toBeInTheDocument();
+    expect(screen.queryByText("Đổi mật khẩu thành công.")).not.toBeInTheDocument();
+  });
+
+  it("should show server VALIDATION_ERROR field messages under the matching field", async () => {
+    vi.spyOn(httpService, "put").mockRejectedValue({
+      response: {
+        status: 400,
+        data: {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Dữ liệu gửi lên không hợp lệ.",
+            details: {
+              fields: [{ field: "newPassword", message: "Mật khẩu không được trùng với username hoặc email" }],
+            },
+          },
+        },
+      },
+    });
+
+    renderComponent();
+    fillAndSubmit("OldPassword123", "me@example.com");
+
+    expect(
+      await screen.findByText("Mật khẩu không được trùng với username hoặc email")
+    ).toBeInTheDocument();
+  });
 });

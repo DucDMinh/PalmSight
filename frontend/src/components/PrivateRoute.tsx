@@ -21,7 +21,7 @@ const PrivateRoute = ({ children }: PrivateRouteProps) => {
   // 2. If still verifying unknown session on initial load (no cached user), show loading indicator
   if (auth.loading) {
     return (
-      <div className="p-4 flex items-center justify-center min-h-[50vh]">
+      <div className="p-4 flex items-center justify-center min-h-[50vh]" role="status" aria-label="Đang tải">
         <Loading />
       </div>
     );
