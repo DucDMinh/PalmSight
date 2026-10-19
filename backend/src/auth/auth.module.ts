@@ -15,6 +15,8 @@ import {
   DeletedIdentitySchema,
 } from '../schemas/deleted-identity.schema';
 import { PasswordReset, PasswordResetSchema } from '../schemas/password-reset.schema';
+import { Reading, ReadingSchema } from '../schemas/reading.schema';
+import { GuestTrial, GuestTrialSchema } from '../schemas/guest-trial.schema';
 
 import { MailModule } from '../mail/mail.module';
 import { CreditsModule } from '../credits/credits.module';
@@ -34,6 +36,8 @@ import { PasswordService } from './password.service';
       { name: Referral.name, schema: ReferralSchema },
       { name: DeletedIdentity.name, schema: DeletedIdentitySchema },
       { name: PasswordReset.name, schema: PasswordResetSchema },
+      { name: Reading.name, schema: ReadingSchema },
+      { name: GuestTrial.name, schema: GuestTrialSchema },
     ]),
     JwtModule.registerAsync({
       inject: [ConfigService],

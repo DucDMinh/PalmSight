@@ -6,8 +6,8 @@ import { HandOrientation, ReadingSchool, ReadingStatus } from '@palmsight/shared
 export class Reading {
   _id: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  userId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false, default: null })
+  userId?: Types.ObjectId | null;
 
   @Prop({
     type: String,
@@ -21,6 +21,12 @@ export class Reading {
     },
   })
   idempotencyKey: string;
+
+  @Prop({ type: Boolean, default: false, required: true })
+  isGuest: boolean;
+
+  @Prop({ type: String, default: null, minlength: 64, maxlength: 64, trim: true })
+  guestTokenHash?: string | null;
 
   @Prop({ type: String, required: true, enum: Object.values(ReadingSchool) })
   school: ReadingSchool;
@@ -59,6 +65,15 @@ export class Reading {
   @Prop({ type: Number, default: null })
   latencyMs?: number | null;
 
+  @Prop({ type: Date, default: null })
+  previewExpiresAt?: Date | null;
+
+  @Prop({ type: Date, default: null })
+  claimedAt?: Date | null;
+
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  claimedByUserId?: Types.ObjectId | null;
+
   createdAt: Date;
 
   @Prop({ type: Date, default: null })
@@ -71,12 +86,24 @@ export class Reading {
 export type ReadingDocument = HydratedDocument<Reading>;
 export const ReadingSchema = SchemaFactory.createForClass(Reading);
 
-// Indexes according to database-erd.md:
-// - { userId: 1, idempotencyKey: 1 } unique
-ReadingSchema.index({ userId: 1, idempotencyKey: 1 }, { unique: true });
+// Indexes:
+// - Partial unique index on { userId: 1, idempotencyKey: 1 } where userId exists
+ReadingSchema.index(
+  { userId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { userId: { $type: 'objectId' } } },
+);
 
 // - { userId: 1, createdAt: -1 }
 ReadingSchema.index({ userId: 1, createdAt: -1 });
 
 // - { status: 1, createdAt: 1 }
 ReadingSchema.index({ status: 1, createdAt: 1 });
+
+// - Guest token lookup
+ReadingSchema.index({ guestTokenHash: 1 }, { sparse: true });
+
+// - TTL Index for unclaimed guest previews (7 days)
+ReadingSchema.index(
+  { previewExpiresAt: 1 },
+  { expireAfterSeconds: 0, partialFilterExpression: { previewExpiresAt: { $type: 'date' } } },
+);

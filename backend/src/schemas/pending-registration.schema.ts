@@ -29,6 +29,20 @@ export class PendingRegistration {
   @Prop({ type: String, default: null, uppercase: true, trim: true })
   referralCode?: string | null;
 
+  @Prop({
+    type: String,
+    default: null,
+    trim: true,
+    validate: {
+      validator: (val: string | null) =>
+        val === null ||
+        val === undefined ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val),
+      message: 'claimToken must be a valid UUID v4',
+    },
+  })
+  claimToken?: string | null;
+
   @Prop({ type: String, required: true, trim: true })
   tokenHash: string;
 

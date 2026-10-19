@@ -13,6 +13,8 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
   let sessionModel: any;
   let referralModel: any;
   let deletedIdentityModel: any;
+  let readingModel: any;
+  let guestTrialModel: any;
   let connection: any;
   let mailService: any;
   let creditLedgerService: any;
@@ -47,6 +49,7 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
     } as unknown as MailService;
     creditLedgerService = {
       recordWithSession: vi.fn().mockResolvedValue(undefined),
+      spendForReading: vi.fn().mockResolvedValue(undefined),
     } as unknown as CreditLedgerService;
     const jwtService = new JwtService({ secret: 'test-jwt-access-secret-minimum-32-chars-long' });
 
@@ -78,6 +81,14 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
     deletedIdentityModel = {
       exists: vi.fn(),
     };
+    readingModel = {
+      findOne: vi.fn(),
+      create: vi.fn(),
+    };
+    guestTrialModel = {
+      create: vi.fn(),
+      updateOne: vi.fn(),
+    };
 
     connection = {
       startSession: vi.fn(),
@@ -89,6 +100,8 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
       sessionModel,
       referralModel,
       deletedIdentityModel,
+      readingModel as any,
+      guestTrialModel as any,
       mailService,
       creditLedgerService,
       jwtService,
@@ -401,6 +414,157 @@ describe('AuthService Unit Logic (TC-004, TC-005, TC-006)', () => {
           message: 'Bạn đã gửi quá số lần cho phép. Vui lòng thử lại sau ít phút.',
         },
       });
+    });
+  });
+
+  describe('Guest Trial Claiming (TC-012, TC-013, TC-015)', () => {
+    it('TC-015: register should persist claimToken in pendingModel.findOneAndUpdate', async () => {
+      userModel.findOne.mockResolvedValue(null);
+      pendingModel.findOne.mockResolvedValue(null);
+      pendingModel.findOneAndUpdate.mockResolvedValue({});
+
+      const claimToken = 'e4b8a21f-82df-4db3-9824-7128cf4291f0';
+      const dto = {
+        displayName: 'Test User',
+        username: 'test_user',
+        email: 'test@example.com',
+        password: 'password123',
+        claimToken,
+      };
+
+      const result = await authService.register(dto as any);
+      expect(result.email).toBe('test@example.com');
+      expect(pendingModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { email: 'test@example.com' },
+        expect.objectContaining({
+          claimToken,
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('TC-012: verifyEmail with valid claimToken deducts 1 credit, marks reading DONE and returns balance 2', async () => {
+      const mockSession = {
+        startTransaction: vi.fn(),
+        commitTransaction: vi.fn(),
+        abortTransaction: vi.fn(),
+        endSession: vi.fn(),
+      };
+      connection.startSession.mockResolvedValue(mockSession);
+
+      const claimToken = 'e4b8a21f-82df-4db3-9824-7128cf4291f0';
+
+      const mockPending = {
+        _id: 'pending-id',
+        email: 'trial@example.com',
+        username: 'trialuser',
+        displayName: 'Trial User',
+        passwordHash: 'hashed_pw',
+        claimToken,
+      };
+
+      const mockPendingQuery: any = Promise.resolve(mockPending);
+      mockPendingQuery.session = vi.fn().mockReturnValue(mockPendingQuery);
+      pendingModel.findOne.mockReturnValue(mockPendingQuery);
+      pendingModel.deleteOne.mockReturnValue({ session: vi.fn().mockResolvedValue({}) });
+
+      const mockUserQuery: any = Promise.resolve(null);
+      mockUserQuery.session = vi.fn().mockReturnValue(mockUserQuery);
+      userModel.findOne.mockReturnValue(mockUserQuery);
+
+      const newUserDoc: any = {
+        _id: 'new-user-id',
+        displayName: 'Trial User',
+        username: 'trialuser',
+        email: 'trial@example.com',
+        creditBalance: 3,
+        referralCode: 'PALM1234',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      userModel.create.mockResolvedValue([newUserDoc]);
+
+      const mockReadingDoc: any = {
+        _id: 'reading-claim-id-1',
+        userId: null,
+        status: 'GUEST_PREVIEW',
+        previewExpiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000),
+        save: vi.fn().mockResolvedValue(true),
+      };
+      const mockReadingQuery: any = Promise.resolve(mockReadingDoc);
+      mockReadingQuery.session = vi.fn().mockReturnValue(mockReadingQuery);
+      readingModel.findOne.mockReturnValue(mockReadingQuery);
+      guestTrialModel.updateOne.mockReturnValue({ session: vi.fn().mockResolvedValue({}) });
+
+      deletedIdentityModel.exists.mockReturnValue({ session: vi.fn().mockResolvedValue(false) });
+      sessionModel.create.mockResolvedValue({ _id: 'session-id' });
+
+      const { authResponse } = await authService.verifyEmail('valid-token', claimToken);
+
+      expect(creditLedgerService.spendForReading).toHaveBeenCalledWith(
+        'new-user-id',
+        'reading-claim-id-1',
+        mockSession,
+      );
+      expect(mockReadingDoc.status).toBe('DONE');
+      expect(mockReadingDoc.previewExpiresAt).toBeNull();
+      expect(mockReadingDoc.userId).toBe('new-user-id');
+      expect(authResponse.user.creditBalance).toBe(2);
+      expect(authResponse.claimedReadingId).toBe('reading-claim-id-1');
+      expect(authResponse.claimFailed).toBeUndefined();
+    });
+
+    it('TC-013: verifyEmail with expired/non-existent claimToken preserves 3 credits and sets claimFailed = true', async () => {
+      const mockSession = {
+        startTransaction: vi.fn(),
+        commitTransaction: vi.fn(),
+        abortTransaction: vi.fn(),
+        endSession: vi.fn(),
+      };
+      connection.startSession.mockResolvedValue(mockSession);
+
+      const claimToken = '00000000-0000-4000-8000-000000000000';
+      const mockPending = {
+        _id: 'pending-id',
+        email: 'expired@example.com',
+        username: 'expireduser',
+        displayName: 'Expired User',
+        passwordHash: 'hashed_pw',
+        claimToken,
+      };
+
+      const mockPendingQuery: any = Promise.resolve(mockPending);
+      mockPendingQuery.session = vi.fn().mockReturnValue(mockPendingQuery);
+      pendingModel.findOne.mockReturnValue(mockPendingQuery);
+      pendingModel.deleteOne.mockReturnValue({ session: vi.fn().mockResolvedValue({}) });
+
+      const mockUserQuery: any = Promise.resolve(null);
+      mockUserQuery.session = vi.fn().mockReturnValue(mockUserQuery);
+      userModel.findOne.mockReturnValue(mockUserQuery);
+
+      const newUserDoc: any = {
+        _id: 'new-user-id-2',
+        displayName: 'Expired User',
+        username: 'expireduser',
+        email: 'expired@example.com',
+        creditBalance: 3,
+        referralCode: 'PALM5678',
+        save: vi.fn().mockResolvedValue(true),
+      };
+      userModel.create.mockResolvedValue([newUserDoc]);
+
+      const mockReadingQuery: any = Promise.resolve(null);
+      mockReadingQuery.session = vi.fn().mockReturnValue(mockReadingQuery);
+      readingModel.findOne.mockReturnValue(mockReadingQuery);
+
+      deletedIdentityModel.exists.mockReturnValue({ session: vi.fn().mockResolvedValue(false) });
+      sessionModel.create.mockResolvedValue({ _id: 'session-id' });
+
+      const { authResponse } = await authService.verifyEmail('valid-token', claimToken);
+
+      expect(creditLedgerService.spendForReading).not.toHaveBeenCalled();
+      expect(authResponse.user.creditBalance).toBe(3);
+      expect(authResponse.claimedReadingId).toBeNull();
+      expect(authResponse.claimFailed).toBe(true);
     });
   });
 });

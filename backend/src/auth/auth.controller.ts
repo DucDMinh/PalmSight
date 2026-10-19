@@ -91,8 +91,10 @@ export class AuthController {
       });
     }
 
+    const claimToken = body.claimToken ? String(body.claimToken).trim() : undefined;
     const { authResponse, rawRefreshToken } = await this.authService.verifyEmail(
       body.token.trim(),
+      claimToken,
     );
 
     this.setRefreshCookie(res, rawRefreshToken);
@@ -154,12 +156,14 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
-    const { idToken } = await googleAuthSchema.validate(body, { abortEarly: false });
-    const profile = await this.googleAuthVerifier.verify(idToken);
+    const validated = await googleAuthSchema.validate(body, { abortEarly: false });
+    const profile = await this.googleAuthVerifier.verify(validated.idToken);
 
+    const claimToken = validated.claimToken ? String(validated.claimToken).trim() : undefined;
     const { authResponse, rawRefreshToken } = await this.authService.googleLogin(
       profile,
       req.cookies?.rt,
+      claimToken,
     );
 
     this.setRefreshCookie(res, rawRefreshToken);

@@ -26,6 +26,7 @@ import {
   CREDIT_AMOUNTS,
   AuthProvider,
   DeletedIdentityKind,
+  ReadingStatus,
 } from '@palmsight/shared';
 
 import { PendingRegistration, PendingRegistrationDocument } from '../schemas/pending-registration.schema';
@@ -33,12 +34,15 @@ import { User, UserDocument } from '../schemas/user.schema';
 import { Session, SessionDocument } from '../schemas/session.schema';
 import { Referral, ReferralDocument } from '../schemas/referral.schema';
 import { DeletedIdentity, DeletedIdentityDocument } from '../schemas/deleted-identity.schema';
+import { Reading, ReadingDocument } from '../schemas/reading.schema';
+import { GuestTrial, GuestTrialDocument } from '../schemas/guest-trial.schema';
 import { MailService } from '../mail/mail.service';
 import { CreditLedgerService } from '../credits/credit-ledger.service';
 import type { GoogleProfile } from './google-auth.verifier';
 import { unauthenticated } from './guards/jwt-auth.guard';
 
 const REFERRAL_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class AuthService {
@@ -51,6 +55,8 @@ export class AuthService {
     @InjectModel(Session.name) private readonly sessionModel: Model<SessionDocument>,
     @InjectModel(Referral.name) private readonly referralModel: Model<ReferralDocument>,
     @InjectModel(DeletedIdentity.name) private readonly deletedIdentityModel: Model<DeletedIdentityDocument>,
+    @InjectModel(Reading.name) private readonly readingModel: Model<ReadingDocument>,
+    @InjectModel(GuestTrial.name) private readonly guestTrialModel: Model<GuestTrialDocument>,
     private readonly mailService: MailService,
     private readonly creditLedgerService: CreditLedgerService,
     private readonly jwtService: JwtService,
@@ -183,11 +189,22 @@ export class AuthService {
     const { rawToken, tokenHash } = this.generateVerificationToken();
     const ttlHours = Number(this.configService.get('EMAIL_VERIFY_TTL_HOURS', 24));
     const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
+    const claimToken = dto.claimToken ? dto.claimToken.trim() : null;
 
     try {
       await this.pendingModel.findOneAndUpdate(
         { email },
-        { email, username, displayName, passwordHash, tokenHash, expiresAt, referralCode, lastSentAt: new Date() },
+        {
+          email,
+          username,
+          displayName,
+          passwordHash,
+          tokenHash,
+          expiresAt,
+          referralCode,
+          claimToken,
+          lastSentAt: new Date(),
+        },
         { upsert: true, new: true, setDefaultsOnInsert: true },
       );
     } catch (error: any) {
@@ -214,13 +231,18 @@ export class AuthService {
     await this.mailService.sendVerificationEmail(email, pending.displayName, rawToken);
   }
 
-  async verifyEmail(token: string): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
+  async verifyEmail(
+    token: string,
+    explicitClaimToken?: string,
+  ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const session = await this.connection.startSession();
     session.startTransaction();
 
     let verifiedUser: UserDocument;
     let isNewUser = false;
+    let claimedReadingId: string | null = null;
+    let claimFailed: boolean | undefined = undefined;
 
     try {
       const pending = await this.pendingModel
@@ -270,6 +292,15 @@ export class AuthService {
         isNewUser = true;
       }
 
+      const claimToken = explicitClaimToken || pending.claimToken;
+      if (claimToken) {
+        const claimResult = await this.handleTrialClaim(verifiedUser, claimToken, session);
+        if (claimResult) {
+          claimedReadingId = claimResult.claimedReadingId;
+          claimFailed = claimResult.claimFailed;
+        }
+      }
+
       await this.pendingModel.deleteOne({ _id: pending._id }).session(session);
       await session.commitTransaction();
     } catch (error) {
@@ -279,12 +310,13 @@ export class AuthService {
       await session.endSession();
     }
 
-    return this.createAuthSession(verifiedUser!, isNewUser);
+    return this.createAuthSession(verifiedUser!, isNewUser, claimedReadingId, claimFailed);
   }
 
   async googleLogin(
     profile: GoogleProfile,
     currentRefreshToken?: string,
+    claimToken?: string,
     isRetry = false,
   ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
     if (!isRetry) await this.revokeSession(currentRefreshToken);
@@ -294,60 +326,20 @@ export class AuthService {
 
     let user: UserDocument;
     let isNewUser = false;
+    let claimedReadingId: string | null = null;
+    let claimFailed: boolean | undefined = undefined;
 
     try {
-      const linkedUser = await this.userModel
-        .findOne({
-          identities: { $elemMatch: { provider: AuthProvider.GOOGLE, providerUserId: profile.sub } },
-          deletedAt: null,
-        })
-        .session(session);
+      const resolved = await this.resolveGoogleUser(profile, session);
+      user = resolved.user;
+      isNewUser = resolved.isNewUser;
 
-      // Only a provider-verified email may be used to merge into an existing account
-      const verifiedEmail = profile.emailVerified ? profile.email : null;
-      const emailUser =
-        !linkedUser && verifiedEmail
-          ? await this.userModel.findOne({ email: verifiedEmail, deletedAt: null }).session(session)
-          : null;
-
-      if (linkedUser) {
-        if (profile.picture) linkedUser.avatarUrl = profile.picture;
-        await linkedUser.save({ session });
-        user = linkedUser;
-      } else if (emailUser) {
-        emailUser.identities.push({
-          provider: AuthProvider.GOOGLE,
-          providerUserId: profile.sub,
-          email: verifiedEmail,
-          linkedAt: new Date(),
-        });
-        if (!emailUser.avatarUrl && profile.picture) emailUser.avatarUrl = profile.picture;
-        await emailUser.save({ session });
-        user = emailUser;
-      } else {
-        const deletedChecks = [{ kind: DeletedIdentityKind.GOOGLE, value: profile.sub }];
-        if (verifiedEmail) deletedChecks.push({ kind: DeletedIdentityKind.EMAIL, value: verifiedEmail });
-        const isDeleted = await this.isDeletedIdentity(deletedChecks, session);
-
-        const fallbackName = verifiedEmail?.split('@')[0] || 'Người dùng Google';
-        user = await this.createUserWithBonus(
-          {
-            displayName: (profile.name?.trim() || fallbackName).slice(0, 50),
-            email: verifiedEmail,
-            avatarUrl: profile.picture,
-            identities: [
-              {
-                provider: AuthProvider.GOOGLE,
-                providerUserId: profile.sub,
-                email: verifiedEmail,
-                linkedAt: new Date(),
-              },
-            ],
-          },
-          isDeleted,
-          session,
-        );
-        isNewUser = true;
+      if (claimToken) {
+        const claimResult = await this.handleTrialClaim(user, claimToken, session);
+        if (claimResult) {
+          claimedReadingId = claimResult.claimedReadingId;
+          claimFailed = claimResult.claimFailed;
+        }
       }
 
       await session.commitTransaction();
@@ -355,14 +347,74 @@ export class AuthService {
       await session.abortTransaction();
       // Two concurrent first logins race on the unique identity/email index: retry once to pick up the winner
       if (!isRetry && (error?.code === 11000 || error?.hasErrorLabel?.('TransientTransactionError'))) {
-        return this.googleLogin(profile, undefined, true);
+        return this.googleLogin(profile, undefined, claimToken, true);
       }
       throw error;
     } finally {
       await session.endSession();
     }
 
-    return this.createAuthSession(user, isNewUser);
+    return this.createAuthSession(user, isNewUser, claimedReadingId, claimFailed);
+  }
+
+  private async resolveGoogleUser(
+    profile: GoogleProfile,
+    session: ClientSession,
+  ): Promise<{ user: UserDocument; isNewUser: boolean }> {
+    const linkedUser = await this.userModel
+      .findOne({
+        identities: { $elemMatch: { provider: AuthProvider.GOOGLE, providerUserId: profile.sub } },
+        deletedAt: null,
+      })
+      .session(session);
+
+    // Only a provider-verified email may be used to merge into an existing account
+    const verifiedEmail = profile.emailVerified ? profile.email : null;
+    const emailUser =
+      !linkedUser && verifiedEmail
+        ? await this.userModel.findOne({ email: verifiedEmail, deletedAt: null }).session(session)
+        : null;
+
+    if (linkedUser) {
+      if (profile.picture) linkedUser.avatarUrl = profile.picture;
+      await linkedUser.save({ session });
+      return { user: linkedUser, isNewUser: false };
+    }
+    if (emailUser) {
+      emailUser.identities.push({
+        provider: AuthProvider.GOOGLE,
+        providerUserId: profile.sub,
+        email: verifiedEmail,
+        linkedAt: new Date(),
+      });
+      if (!emailUser.avatarUrl && profile.picture) emailUser.avatarUrl = profile.picture;
+      await emailUser.save({ session });
+      return { user: emailUser, isNewUser: false };
+    }
+
+    const deletedChecks = [{ kind: DeletedIdentityKind.GOOGLE, value: profile.sub }];
+    if (verifiedEmail) deletedChecks.push({ kind: DeletedIdentityKind.EMAIL, value: verifiedEmail });
+    const isDeleted = await this.isDeletedIdentity(deletedChecks, session);
+
+    const fallbackName = verifiedEmail?.split('@')[0] || 'Người dùng Google';
+    const newUser = await this.createUserWithBonus(
+      {
+        displayName: (profile.name?.trim() || fallbackName).slice(0, 50),
+        email: verifiedEmail,
+        avatarUrl: profile.picture,
+        identities: [
+          {
+            provider: AuthProvider.GOOGLE,
+            providerUserId: profile.sub,
+            email: verifiedEmail,
+            linkedAt: new Date(),
+          },
+        ],
+      },
+      isDeleted,
+      session,
+    );
+    return { user: newUser, isNewUser: true };
   }
 
   async refresh(
@@ -514,9 +566,52 @@ export class AuthService {
     );
   }
 
+  private async handleTrialClaim(
+    verifiedUser: UserDocument,
+    claimToken: string,
+    session: ClientSession,
+  ): Promise<{ claimedReadingId: string | null; claimFailed: boolean } | null> {
+    if (!UUID_V4_REGEX.test(claimToken)) {
+      return { claimedReadingId: null, claimFailed: true };
+    }
+
+    const guestTokenHash = crypto.createHash('sha256').update(claimToken).digest('hex');
+    const trialReading = await this.readingModel
+      .findOne({
+        guestTokenHash,
+        status: ReadingStatus.GUEST_PREVIEW,
+        previewExpiresAt: { $gt: new Date() },
+      })
+      .session(session);
+
+    if (!trialReading) {
+      return { claimedReadingId: null, claimFailed: true };
+    }
+
+    await this.creditLedgerService.spendForReading(verifiedUser._id, trialReading._id, session);
+
+    trialReading.userId = verifiedUser._id;
+    trialReading.claimedByUserId = verifiedUser._id;
+    trialReading.claimedAt = new Date();
+    trialReading.status = ReadingStatus.DONE;
+    trialReading.previewExpiresAt = null;
+    await trialReading.save({ session });
+
+    await this.guestTrialModel.updateOne(
+      { guestTokenHash },
+      { $set: { isClaimed: true, claimedByUserId: verifiedUser._id, claimedAt: new Date() } },
+      { session },
+    );
+
+    verifiedUser.creditBalance -= CREDIT_AMOUNTS.READING_COST;
+    return { claimedReadingId: trialReading._id.toString(), claimFailed: false };
+  }
+
   private async createAuthSession(
     user: UserDocument,
     isNewUser: boolean,
+    claimedReadingId?: string | null,
+    claimFailed?: boolean,
   ): Promise<{ authResponse: AuthResponseDto; rawRefreshToken: string }> {
     const { accessToken, expiresIn, rawRefreshToken } = await this.issueTokens(user);
 
@@ -533,6 +628,8 @@ export class AuthService {
           creditBalance: user.creditBalance,
           referralCode: user.referralCode,
         },
+        ...(claimedReadingId !== undefined ? { claimedReadingId } : {}),
+        ...(claimFailed ? { claimFailed: true } : {}),
       },
       rawRefreshToken,
     };
