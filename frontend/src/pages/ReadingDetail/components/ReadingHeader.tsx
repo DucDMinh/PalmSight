@@ -89,6 +89,7 @@ export const ReadingHeader: React.FC<ReadingHeaderProps> = ({
         setTimeout(() => setCopied(false), 2000);
       }
     } catch {
+      setCopied(false);
     }
   };
 

@@ -33,6 +33,7 @@ export const ReadingDetail: React.FC = () => {
       setIsDeleteOpen(false);
       navigate(BaseUrl.Readings);
     } catch {
+      return;
     }
   };
 

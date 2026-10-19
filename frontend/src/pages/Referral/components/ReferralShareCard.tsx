@@ -50,6 +50,8 @@ export const ReferralShareCard = ({ referralCode }: ReferralShareCardProps) => {
         });
         return;
       } catch {
+        handleCopyLink();
+        return;
       }
     }
     handleCopyLink();

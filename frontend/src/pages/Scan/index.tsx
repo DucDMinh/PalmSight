@@ -38,6 +38,7 @@ export const Scan: React.FC = () => {
         return saved as ReadingSchool;
       }
     } catch {
+      return ReadingSchool.EASTERN;
     }
     return ReadingSchool.EASTERN;
   });
@@ -67,12 +68,13 @@ export const Scan: React.FC = () => {
 
   const handleSelectSchool = useCallback((newSchool: ReadingSchool) => {
     setSchool(newSchool);
+    const nextSections = READING_SCHOOLS[newSchool].sections.map((s) => s.key);
+    setSelectedSections(nextSections);
     try {
       localStorage.setItem(LAST_SCHOOL_STORAGE_KEY, newSchool);
     } catch {
+      return;
     }
-    const nextSections = READING_SCHOOLS[newSchool].sections.map((s) => s.key);
-    setSelectedSections(nextSections);
   }, []);
 
   const handleTopicsChange = useCallback(
