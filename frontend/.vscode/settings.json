@@ -7,6 +7,14 @@
     },
     "i18n-ally.localesPaths": [
       "src/i18n"
+    ],
+    "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(git checkout *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
+  }
   }
   
