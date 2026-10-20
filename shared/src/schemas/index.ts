@@ -92,7 +92,6 @@ export const loginSchema = yup.object({
     .max(128, "Mật khẩu tối đa 128 ký tự"),
 });
 
-//! Accepts either a GIS ID token or an OAuth authorization code from the custom button
 export const googleAuthSchema = yup
   .object({
     idToken: yup.string().trim().max(4096, "Mã đăng nhập Google không hợp lệ"),
@@ -180,15 +179,15 @@ export const readingSectionResultSchema = yup.object({
   key: yup.string().required("Key mục bói không được để trống"),
   title: yup
     .string()
-    .max(60, "Tiêu đề tối đa 60 ký tự")
+    .max(120, "Tiêu đề tối đa 120 ký tự")
     .required("Tiêu đề không được để trống"),
   observation: yup
     .string()
-    .max(800, "Quan sát tối đa 800 ký tự")
+    .max(2500, "Quan sát tối đa 2500 ký tự")
     .required("Quan sát không được để trống"),
   meaning: yup
     .string()
-    .max(800, "Ý nghĩa tối đa 800 ký tự")
+    .max(3500, "Ý nghĩa tối đa 3500 ký tự")
     .required("Ý nghĩa không được để trống"),
 });
 
@@ -249,11 +248,11 @@ export const palmResultSchema = yup.object({
         .required("Khía cạnh cuộc sống là bắt buộc")
         .test(
           "aspects-values",
-          "Nội dung khía cạnh cuộc sống phải là chuỗi tối đa 800 ký tự",
+          "Nội dung khía cạnh cuộc sống phải là chuỗi tối đa 3500 ký tự",
           (val) => {
             if (!val) return true;
             return Object.values(val).every(
-              (v) => typeof v === "string" && v.length <= 800
+              (v) => typeof v === "string" && v.length <= 3500
             );
           }
         ),
@@ -261,7 +260,7 @@ export const palmResultSchema = yup.object({
   }),
   summary: yup
     .string()
-    .max(300, "Tóm tắt tối đa 300 ký tự")
+    .max(1500, "Tóm tắt tối đa 1500 ký tự")
     .when("isPalm", {
       is: true,
       then: (schema) =>
@@ -270,7 +269,7 @@ export const palmResultSchema = yup.object({
     }),
   advice: yup
     .string()
-    .max(800, "Lời khuyên tối đa 800 ký tự")
+    .max(3000, "Lời khuyên tối đa 3000 ký tự")
     .when("isPalm", {
       is: true,
       then: (schema) =>

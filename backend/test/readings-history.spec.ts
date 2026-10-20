@@ -8,6 +8,7 @@ import {
   ImageQuality,
   PalmResult,
 } from "@palmsight/shared";
+import { STUCK_TIMEOUT_MS } from "../src/readings/utils/readings.util";
 import { createTestApp, closeTestApp, TestAppInstance } from "./test-helper";
 import type { GoogleProfile } from "../src/auth/google-auth.verifier";
 
@@ -64,7 +65,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
       },
     });
 
-    // Create User A
     const resA = await fetch(`${testApp.baseUrl}/api/v1/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -74,7 +74,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     tokenUserA = bodyA.accessToken;
     userAId = new Types.ObjectId(bodyA.user.id);
 
-    // Create User B
     const resB = await fetch(`${testApp.baseUrl}/api/v1/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -89,7 +88,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
   });
 
   it("GET /api/v1/readings returns cursor-based paginated list of readings", async () => {
-    // Seed 3 readings for User A
     const readingsCol = testApp.connection.collection("readings");
     await readingsCol.deleteMany({});
 
@@ -129,21 +127,18 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
       deletedAt: null,
     });
 
-    // Page 1: limit 2
     const resPage1 = await fetch(`${testApp.baseUrl}/api/v1/readings?limit=2`, {
       headers: { Authorization: `Bearer ${tokenUserA}` },
     });
     expect(resPage1.status).toBe(200);
     const page1Data = (await resPage1.json()) as any;
     expect(page1Data.items.length).toBe(2);
-    // Ordered newest first: r3, then r2
     expect(page1Data.items[0].id).toBe(r3.insertedId.toString());
     expect(page1Data.items[0].summary).toBe(mockPalmResult.summary);
     expect(page1Data.items[1].id).toBe(r2.insertedId.toString());
-    expect(page1Data.items[1].summary).toBeNull(); // FAILED reading summary is null
+    expect(page1Data.items[1].summary).toBeNull();
     expect(page1Data.nextCursor).toBe(r2.insertedId.toString());
 
-    // Page 2: with cursor
     const resPage2 = await fetch(
       `${testApp.baseUrl}/api/v1/readings?limit=2&cursor=${page1Data.nextCursor}`,
       {
@@ -157,15 +152,13 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     expect(page2Data.nextCursor).toBeNull();
   });
 
-  it("GET /api/v1/readings automatically cleans up stuck PROCESSING readings (> 2 mins) and refunds credit", async () => {
+  it("GET /api/v1/readings automatically cleans up stuck PROCESSING readings past STUCK_TIMEOUT_MS and refunds credit", async () => {
     const readingsCol = testApp.connection.collection("readings");
     const usersCol = testApp.connection.collection("users");
 
-    // Ensure User A creditBalance is known
     await usersCol.updateOne({ _id: userAId }, { $set: { creditBalance: 3 } });
 
-    // Insert a stuck reading (> 2 minutes old)
-    const stuckTime = new Date(Date.now() - 3 * 60 * 1000); // 3 minutes ago
+    const stuckTime = new Date(Date.now() - STUCK_TIMEOUT_MS - 60 * 1000);
     const stuck = await readingsCol.insertOne({
       userId: userAId,
       idempotencyKey: "10000000-0000-4000-8000-000000000099",
@@ -189,9 +182,8 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     expect(item).toBeDefined();
     expect(item.status).toBe(ReadingStatus.FAILED);
 
-    // Verify credit refund was applied
     const userDoc = await usersCol.findOne({ _id: userAId });
-    expect(userDoc?.creditBalance).toBe(4); // 3 + 1 refunded
+    expect(userDoc?.creditBalance).toBe(4);
   });
 
   it("GET /api/v1/readings/:id returns reading details or 404 for non-existent / other user", async () => {
@@ -209,7 +201,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
       deletedAt: null,
     });
 
-    // 1. Success by owner
     const resSuccess = await fetch(
       `${testApp.baseUrl}/api/v1/readings/${doc.insertedId.toString()}`,
       {
@@ -222,7 +213,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     expect(successData.status).toBe(ReadingStatus.DONE);
     expect(successData.result).toBeDefined();
 
-    // 2. 404 when requested by another user (User B)
     const resOtherUser = await fetch(
       `${testApp.baseUrl}/api/v1/readings/${doc.insertedId.toString()}`,
       {
@@ -231,7 +221,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     );
     expect(resOtherUser.status).toBe(404);
 
-    // 3. 404 for invalid ObjectId
     const resInvalidId = await fetch(
       `${testApp.baseUrl}/api/v1/readings/invalid-id`,
       {
@@ -244,7 +233,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
   it("DELETE /api/v1/readings/:id soft-deletes reading with 204 No Content, prevents 409 if PROCESSING", async () => {
     const readingsCol = testApp.connection.collection("readings");
 
-    // Case 1: Attempt to delete reading that is PROCESSING -> 409 READING_IN_PROGRESS
     const processingDoc = await readingsCol.insertOne({
       userId: userAId,
       idempotencyKey: "10000000-0000-4000-8000-000000000201",
@@ -267,7 +255,6 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     );
     expect(resProcessing.status).toBe(409);
 
-    // Case 2: Delete completed reading -> 204 No Content
     const completedDoc = await readingsCol.insertOne({
       userId: userAId,
       idempotencyKey: "10000000-0000-4000-8000-000000000202",
@@ -292,12 +279,10 @@ describe("US-READ-001: Readings History & Detail API (GET /readings, GET /readin
     );
     expect(resDelete.status).toBe(204);
 
-    // Verify it is soft-deleted in DB: deletedAt !== null and result === null
     const inDb = await readingsCol.findOne({ _id: completedDoc.insertedId });
     expect(inDb?.deletedAt).toBeInstanceOf(Date);
     expect(inDb?.result).toBeNull();
 
-    // Verify GET /readings/:id now returns 404
     const resGetAfterDelete = await fetch(
       `${
         testApp.baseUrl

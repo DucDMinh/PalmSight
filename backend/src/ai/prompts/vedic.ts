@@ -1,4 +1,9 @@
 export const VEDIC_PROMPT = `[VEDIC]
-Trường phái: chỉ tay Ấn Độ (Hast Samudrika Shastra).
+Trường phái: Thuật xem chỉ tay Ấn Độ cổ đại (Hast Samudrika Shastra & Jyotish Palmistry).
 sections: planetMounts, majorLines, specialSigns, thumb.
-planetMounts nhận xét các gò theo hành tinh (Mặt Trời, Mặt Trăng, Sao Hoả, Sao Thuỷ, Sao Mộc, Sao Kim, Sao Thổ, Rahu, Ketu). specialSigns chỉ nêu dấu hiệu thật sự nhìn thấy.`;
+
+Hướng dẫn luận giải chuyên sâu từng mục:
+- planetMounts (Các Gò Hành Tinh – Graha Parvat): Phân tích độ đầy đặn, vị trí và khí sắc của các gò hành tinh theo chiêm tinh Vệ Đà: Surya (Mặt Trời), Chandra (Mặt Trăng), Mangal (Sao Hoả thượng và hạ), Budha (Sao Thuỷ), Guru (Sao Mộc), Shukra (Sao Kim), Shani (Sao Thổ) cùng hai vùng trung tâm Rahu và Ketu. Luận giải sâu sự cân bằng năng lượng các hành tinh (Graha), phước báu tiền kiếp, trí tuệ tâm linh, quyền uy và nhân duyên.
+- majorLines (Các Đường Chỉ Chính – Rekha): Phân tích tổng hòa và chi tiết bốn đường lớn: Pitr Rekha (Đường Sinh Mệnh / Cội nguồn), Matri Rekha (Đường Trí Tuệ / Tâm thức), Hriday Rekha (Đường Tâm Đạo / Cảm xúc thanh tịnh) và Bhagya Rekha (Đường Vận Mệnh / Nghiệp lực Karma). Luận giải sự tương tác giữa các đường để thấy rõ dòng chảy năng lượng Prana, sự kiên định, trí huệ và hành trình hoàn thiện bản thân.
+- specialSigns (Các Dấu Hiệu Cát Tường & Đặc Biệt – Shubh Chinh): Quan sát kỹ trên các gò và đường chỉ xem có xuất hiện các ấn tướng đặc biệt thực sự nhìn thấy được như vân Mắt Phượng (Yav / hạt lúa mạch trên ngón cái), vân Tam Giác (Trikona), vân Ngôi Sao (Tara), vân Chữ Thập huyền bí, vân Đuôi Cá (Matsya), các đường thẳng đứng tốt lành trên đốt ngón tay (Khadi Rekha). Chỉ nêu những dấu hiệu thật sự nhìn thấy và giải thích ý nghĩa cát tường, trực giác tâm linh và cơ duyên may mắn của chúng.
+- thumb (Ngón Cái & Ý Chí – Angustha): Phân tích cấu trúc ngón cái gồm độ mở góc so với bàn tay, độ cứng cáp hay mềm dẻo, tỷ lệ đốt thứ nhất (Ý chí – Iccha Shakti), đốt thứ hai (Lý trí / Logic – Jnana Shakti) và khớp nối. Luận giải sức mạnh nội lực, bản lĩnh làm chủ cuộc đời, khả năng biến ý tưởng thành hành động thực tiễn và sự kiên tâm.`;

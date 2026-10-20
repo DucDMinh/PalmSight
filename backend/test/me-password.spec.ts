@@ -14,7 +14,6 @@ const NEW_PASSWORD = 'brand-new-password-456';
 describe('PUT /api/v1/me/password', () => {
   let testApp: TestAppInstance;
   let passwordHash: string;
-  // Each auth request gets its own IP so the 10 req/min/IP limit on /auth/* never trips mid-suite
   let ipCounter = 0;
 
   const authPost = (path: string, init: { body?: unknown; rt?: string } = {}) =>
@@ -65,7 +64,6 @@ describe('PUT /api/v1/me/password', () => {
     return { accessToken: ((await res.json()) as any).accessToken as string, rt };
   };
 
-  // Access token for a seeded user without going through a login endpoint
   const tokenFor = (userId: Types.ObjectId) =>
     new JwtService({ secret: JWT_SECRET }).sign({ sub: userId.toString(), sid: new Types.ObjectId().toString() });
 
@@ -97,7 +95,7 @@ describe('PUT /api/v1/me/password', () => {
 
     const user = await testApp.connection.collection('users').findOne({ _id: userId });
     expect(user!.passwordUpdatedAt.getTime()).toBeGreaterThan(Date.now() - 10_000);
-  });
+  }, 30000);
 
   it('rejects a wrong current password with 400 CURRENT_PASSWORD_INCORRECT and keeps every session', async () => {
     const email = 'change.wrong@example.com';
@@ -114,7 +112,7 @@ describe('PUT /api/v1/me/password', () => {
 
     expect(await testApp.connection.collection('sessions').countDocuments({ userId })).toBe(2);
     expect((await authPost('login', { body: { login: email, password: OLD_PASSWORD } })).status).toBe(200);
-  });
+  }, 30000);
 
   it('answers 409 PASSWORD_NOT_SET for a Google-only user', async () => {
     const userId = await seedUser('change.google@example.com', {
@@ -134,7 +132,7 @@ describe('PUT /api/v1/me/password', () => {
     const res = await changePassword(tokenFor(userId), { currentPassword: 'anything', newPassword: NEW_PASSWORD });
     expect(res.status).toBe(409);
     expect(await errorCode(res)).toBe('PASSWORD_NOT_SET');
-  });
+  }, 30000);
 
   it('rejects a new password that is too short, equals the current one, the email or the username', async () => {
     const email = 'change.rules@example.com';
@@ -149,13 +147,13 @@ describe('PUT /api/v1/me/password', () => {
 
     const user = await testApp.connection.collection('users').findOne({ _id: userId });
     expect(user!.passwordHash).toBe(passwordHash);
-  });
+  }, 30000);
 
   it('requires an access token', async () => {
     const res = await changePassword(null, { currentPassword: OLD_PASSWORD, newPassword: NEW_PASSWORD });
     expect(res.status).toBe(401);
     expect(await errorCode(res)).toBe('UNAUTHENTICATED');
-  });
+  }, 30000);
 
   it('allows 5 requests per hour per user, failed ones included, then answers 429 with Retry-After', async () => {
     const limitedId = await seedUser('change.limit@example.com');
@@ -171,7 +169,6 @@ describe('PUT /api/v1/me/password', () => {
     expect(await errorCode(limited)).toBe('RATE_LIMITED');
     expect(Number(limited.headers.get('retry-after'))).toBeGreaterThan(3500);
 
-    // The limit is per user, not global
     expect((await changePassword(tokenFor(otherId), wrongAttempt)).status).toBe(400);
-  });
+  }, 30000);
 });

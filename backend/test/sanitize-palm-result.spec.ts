@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { ReadingSchool, HandOrientation } from "@palmsight/shared";
-import { sanitizePalmResult } from "../src/ai/sanitize-palm-result";
+import {
+  sanitizePalmResult,
+  parseAiJsonResponse,
+} from "../src/ai/sanitize-palm-result";
 
-describe("sanitizePalmResult", () => {
+describe("sanitizePalmResult & parseAiJsonResponse", () => {
   it("filters out unrequested sections when user only selects life aspects", () => {
     const rawResult: any = {
       isPalm: true,
@@ -40,7 +43,7 @@ describe("sanitizePalmResult", () => {
       sections: [],
       aspects: {
         personality: "Tính cách kiên định",
-        love: "Tình cảm tốt đẹp", // not requested
+        love: "Tình cảm tốt đẹp",
       },
     };
 
@@ -95,5 +98,12 @@ describe("sanitizePalmResult", () => {
 
     expect(sanitized.isPalm).toBe(false);
     expect(sanitized.rejectReason).toBe("Không phải bàn tay");
+  });
+
+  it("parseAiJsonResponse strips markdown code fences and parses JSON cleanly", () => {
+    const fenced = '```json\n{"isPalm":true,"summary":"Huyền cơ"}\n```';
+    const parsed = parseAiJsonResponse(fenced);
+    expect(parsed.isPalm).toBe(true);
+    expect(parsed.summary).toBe("Huyền cơ");
   });
 });

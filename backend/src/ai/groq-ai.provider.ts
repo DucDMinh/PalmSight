@@ -4,6 +4,7 @@ import { PalmResult, palmResultSchema } from "@palmsight/shared";
 import {
   AiProvider,
   AiReadingOptions,
+  parseAiJsonResponse,
   sanitizePalmResult,
 } from "./ai-provider.interface";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
@@ -20,12 +21,13 @@ export class GroqAiProvider implements AiProvider {
     options: AiReadingOptions
   ): Promise<PalmResult> {
     const apiKey = this.config.get<string>("GROQ_API_KEY");
-    const baseUrl =
+    const baseUrl = (
       this.config.get<string>("AI_BASE_URL") ||
-      "https://api.groq.com/openai/v1";
+      "https://api.groq.com/openai/v1"
+    ).replace(/\/+$/, "");
     const model = this.config.get<string>("AI_MODEL") || "qwen/qwen3.8-27b";
-    const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
-    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 2000);
+    const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 150000);
+    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 8192);
     const temperature = Number(
       this.config.get<string>("AI_TEMPERATURE") || 0.7
     );
@@ -80,9 +82,7 @@ export class GroqAiProvider implements AiProvider {
         throw new Error("Groq API returned empty message content");
       }
 
-      const parsed = JSON.parse(rawContent);
-
-      // Server forcefully aligns metadata fields and filters requested topics
+      const parsed = parseAiJsonResponse(rawContent);
       const sanitized = sanitizePalmResult(parsed, options);
 
       const validated = (await palmResultSchema.validate(sanitized, {

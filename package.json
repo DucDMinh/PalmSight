@@ -12,6 +12,8 @@
     "dev:frontend": "pnpm --filter frontend dev",
     "test:frontend": "pnpm --filter frontend test",
     "typecheck:frontend": "pnpm --filter frontend typecheck",
+    "proxy:login": "docker-data\\cli-proxy\\cli-proxy-api.exe -config docker-data/cli-proxy/config.yaml -antigravity-login",
+    "proxy:start": "docker-data\\cli-proxy\\cli-proxy-api.exe -config docker-data/cli-proxy/config.yaml",
     "stitch:sync": "node scripts/sync-stitch-screens.mjs",
     "push": "bash scripts/modular-push.sh",
     "prepare": "pnpm --filter @palmsight/shared build"

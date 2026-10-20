@@ -5,6 +5,25 @@ import {
 } from "@palmsight/shared";
 import { AiReadingOptions } from "./ai-provider.interface";
 
+export function parseAiJsonResponse(rawContent: string): any {
+  const trimmed = rawContent.trim();
+  const withoutFence = trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  try {
+    return JSON.parse(withoutFence);
+  } catch {
+    const firstBrace = withoutFence.indexOf("{");
+    const lastBrace = withoutFence.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      return JSON.parse(withoutFence.slice(firstBrace, lastBrace + 1));
+    }
+    throw new Error("Invalid JSON response from AI provider");
+  }
+}
+
 export function sanitizePalmResult(
   result: any,
   options: AiReadingOptions
@@ -19,7 +38,6 @@ export function sanitizePalmResult(
 
   const allowedTopics = new Set(options.topics || []);
 
-  // Filter sections to ONLY keep keys that are in options.topics
   if (Array.isArray(result.sections)) {
     result.sections = result.sections.filter(
       (s: any) => s && typeof s.key === "string" && allowedTopics.has(s.key)
@@ -28,7 +46,6 @@ export function sanitizePalmResult(
     result.sections = [];
   }
 
-  // Filter aspects to ONLY keep keys in allowedTopics
   const currentAspects: Record<string, string> =
     result.aspects && typeof result.aspects === "object"
       ? { ...result.aspects }
@@ -41,7 +58,6 @@ export function sanitizePalmResult(
     }
   }
 
-  // Guarantee aspects: If user selected life aspects, ensure none are empty
   const requestedAspectKeys = LIFE_ASPECT_KEYS.filter((a) =>
     allowedTopics.has(a)
   );

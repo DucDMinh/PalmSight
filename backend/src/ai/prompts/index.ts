@@ -43,48 +43,51 @@ export function buildUserPrompt(params: {
       ? 'Mục đường chỉ & dấu hiệu (sections): Người dùng KHÔNG chọn mục nào trong nhóm này -> BẮT BUỘC trả về mảng rỗng: "sections": []'
       : `Mục đường chỉ & dấu hiệu (sections): BẮT BUỘC CHỈ phân tích đúng các mục sau: ${requestedSections
           .map((s) => `${s.key} (${s.title})`)
-          .join(", ")}`;
+          .join(
+            ", "
+          )}. Mỗi mục phải có "observation" mô tả chi tiết hình thái nhìn thấy trên ảnh (4-6 câu, 350-900 ký tự) và "meaning" luận giải chuyên sâu đa chiều theo trường phái (6-10 câu, 600-1800 ký tự).`;
 
   const aspectsInstruction =
     requestedAspects.length === 0
       ? 'Khía cạnh cuộc sống (aspects): Người dùng KHÔNG chọn mục nào trong nhóm này -> BẮT BUỘC trả về object rỗng: "aspects": {}'
       : `Khía cạnh cuộc sống (aspects): BẮT BUỘC phân tích và điền đầy đủ các key sau trong object "aspects": ${requestedAspects
           .map((a) => `${a.key} (${a.label})`)
-          .join(", ")}. KHÔNG ĐƯỢC để trống aspects!`;
+          .join(
+            ", "
+          )}. KHÔNG ĐƯỢC để trống aspects! Mỗi khía cạnh phải viết thành đoạn văn luận giải sâu sắc, chi tiết (6-10 câu, 600-1800 ký tự), liên kết cụ thể các dấu hiệu trên bàn tay với vận trình thực tế.`;
 
   const sectionsSchemaPart =
     requestedSections.length === 0
-      ? `  "sections": [], // người dùng KHÔNG chọn mục nào trong nhóm này, BẮT BUỘC trả về mảng rỗng []`
+      ? `  "sections": [],`
       : `  "sections": [
-    // BẮT BUỘC CHỈ phân tích đúng các mục: ${requestedSections.map((s) => s.key).join(", ")}
     {
-      "key": string, // một trong: ${requestedSections.map((s) => `"${s.key}"`).join(", ")}
-      "title": string, // tên tiêu đề tiếng Việt của mục
-      "observation": string, // mô tả khách quan các đặc điểm nhìn thấy trên bàn tay (tối đa 800 ký tự)
-      "meaning": string // diễn giải ý nghĩa theo trường phái (tối đa 800 ký tự)
+      "key": string (${requestedSections.map((s) => `"${s.key}"`).join(" | ")}),
+      "title": string (tên tiêu đề tiếng Việt của mục),
+      "observation": string (mô tả tỉ mỉ, chi tiết các đặc điểm nhìn thấy trên bàn tay, 4-6 câu, tối đa 2500 ký tự),
+      "meaning": string (luận giải chuyên sâu, giàu chiều sâu huyền học theo trường phái, 6-10 câu, tối đa 3500 ký tự)
     }
   ],`;
 
   const aspectsSchemaPart =
     requestedAspects.length === 0
-      ? `  "aspects": {}, // người dùng KHÔNG chọn khía cạnh nào, BẮT BUỘC trả về object rỗng {}`
+      ? `  "aspects": {},`
       : `  "aspects": {
 ${requestedAspects
   .map(
     (a) =>
-      `    "${a.key}": string // bắt buộc: diễn giải khía cạnh ${a.label} (tối đa 800 ký tự)`
+      `    "${a.key}": string (luận giải chuyên sâu khía cạnh ${a.label}, 6-10 câu, tối đa 3500 ký tự)`
   )
   .join(",\n")}
   },`;
 
   const schemaDescription = `{
-  "isPalm": boolean, // bắt buộc: true nếu là ảnh chụp lòng bàn tay người đủ rõ để đọc chỉ tay, false nếu ảnh không phải hoặc quá mờ/tối
-  "rejectReason": string | null, // lý do từ chối thân thiện nếu isPalm = false, ngược lại null
-  "imageQuality": "GOOD" | "FAIR" | "POOR", // chất lượng ảnh
-  "summary": string, // tóm tắt tổng quan bài bói, tối đa 300 ký tự
+  "isPalm": boolean (true nếu là ảnh chụp lòng bàn tay người đủ rõ để đọc chỉ tay, false nếu ảnh không phải hoặc quá mờ/tối),
+  "rejectReason": string | null (lý do từ chối thân thiện nếu isPalm = false, ngược lại null),
+  "imageQuality": "GOOD" | "FAIR" | "POOR",
+  "summary": string (đoạn tổng luận sâu sắc khái quát toàn bộ tướng tay, khí chất và vận mệnh chủ đạo, 4-6 câu, tối đa 1500 ký tự),
 ${sectionsSchemaPart}
 ${aspectsSchemaPart}
-  "advice": string, // lời khuyên sinh hoạt / định hướng tích cực (tối đa 800 ký tự)
+  "advice": string (lời khuyên kim chỉ nam sâu sắc, thiết thực về dưỡng tâm, phát huy sở trường và nắm bắt vận hội, 5-8 câu, tối đa 3000 ký tự),
   "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 }`;
 
@@ -92,6 +95,7 @@ ${aspectsSchemaPart}
 Hướng dẫn chi tiết:
 - ${sectionsInstruction}
 - ${aspectsInstruction}
+- Hãy viết bài luận giải thật sâu sắc, giàu chi tiết, phân tích kỹ lưỡng từng đường nét, gò bàn tay và các mối liên hệ tương hỗ thay vì nhận xét ngắn gọn.
 
 Schema JSON bắt buộc:
 ${schemaDescription}`;

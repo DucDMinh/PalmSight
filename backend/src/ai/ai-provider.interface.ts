@@ -11,4 +11,7 @@ export interface AiProvider {
   readPalm(imageBase64: string, options: AiReadingOptions): Promise<PalmResult>;
 }
 
-export { sanitizePalmResult } from "./sanitize-palm-result";
+export {
+  sanitizePalmResult,
+  parseAiJsonResponse,
+} from "./sanitize-palm-result";

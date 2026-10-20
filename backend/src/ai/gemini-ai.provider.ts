@@ -4,6 +4,7 @@ import { PalmResult, palmResultSchema } from "@palmsight/shared";
 import {
   AiProvider,
   AiReadingOptions,
+  parseAiJsonResponse,
   sanitizePalmResult,
 } from "./ai-provider.interface";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
@@ -20,10 +21,14 @@ export class GeminiAiProvider implements AiProvider {
     options: AiReadingOptions
   ): Promise<PalmResult> {
     const apiKey = this.config.get<string>("GEMINI_API_KEY");
+    const baseUrl = (
+      this.config.get<string>("GEMINI_BASE_URL") ||
+      "https://generativelanguage.googleapis.com"
+    ).replace(/\/+$/, "");
     const model =
       this.config.get<string>("AI_FALLBACK_MODEL") || "gemini-2.5-flash";
-    const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
-    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 2000);
+    const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 150000);
+    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 8192);
     const temperature = Number(
       this.config.get<string>("AI_TEMPERATURE") || 0.7
     );
@@ -35,10 +40,9 @@ export class GeminiAiProvider implements AiProvider {
     const systemPrompt = buildSystemPrompt(options.school);
     const userPrompt = buildUserPrompt(options);
 
-    // Strip "data:image/...;base64," prefix for inlineData
     const rawBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = `${baseUrl}/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -89,9 +93,7 @@ export class GeminiAiProvider implements AiProvider {
         throw new Error("Gemini API returned empty text content");
       }
 
-      const parsed = JSON.parse(rawContent);
-
-      // Server forcefully aligns metadata fields and filters requested topics
+      const parsed = parseAiJsonResponse(rawContent);
       const sanitized = sanitizePalmResult(parsed, options);
 
       const validated = (await palmResultSchema.validate(sanitized, {

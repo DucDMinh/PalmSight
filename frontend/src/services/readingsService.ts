@@ -34,7 +34,7 @@ export class ReadingsService {
           "Idempotency-Key": idempotencyKey,
         },
         withCredentials: true,
-        timeout: 60000,
+        timeout: 180000,
       }
     );
     return response.data;
@@ -74,7 +74,7 @@ export class ReadingsService {
           "Idempotency-Key": params.idempotencyKey,
         },
         withCredentials: true,
-        timeout: 60000,
+        timeout: 180000,
       }
     );
     return response.data;

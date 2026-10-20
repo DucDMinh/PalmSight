@@ -1,6 +1,11 @@
 export const EASTERN_PROMPT = `[EASTERN]
-Trường phái: chỉ tay phương Đông (Trung Hoa).
+Trường phái: Tướng thủ Phương Đông cổ truyền (Trung Hoa – Âm Dương Ngũ Hành & Bát Quái Cửu Cung).
 sections: nguHanh, thienVan, nhanVan, diaVan, batQuai, fingers.
-nguHanh xếp dáng tay vào Kim, Mộc, Thuỷ, Hoả hoặc Thổ.
-Thiên văn, Nhân văn, Địa văn lần lượt là đường tình cảm, trí tuệ, sinh mệnh.
-batQuai nhận xét 8 cung (Càn, Khảm, Cấn, Chấn, Tốn, Ly, Khôn, Đoài) và Minh Đường.`;
+
+Hướng dẫn luận giải chuyên sâu từng mục:
+- nguHanh (Dáng tay Ngũ Hành): Xếp dáng bàn tay vào hành chủ đạo (Kim, Mộc, Thuỷ, Hoả, Thổ) hoặc hình tướng kiêm cách (ví dụ Mộc đới Hoả, Thổ kiêm Kim) dựa trên tỉ lệ chưởng bộ (lòng bàn tay) và chỉ bộ (ngón tay), độ dày mỏng, sắc nhuận và gân xương. Phân tích căn cơ bẩm sinh, khí chất, cách hành sự và tương sinh tương khắc trong cuộc sống.
+- thienVan (Đường Thiên Văn – Tình Cảm / Phúc Đức): Quan sát điểm khởi từ bờ thái âm dưới ngón út kéo về phía ngón trỏ/ngón giữa, độ sâu, độ cong, các nhánh hướng lên hoặc rủ xuống. Luận giải sâu về nhân duyên, đời sống tình cảm, lòng bao dung, tâm tính đối đãi với người thân và phúc khí tinh thần.
+- nhanVan (Đường Nhân Văn – Trí Tuệ / Tài Năng): Quan sát điểm khởi giữa ngón cái và ngón trỏ, độ dài, độ nghiêng về gò Thái Âm hay chạy ngang thẳng, độ liền mạch và nhánh rẽ. Luận giải chiều sâu tư duy, trực giác, khả năng hoạch định, bản lĩnh quyết đoán, năng lực sáng tạo và định hướng công danh.
+- diaVan (Đường Địa Văn – Sinh Mệnh / Căn Cơ): Quan sát vòng cung ôm quanh cung Cấn (gò Kim Tinh), độ rộng hẹp của vòng cung, độ sâu rõ, các đường quý nhân phù trợ song hành hoặc nhánh hướng lên. Luận giải về nền tảng sinh lực, sức bền nội tại, sự gắn kết cội nguồn gia tộc, khả năng vượt nghịch cảnh và sự ổn định hậu vận.
+- batQuai (Bát Quái Cửu Cung & Minh Đường): Nhận xét chi tiết độ đầy đặn, khí sắc của 8 cung quanh bàn tay (Càn, Khảm, Cấn, Chấn, Tốn, Ly, Khôn, Đoài) và vùng trũng trung tâm Minh Đường. Chỉ rõ cung nào đắc địa (đầy đặn, hồng nhuận) mang lại quý khí về tài lộc (Tốn), danh vọng (Ly), phúc hậu (Khôn, Càn), và độ sâu rộng của Minh Đường thể hiện khả năng tụ tài, dung người.
+- fingers (Ngũ Chỉ – Ngón Tay & Tam Tài): Quan sát tỷ lệ dài ngắn, độ thẳng, thế đứng và ba đốt (Thiên - Nhân - Địa) của 5 ngón tay (ngón cái Quân chủ, ngón trỏ Thần, ngón giữa Bản thân, ngón áp út Phối ngẫu/Nghệ thuật, ngón út Tử tức/Giao tế) cùng khoảng hở giữa các kẽ tay. Luận giải khả năng làm chủ vận mệnh, quản lý tiền bạc, quý nhân và hậu vận.`;

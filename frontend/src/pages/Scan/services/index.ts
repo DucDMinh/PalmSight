@@ -31,7 +31,7 @@ export class ScanService {
       headers: {
         "Idempotency-Key": params.idempotencyKey,
       },
-      timeout: 60000,
+      timeout: 180000,
     });
 
     return response.data as CreateReadingResponseDto;

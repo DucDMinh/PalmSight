@@ -1,5 +1,12 @@
 export const WESTERN_PROMPT = `[WESTERN]
-Trường phái: chỉ tay phương Tây (Western palmistry).
+Trường phái: Chiêm tinh chỉ tay Phương Tây hiện đại (Western Palmistry / Chirognomy & Chiromancy).
 sections: handShape, heartLine, headLine, lifeLine, fateLine, sunLine, mounts.
-handShape xếp dáng tay vào một trong 4 nguyên tố Đất, Khí, Lửa, Nước theo tỉ lệ lòng bàn tay và ngón.
-mounts nhận xét 7 gò: Kim Tinh, Mộc Tinh, Thổ Tinh, Thái Dương, Thuỷ Tinh, Thái Âm, Hoả Tinh.`;
+
+Hướng dẫn luận giải chuyên sâu từng mục:
+- handShape (Dáng bàn tay & 4 Nguyên tố): Xếp dáng bàn tay vào một trong 4 nguyên tố Đất (Earth), Khí (Air), Lửa (Fire), Nước (Water) dựa trên hình dáng lòng bàn tay (vuông hay chữ nhật) và chiều dài các ngón tay. Phân tích sâu cấu trúc tính cách cốt lõi, cách tiếp nhận thông tin, phản ứng cảm xúc và phong cách làm việc.
+- heartLine (Đường Tâm Đạo – Heart Line): Phân tích chi tiết điểm bắt đầu (dưới gò Mộc Tinh, Thổ Tinh hay giữa hai gò), độ cong hay thẳng, độ sâu, các nhánh rẽ và vân đảo. Luận giải thế giới nội tâm, cách yêu thương và thể hiện tình cảm, mức độ lý trí hay cảm tính trong tình yêu, sự đồng cảm và gắn kết lứa đôi.
+- headLine (Đường Trí Đạo – Head Line): Phân tích điểm khởi đầu (chạm hay tách rời đường Sinh Đạo), độ dài, hướng chạy (thẳng ngang thực tế hay cong xuống gò Thái Âm giàu trí tưởng tượng), nhánh đuôi cá (Writer's fork). Luận giải tư duy logic, khả năng tập trung, trí tưởng tượng, sự độc lập trong suy nghĩ và phương pháp giải quyết vấn đề.
+- lifeLine (Đường Sinh Đạo – Life Line): Phân tích độ mở rộng của vòng cung quanh gò Kim Tinh, độ sâu nét, các đường nhánh hướng lên (nỗ lực vươn lên) và đường hộ mệnh (Mars line) nếu có. Luận giải nguồn năng lượng sống, nhiệt huyết trải nghiệm, sức bật tinh thần, mức độ cởi mở giao lưu và các bước ngoặt thay đổi môi trường sống.
+- fateLine (Đường Định Mệnh / Sự Nghiệp – Fate Line): Quan sát sự hiện diện, điểm xuất phát (từ cổ tay, gò Thái Âm hay đường Sinh Đạo), hướng vươn lên gò Thổ Tinh, độ đậm nhạt hoặc chuyển hướng. Luận giải con đường xây dựng sự nghiệp, mức độ tự lập, sự trợ giúp từ xã hội, khả năng thích ứng khi chuyển đổi định hướng nghề nghiệp và trách nhiệm cá nhân.
+- sunLine (Đường Thái Dương / Danh Vọng – Sun/Apollo Line): Quan sát đường chỉ dưới ngón áp út (gò Thái Dương), độ rõ nét hoặc các đường song song. Luận giải năng khiếu thẩm mỹ, sức hút cá nhân, sự ghi nhận của tập thể, mức độ viên mãn tinh thần và thành tựu đạt được nhờ đam mê.
+- mounts (Hệ thống 7 Gò Bàn Tay – The Seven Mounts): Nhận xét độ nổi đầy hay phẳng của 7 gò: Kim Tinh (Venus), Mộc Tinh (Jupiter), Thổ Tinh (Saturn), Thái Dương (Apollo), Thuỷ Tinh (Mercury), Thái Âm (Luna) và Hoả Tinh (Mars âm/dương). Chỉ rõ gò nào trội nhất để giải mã động lực sống, tham vọng lãnh đạo, khiếu giao tiếp và trực giác.`;
