@@ -42,10 +42,10 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
 
   beforeEach(() => {
     configService = new ConfigService({
-      AI_PROVIDER: "groq",
-      AI_FALLBACK_PROVIDER: "gemini",
-      AI_MODEL: "qwen/qwen3.8-27b",
-      AI_FALLBACK_MODEL: "gemini-2.5-flash",
+      AI_PROVIDER: "gemini",
+      AI_FALLBACK_PROVIDER: "groq",
+      AI_MODEL: "gemini-3.8-flash",
+      AI_FALLBACK_MODEL: "qwen/qwen3.8-27b",
       GROQ_API_KEY: "test-groq-key",
       GEMINI_API_KEY: "test-gemini-key",
       AI_TIMEOUT_MS: "2000",
@@ -119,11 +119,30 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
     expect(result.hand).toBe(HandOrientation.LEFT);
   });
 
-  it("AiService falls back to Gemini when Groq throws HTTP 429 or network failure", async () => {
-    vi.spyOn(groqProvider, "readPalm").mockRejectedValue(
-      new Error("Groq API error HTTP 429: Rate limit exceeded")
-    );
+  it("AiService calls Gemini as primary provider by default", async () => {
     vi.spyOn(geminiProvider, "readPalm").mockResolvedValue(
+      mockValidPalmResult as any
+    );
+    vi.spyOn(groqProvider, "readPalm");
+
+    const response = await aiService.readPalm("data:image/jpeg;base64,xxxx", {
+      school: ReadingSchool.EASTERN,
+      topics: ["nguHanh", "thienVan", "love"],
+      hand: HandOrientation.LEFT,
+    });
+
+    expect(geminiProvider.readPalm).toHaveBeenCalledTimes(1);
+    expect(groqProvider.readPalm).not.toHaveBeenCalled();
+    expect(response.provider).toBe("gemini");
+    expect(response.model).toBe("gemini-3.8-flash");
+    expect(response.result.isPalm).toBe(true);
+  });
+
+  it("AiService falls back to Groq when Gemini fails", async () => {
+    vi.spyOn(geminiProvider, "readPalm").mockRejectedValue(
+      new Error("Gemini API error HTTP 429: Rate limit exceeded")
+    );
+    vi.spyOn(groqProvider, "readPalm").mockResolvedValue(
       mockValidPalmResult as any
     );
 
@@ -133,18 +152,52 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
       hand: HandOrientation.LEFT,
     });
 
-    expect(groqProvider.readPalm).toHaveBeenCalledTimes(1);
     expect(geminiProvider.readPalm).toHaveBeenCalledTimes(1);
+    expect(groqProvider.readPalm).toHaveBeenCalledTimes(1);
+    expect(response.provider).toBe("groq");
+    expect(response.model).toBe("qwen/qwen3.8-27b");
+    expect(response.result.isPalm).toBe(true);
+  });
+
+  it("AiService falls back to Gemini when Groq is configured as primary and fails", async () => {
+    const groqPrimaryConfig = new ConfigService({
+      AI_PROVIDER: "groq",
+      AI_FALLBACK_PROVIDER: "gemini",
+      AI_MODEL: "qwen/qwen3.8-27b",
+      AI_FALLBACK_MODEL: "gemini-3.8-flash",
+      GROQ_API_KEY: "test-groq-key",
+      GEMINI_API_KEY: "test-gemini-key",
+      AI_TIMEOUT_MS: "2000",
+    });
+    const localGroq = new GroqAiProvider(groqPrimaryConfig);
+    const localGemini = new GeminiAiProvider(groqPrimaryConfig);
+    const localService = new AiService(groqPrimaryConfig, localGroq, localGemini);
+
+    vi.spyOn(localGroq, "readPalm").mockRejectedValue(
+      new Error("Groq API error HTTP 429: Rate limit exceeded")
+    );
+    vi.spyOn(localGemini, "readPalm").mockResolvedValue(
+      mockValidPalmResult as any
+    );
+
+    const response = await localService.readPalm("data:image/jpeg;base64,xxxx", {
+      school: ReadingSchool.EASTERN,
+      topics: ["nguHanh", "thienVan", "love"],
+      hand: HandOrientation.LEFT,
+    });
+
+    expect(localGroq.readPalm).toHaveBeenCalledTimes(1);
+    expect(localGemini.readPalm).toHaveBeenCalledTimes(1);
     expect(response.provider).toBe("gemini");
     expect(response.result.isPalm).toBe(true);
   });
 
   it("AiService correctly propagates error if both primary and fallback fail", async () => {
-    vi.spyOn(groqProvider, "readPalm").mockRejectedValue(
-      new Error("Groq unavailable")
-    );
     vi.spyOn(geminiProvider, "readPalm").mockRejectedValue(
       new Error("Gemini unavailable")
+    );
+    vi.spyOn(groqProvider, "readPalm").mockRejectedValue(
+      new Error("Groq unavailable")
     );
 
     await expect(
@@ -153,6 +206,6 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
         topics: ["nguHanh", "thienVan", "love"],
         hand: HandOrientation.LEFT,
       })
-    ).rejects.toThrow("Gemini unavailable");
+    ).rejects.toThrow("Groq unavailable");
   });
 });

@@ -17,13 +17,19 @@ export class GroqAiProvider implements AiProvider {
 
   async readPalm(
     imageBase64: string,
-    options: AiReadingOptions
+    options: AiReadingOptions,
+    modelOverride?: string
   ): Promise<PalmResult> {
     const apiKey = this.config.get<string>("GROQ_API_KEY");
     const baseUrl =
       this.config.get<string>("AI_BASE_URL") ||
       "https://api.groq.com/openai/v1";
-    const model = this.config.get<string>("AI_MODEL") || "qwen/qwen3.8-27b";
+    const configuredModel =
+      (this.config.get<string>("AI_PROVIDER") || "gemini").toLowerCase() ===
+      "groq"
+        ? this.config.get<string>("AI_MODEL") || "qwen/qwen3.8-27b"
+        : this.config.get<string>("AI_FALLBACK_MODEL") || "qwen/qwen3.8-27b";
+    const model = modelOverride || configuredModel;
     const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
     const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 2000);
     const temperature = Number(
@@ -82,7 +88,6 @@ export class GroqAiProvider implements AiProvider {
 
       const parsed = JSON.parse(rawContent);
 
-      // Server forcefully aligns metadata fields and filters requested topics
       const sanitized = sanitizePalmResult(parsed, options);
 
       const validated = (await palmResultSchema.validate(sanitized, {
