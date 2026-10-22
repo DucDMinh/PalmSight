@@ -17,11 +17,16 @@ export class GeminiAiProvider implements AiProvider {
 
   async readPalm(
     imageBase64: string,
-    options: AiReadingOptions
+    options: AiReadingOptions,
+    modelOverride?: string
   ): Promise<PalmResult> {
     const apiKey = this.config.get<string>("GEMINI_API_KEY");
-    const model =
-      this.config.get<string>("AI_FALLBACK_MODEL") || "gemini-2.5-flash";
+    const configuredModel =
+      (this.config.get<string>("AI_PROVIDER") || "gemini").toLowerCase() ===
+      "gemini"
+        ? this.config.get<string>("AI_MODEL") || "gemini-3.8-flash"
+        : this.config.get<string>("AI_FALLBACK_MODEL") || "gemini-3.8-flash";
+    const model = modelOverride || configuredModel;
     const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
     const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 2000);
     const temperature = Number(
@@ -35,7 +40,6 @@ export class GeminiAiProvider implements AiProvider {
     const systemPrompt = buildSystemPrompt(options.school);
     const userPrompt = buildUserPrompt(options);
 
-    // Strip "data:image/...;base64," prefix for inlineData
     const rawBase64 = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "");
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -91,7 +95,6 @@ export class GeminiAiProvider implements AiProvider {
 
       const parsed = JSON.parse(rawContent);
 
-      // Server forcefully aligns metadata fields and filters requested topics
       const sanitized = sanitizePalmResult(parsed, options);
 
       const validated = (await palmResultSchema.validate(sanitized, {

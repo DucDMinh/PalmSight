@@ -51,19 +51,19 @@ services:
       - key: MAIL_FROM
         value: "PalmSight <no-reply@palmsight.app>"
       - key: AI_PROVIDER
+        value: gemini
+      - key: AI_MODEL
+        value: gemini-3.8-flash
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_FALLBACK_PROVIDER
         value: groq
+      - key: AI_FALLBACK_MODEL
+        value: qwen/qwen3.8-27b
       - key: AI_BASE_URL
         value: https://api.groq.com/openai/v1
       - key: GROQ_API_KEY
         sync: false
-      - key: AI_MODEL
-        value: qwen/qwen3.8-27b
-      - key: AI_FALLBACK_PROVIDER
-        value: gemini
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: AI_FALLBACK_MODEL
-        value: gemini-3.8-flash
       - key: AI_TIMEOUT_MS
         value: 40000
       - key: AI_MAX_TOKENS

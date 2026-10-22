@@ -632,13 +632,14 @@ SMTP_USER=palmsight.app@gmail.com
 SMTP_PASS=xxxx-xxxx-xxxx-xxxx
 SUPPORT_EMAIL=support@palmsight.app
 
-# ── Trí tuệ Nhân tạo (Groq Vision & Gemini Fallback) ─────────
-AI_PROVIDER=groq
+# ── Trí tuệ Nhân tạo (Gemini Vision & Groq Fallback) ─────────
+AI_PROVIDER=gemini
+AI_MODEL=gemini-3.8-flash
+GEMINI_API_KEY=AIzaxxxxxxxxxxxxxxxxxxxxx
+AI_FALLBACK_PROVIDER=groq
+AI_FALLBACK_MODEL=qwen/qwen3.8-27b
 AI_BASE_URL=https://api.groq.com/openai/v1
 GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
-AI_MODEL=meta-llama/llama-4-scout-17b-16e-instruct
-AI_FALLBACK_PROVIDER=gemini
-GEMINI_API_KEY=AIzaxxxxxxxxxxxxxxxxxxxxx
 AI_TIMEOUT_MS=40000
 
 # ── Quy tắc Credits Hằng số ──────────────────────────────────

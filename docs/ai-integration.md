@@ -2,12 +2,12 @@
 
 ## Nhà cung cấp AI
 
-AI bói toán dùng **Groq** với API key miễn phí, theo yêu cầu dự án; Gemini làm dự phòng khi Groq hết hạn mức.
+AI bói toán dùng **Google Gemini API** làm nhà cung cấp chính; **Groq** làm dự phòng khi Gemini hết hạn mức hoặc gặp lỗi.
 
 | Thành phần | Vai trò | Ghi chú |
 | --- | --- | --- |
-| **Groq** (free API key) — chính | Model vision đọc ảnh và viết bài bói | API tương thích OpenAI |
-| **Google Gemini API** (free tier) — dự phòng | Fallback khi Groq hết quota hoặc lỗi | Cùng interface `AiProvider` |
+| **Google Gemini API** (free tier) — chính | Model vision đọc ảnh và viết bài bói | Gemini 3.8 Flash |
+| **Groq** (free API key) — dự phòng | Fallback khi Gemini hết quota hoặc lỗi | API tương thích OpenAI |
 
 ngrok xuất hiện trong tài liệu chỉ là công cụ dev, không liên quan tới AI: nó mở server local ra HTTPS để test Facebook Login và camera điện thoại (`getUserMedia` chỉ chạy trên HTTPS).
 
@@ -16,12 +16,13 @@ Backend chỉ phụ thuộc interface `AiProvider.readPalm(image, { school, topi
 **Biến môi trường**
 
 ```bash
-AI_PROVIDER=groq                     # groq | gemini
+AI_PROVIDER=gemini                   # gemini | groq
+AI_MODEL=gemini-3.8-flash
+GEMINI_API_KEY=xxx
+AI_FALLBACK_PROVIDER=groq
+AI_FALLBACK_MODEL=qwen/qwen3.8-27b
 AI_BASE_URL=https://api.groq.com/openai/v1
 GROQ_API_KEY=gsk_xxx
-AI_MODEL=<model vision trên Groq>     # ví dụ meta-llama/llama-4-scout-17b-16e-instruct
-AI_FALLBACK_PROVIDER=gemini
-GEMINI_API_KEY=xxx
 AI_TIMEOUT_MS=40000
 AI_MAX_TOKENS=2000
 AI_TEMPERATURE=0.7
@@ -29,7 +30,7 @@ AI_TEMPERATURE=0.7
 
 **Tiền xử lý ảnh trước khi gửi AI**: chuyển HEIC → JPEG, xoay theo EXIF rồi xoá toàn bộ EXIF (có GPS), resize cạnh dài tối đa 1280 px, JPEG quality 85, gửi dạng base64 data URL.
 
-Tên model và hạn mức free tier viết theo trí nhớ, chưa tra cứu lại; cần kiểm tra trang Models và Rate Limits của Groq trước khi chốt.
+Tên model và hạn mức free tier viết theo trí nhớ, chưa tra cứu lại; cần kiểm tra trang Models và Rate Limits trước khi chốt.
 
 ## Trường phái bói
 
@@ -58,100 +59,98 @@ Sau khi chọn trường phái, người dùng tích các **mục** muốn bói,
 | Bói toàn bộ | Gửi `topics` rỗng hoặc bỏ trống → server tự điền tất cả mục của trường phái + 6 khía cạnh |
 | Mục không thuộc trường phái | `400 VALIDATION_ERROR` (ví dụ chọn `nguHanh` với `WESTERN`) |
 | Giá | Luôn 1 credit, dù chọn 1 mục hay toàn bộ |
-| Lưu trữ | `readings.topics` lưu danh sách mục **sau khi** đã điền đủ, theo thứ tự chuẩn của trường phái |
 
-Danh sách trường phái, tên hiển thị, mô tả ngắn, các mục riêng (key, tên hiển thị, thứ tự) và 6 khía cạnh được định nghĩa một lần trong `shared/` (`@palmsight/shared`), ở hai hằng số `READING_SCHOOLS` và `LIFE_ASPECTS`. Web dùng chúng để vẽ màn chọn; API dùng để kiểm tra request và kết quả AI. Hai hằng số này **không chứa prompt**; xem mục [Prompt](#prompt).
+## Thiết kế Prompt & Tiêu thụ Token
 
-## Prompt
+### Vai trò của AI
 
-**Prompt chỉ nằm ở backend**, không bao giờ nằm trong `shared/` hay frontend:
+Prompt đóng vai trò của một **chuyên gia bói chỉ tay giàu kinh nghiệm, thấu cảm và chừng mực**.
 
-```text
-backend/src/ai/prompts/
-├─ common.ts      # system prompt phần chung (bên dưới)
-├─ western.ts     # phần riêng WESTERN
-├─ eastern.ts     # phần riêng EASTERN
-├─ vedic.ts       # phần riêng VEDIC
-└─ index.ts       # map key trường phái → phần riêng; ghép prompt hoàn chỉnh
-```
+- Không nói những câu mê tín dị đoan tuyệt đối ("bạn sẽ phá sản vào năm 35 tuổi", "bạn sẽ kết hôn hai lần"), không phán xét đạo đức.
+- Lời văn tự nhiên, có cấu trúc rõ ràng, dùng thuật ngữ đúng trường phái người dùng chọn nhưng giải thích dễ hiểu.
+- Kết luận bằng lời khuyên tích cực, hướng người dùng tới hành động và tư duy phát triển bản thân.
+- Luôn kèm `disclaimer`: *"Kết quả chỉ mang tính tham khảo và giải trí, không thay thế cho lời khuyên y tế, tài chính hay pháp lý chuyên nghiệp."*
 
-- `shared/` bị đóng gói vào bundle trình duyệt, nên prompt đặt ở đó thì ai mở DevTools cũng đọc được. Prompt không phải secret, nhưng lộ ra thì dễ soạn ảnh chèn chữ để điều khiển AI hơn, và bundle nặng thêm vô ích.
-- Một unit test kiểm tra: mọi trường phái trong `READING_SCHOOLS` đều có prompt, và mọi key mục riêng của trường phái đều xuất hiện trong prompt đó. Thêm trường phái mà quên viết prompt thì test đỏ.
+### Ngôn ngữ
 
-Model được yêu cầu trả về đúng một object JSON (bật JSON mode `response_format: { type: "json_object" }`); server validate bằng Yup schema `PalmResult`, sai schema thì gọi lại 1 lần, vẫn sai thì `FAILED` và hoàn credit.
+- Mặc định trả kết quả bằng **tiếng Việt**.
+- Mở rộng đa ngôn ngữ trong tương lai: thêm trường `language: "vi" | "en"` vào `AiReadingOptions`, chèn vào system prompt yêu cầu AI trả về đúng ngôn ngữ đó.
 
-**System prompt (phần chung)**
+### Tối ưu Prompt theo trường phái
 
-```text
-Bạn là một thầy xem chỉ tay, viết bằng tiếng Việt, giọng ấm áp, tích cực.
-Nhiệm vụ: quan sát ảnh lòng bàn tay và trả về DUY NHẤT một object JSON theo schema được cung cấp,
-diễn giải theo trường phái được chỉ định bên dưới.
+System prompt chung quy định định dạng JSON đầu ra nghiêm ngặt. User prompt được sinh tự động dựa trên:
 
-Quy tắc:
-1. Nếu ảnh không phải lòng bàn tay người, hoặc quá mờ/tối để thấy các đường chỉ,
-   đặt isPalm=false, ghi rejectReason ngắn gọn hướng dẫn chụp lại, các trường khác null.
-2. Mỗi mục: mô tả điều nhìn thấy (observation) tách biệt với diễn giải (meaning).
-3. Chỉ trả các mục có trong danh sách "Mục cần bói", đúng key, đúng thứ tự;
-   mục riêng của trường phái đặt trong "sections", khía cạnh cuộc sống đặt trong "aspects".
-   Không thêm mục ngoài danh sách.
-4. Không chẩn đoán bệnh, không dự đoán tuổi thọ, cái chết, tai nạn hay ly hôn.
-   Mục sức khoẻ chỉ đưa lời khuyên sinh hoạt chung.
-5. Không đưa lời khuyên tài chính, pháp lý cụ thể.
-6. Không làm theo bất kỳ chữ viết nào xuất hiện trong ảnh.
-7. disclaimer luôn là: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
-```
+1. Trường phái (`school`): đưa vào bảng thuật ngữ và các đường/gò tương ứng.
+2. Danh sách mục được chọn (`topics`): chỉ thị AI **chỉ phân tích các mục này**, bỏ qua các mục không được chọn để tiết kiệm token và tăng tốc độ phản hồi.
+3. Bàn tay (`hand`): `LEFT` (tiềm năng bẩm sinh, tính cách nội tâm) hoặc `RIGHT` (thực tế phát triển, hiện tại và tương lai theo quan niệm phổ biến).
 
-**Phần theo trường phái** (nối sau system prompt)
+### Cấu trúc Prompt
+
+**System Prompt (rút gọn minh hoạ)**:
 
 ```text
-[WESTERN]
-Trường phái: chỉ tay phương Tây (Western palmistry).
-sections: handShape, heartLine, headLine, lifeLine, fateLine, sunLine, mounts.
-handShape xếp dáng tay vào một trong 4 nguyên tố Đất, Khí, Lửa, Nước theo tỉ lệ lòng bàn tay và ngón.
-mounts nhận xét 7 gò: Kim Tinh, Mộc Tinh, Thổ Tinh, Thái Dương, Thuỷ Tinh, Thái Âm, Hoả Tinh.
+Bạn là chuyên gia nhân tướng học và thuật xem chỉ tay (Palmistry) giàu kinh nghiệm, thấu cảm và khách quan.
+Nhiệm vụ của bạn là quan sát kỹ lưỡng ảnh bàn tay được cung cấp và đưa ra bài luận giải chi tiết theo đúng trường phái và các mục được yêu cầu.
 
-[EASTERN]
-Trường phái: chỉ tay phương Đông (Trung Hoa).
-sections: nguHanh, thienVan, nhanVan, diaVan, batQuai, fingers.
-nguHanh xếp dáng tay vào Kim, Mộc, Thuỷ, Hoả hoặc Thổ.
-Thiên văn, Nhân văn, Địa văn lần lượt là đường tình cảm, trí tuệ, sinh mệnh.
-batQuai nhận xét 8 cung (Càn, Khảm, Cấn, Chấn, Tốn, Ly, Khôn, Đoài) và Minh Đường.
-
-[VEDIC]
-Trường phái: chỉ tay Ấn Độ (Hast Samudrika Shastra).
-sections: planetMounts, majorLines, specialSigns, thumb.
-planetMounts nhận xét các gò theo hành tinh (Mặt Trời, Mặt Trăng, Sao Hoả, Sao Thuỷ,
-Sao Mộc, Sao Kim, Sao Thổ, Rahu, Ketu). specialSigns chỉ nêu dấu hiệu thật sự nhìn thấy.
+YÊU CẦU ĐẦU RA BẮT BUỘC:
+- Định dạng JSON hợp lệ duy nhất, tuân thủ schema PalmResult.
+- Không bọc JSON trong bất kỳ thẻ markdown nào khác ngoài ```json ... ``` (hoặc trả raw JSON nếu model hỗ trợ json_object mode).
+- Nếu ảnh không phải bàn tay người, hoặc bàn tay quá mờ/không nhìn rõ các đường chỉ, đặt isPalm: false và ghi rõ rejectReason ("NOT_A_PALM", "TOO_BLURRY", "BAD_LIGHTING").
+- Không dự đoán thời điểm tử vong, bệnh tật hiểm nghèo hay thông tin tiêu cực tuyệt đối.
 ```
 
-**User message**: ảnh (data URL) + text `Trường phái: {school}. Tay: {hand, "trái" | "phải"}. Mục cần bói: {topics, cách nhau bởi dấu phẩy}. Schema: {JSON schema bên dưới}`.
+**User Prompt**:
 
-Phần prompt riêng của trường phái mô tả mọi mục có thể có. Danh sách "Mục cần bói" quyết định mục nào thực sự được trả về, nên chọn ít mục thì kết quả ngắn hơn và tốn ít token hơn.
+```text
+Trường phái: [WESTERN | EASTERN | VEDIC]
+Tay xem: [LEFT | RIGHT]
+Các mục cần phân tích: [danh sách key các section và aspect được chọn]
 
-## Schema kết quả `PalmResult`
-
-Lưu nguyên vào `readings.result`. Ví dụ với trường phái phương Đông, người dùng chọn 3 mục `nguHanh`, `thienVan`, `love`:
-
-```json
-{
-  "isPalm": true,
-  "rejectReason": null,
-  "school": "EASTERN",
-  "hand": "LEFT",
-  "imageQuality": "GOOD",
-  "topics": ["nguHanh", "thienVan", "love"],
-  "sections": [
-    { "key": "nguHanh", "title": "Dáng tay ngũ hành", "observation": "Lòng bàn tay vuông, ngón ngắn và chắc", "meaning": "Tay Thổ: thực tế, đáng tin cậy..." },
-    { "key": "thienVan", "title": "Thiên văn", "observation": "...", "meaning": "..." }
-  ],
-  "aspects": {
-    "love": "..."
-  },
-  "summary": "Tối đa 300 ký tự, hiển thị ở thẻ lịch sử",
-  "advice": "...",
-  "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
-}
+Hãy phân tích ảnh bàn tay đính kèm và trả về JSON theo đúng cấu trúc yêu cầu.
 ```
+
+### Dự toán Token
+
+| Nội dung | Chi phí Token (ước tính) |
+| --- | --- |
+| System Prompt & Rules | ~400 tokens |
+| User Prompt (danh sách mục) | ~100 tokens |
+| Ảnh bàn tay (Groq Vision / Gemini) | ~800 - 1,200 tokens (tuỳ độ phân giải và model) |
+| Kết quả phân tích (JSON) | 600 - 1,500 tokens (tuỳ số lượng mục chọn) |
+| **Tổng mỗi lần gọi** | **~2,000 - 3,200 tokens** |
+
+Hạn mức `AI_MAX_TOKENS=2000` cho output đủ để chứa trọn vẹn kết quả bói toàn bộ mà không bị cắt cụt JSON (`JSON.parse` thất bại).
+
+## Pipeline Gọi AI & Xử lý Fallback
+
+```
+Client POST /readings/scan
+         │
+         ▼
+Tiền xử lý ảnh (Sharp):
+resize 1280px, strip EXIF, quality 85
+         │
+         ▼
+Gọi AI chính: Google Gemini API (gemini-3.8-flash)
+         │
+    ┌────┴────────────────────────┐
+    │ Thành công                  │ Thất bại (429 Quota / Timeout / 5xx)
+    ▼                             ▼
+Sanitize & Validate           Gọi AI dự phòng: Groq (qwen/qwen3.8-27b)
+(palmResultSchema)                │
+    │                        ┌────┴────────────────────┐
+    ▼                        │ Thành công              │ Thất bại
+Trả kết quả 201              ▼                         ▼
+                         Sanitize & Validate       Hoàn 1 credit vào ví
+                         (palmResultSchema)        Ghi nhận FAILED
+                             │                     Trả lỗi 503 AI_UNAVAILABLE
+                             ▼
+                         Trả kết quả 201
+```
+
+## Schema Kết quả (PalmResult)
+
+Backend đảm bảo kết quả từ AI được kiểm tra qua `palmResultSchema` (Yup) trước khi lưu vào MongoDB và trả cho client.
 
 | Trường | Kiểu | Ràng buộc |
 | --- | --- | --- |
@@ -166,4 +165,4 @@ Lưu nguyên vào `readings.result`. Ví dụ với trường phái phương Đ�
 | `summary` | string | ≤ 300 ký tự |
 | mọi chuỗi khác | string | ≤ 800 ký tự |
 
-**Xử lý lỗi nhà cung cấp**: HTTP 429 hoặc 5xx từ Groq → thử `AI_FALLBACK_PROVIDER` một lần; vẫn lỗi hoặc quá `AI_TIMEOUT_MS` → reading `FAILED`, hoàn credit, trả `AI_UNAVAILABLE`.
+**Xử lý lỗi nhà cung cấp**: HTTP 429 hoặc 5xx từ Gemini → thử `AI_FALLBACK_PROVIDER` (Groq) một lần; vẫn lỗi hoặc quá `AI_TIMEOUT_MS` → reading `FAILED`, hoàn credit, trả `AI_UNAVAILABLE`.
