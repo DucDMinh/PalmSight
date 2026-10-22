@@ -98,7 +98,7 @@ describe("Navbar Component", () => {
 
     const startButton = screen.getByRole("link", { name: "Bắt đầu" });
     expect(startButton).toBeInTheDocument();
-    expect(startButton).toHaveAttribute("href", "/login");
+    expect(startButton).toHaveAttribute("href", "/scan");
     expect(startButton).toHaveClass("btn-primary");
   });
 

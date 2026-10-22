@@ -242,7 +242,7 @@ export default function Navbar({ rightAction }: NavbarProps) {
                 >
                   Đăng nhập
                 </Link>
-                <Link to={BaseUrl.Login} className="btn-primary !min-h-[38px] !px-5 !py-1.5 text-sm">
+                <Link to={BaseUrl.Scan} className="btn-primary !min-h-[38px] !px-5 !py-1.5 text-sm">
                   Bắt đầu
                 </Link>
               </>
