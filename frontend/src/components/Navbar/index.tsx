@@ -223,7 +223,10 @@ export default function Navbar({ rightAction }: NavbarProps) {
                 </Popover>
               </>
             ) : loading && !user ? (
-              <div className="h-8 w-16" aria-hidden="true" />
+              <div
+                className="h-8 w-20 animate-pulse rounded-md bg-[#241842]/60 border border-[#d4af37]/20"
+                aria-label="Đang tải..."
+              />
             ) : isLoginPage ? (
               <Link
                 to={BaseUrl.Register}
@@ -232,9 +235,17 @@ export default function Navbar({ rightAction }: NavbarProps) {
                 Đăng ký
               </Link>
             ) : location.pathname === BaseUrl.Homepage ? (
-              <Link to={BaseUrl.Login} className="btn-primary !min-h-[38px] !px-5 !py-1.5 text-sm">
-                Bắt đầu
-              </Link>
+              <>
+                <Link
+                  to={BaseUrl.Login}
+                  className="text-mute hover:text-[#f7e7b4] text-sm font-medium py-1.5 px-2 transition-colors"
+                >
+                  Đăng nhập
+                </Link>
+                <Link to={BaseUrl.Login} className="btn-primary !min-h-[38px] !px-5 !py-1.5 text-sm">
+                  Bắt đầu
+                </Link>
+              </>
             ) : (
               <Link
                 to={BaseUrl.Login}

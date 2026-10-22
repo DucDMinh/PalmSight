@@ -176,4 +176,18 @@ describe('httpService token refresh', () => {
     expect(httpService.getInMemoryToken()).toBeNull();
     expect(onTokenRefreshed).not.toHaveBeenCalled();
   });
+
+  it('configures a 5000ms timeout on the refresh request to avoid blocking indefinitely', async () => {
+    let refreshConfig: InternalAxiosRequestConfig | undefined;
+    fakeServer((config) => {
+      if (config.url === '/api/v1/auth/refresh') {
+        refreshConfig = config;
+        return { status: 200, data: { accessToken: 'fresh-token', expiresIn: 900 } };
+      }
+      return { status: 200 };
+    });
+
+    await httpService.refreshAccessToken();
+    expect(refreshConfig?.timeout).toBe(5000);
+  });
 });
