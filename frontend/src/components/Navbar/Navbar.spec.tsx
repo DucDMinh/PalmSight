@@ -88,6 +88,20 @@ describe("Navbar Component", () => {
     expect(loginLink).toHaveAttribute("href", "/login");
   });
 
+  it("should display both 'Đăng nhập' link and 'Bắt đầu' CTA button when unauthenticated on homepage", () => {
+    renderNavbar("/", false);
+
+    const loginLink = screen.getByRole("link", { name: "Đăng nhập" });
+    expect(loginLink).toBeInTheDocument();
+    expect(loginLink).toHaveAttribute("href", "/login");
+    expect(loginLink).toHaveClass("text-mute");
+
+    const startButton = screen.getByRole("link", { name: "Bắt đầu" });
+    expect(startButton).toBeInTheDocument();
+    expect(startButton).toHaveAttribute("href", "/login");
+    expect(startButton).toHaveClass("btn-primary");
+  });
+
   it("should display nav links, credits badge, and user menu when authenticated", async () => {
     renderNavbar("/", true);
 
@@ -148,7 +162,13 @@ describe("Navbar Component", () => {
       </MemoryRouter>
     );
 
-    // Unauthenticated button "Bắt đầu" should NOT be rendered while loading and no cached user
+    // Active loading indicator skeleton should be rendered
+    expect(screen.getByLabelText("Đang tải...")).toBeInTheDocument();
+
+    // Unauthenticated button "Bắt đầu" and "Đăng nhập" should NOT be rendered while loading and no cached user
+    expect(
+      screen.queryByRole("link", { name: "Đăng nhập" })
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("link", { name: "Bắt đầu" })
     ).not.toBeInTheDocument();

@@ -93,7 +93,11 @@ class Services {
     if (!this.pendingRefresh) {
       const epoch = this.sessionEpoch;
       const doRefresh = async () => {
-        const response = await this.axios.post<RefreshTokenResponseDto>(AUTH_REFRESH_URL);
+        const response = await this.axios.post<RefreshTokenResponseDto>(
+          AUTH_REFRESH_URL,
+          null,
+          { timeout: 5000 }
+        );
         if (epoch !== this.sessionEpoch) throw new Error("Session ended while refreshing");
         this.inMemoryToken = response.data.accessToken;
         this.handlers.onTokenRefreshed?.(response.data.accessToken);
