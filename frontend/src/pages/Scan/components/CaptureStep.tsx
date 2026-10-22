@@ -194,7 +194,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
           </span>
         </div>
         <span className="text-xs text-[#d4af37]/70 font-rune">
-          INPUT::DEV_0
+          ✦ Ấn Tướng
         </span>
       </div>
 

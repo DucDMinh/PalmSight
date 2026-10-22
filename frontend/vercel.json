@@ -2,18 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/privacy",
-      "destination": "/privacy.html"
-    },
-    {
-      "source": "/terms",
-      "destination": "/terms.html"
-    },
-    {
-      "source": "/data-deletion",
-      "destination": "/data-deletion.html"
-    },
-    {
       "source": "/api/v1/:path*",
       "destination": "https://palmsight-backend.onrender.com/api/v1/:path*"
     },
@@ -23,6 +11,19 @@
     }
   ],
   "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

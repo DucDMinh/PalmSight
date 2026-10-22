@@ -1,4 +1,5 @@
 import BaseUrl from "@/consts/baseUrl";
+import PwaInstallButton from "@/components/PwaInstallButton";
 
 const Footer = () => {
   return (
@@ -30,6 +31,7 @@ const Footer = () => {
           >
             Xoá dữ liệu
           </a>
+          <PwaInstallButton />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

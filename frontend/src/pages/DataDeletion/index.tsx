@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { TarotCorners } from "@/components/mystic/MysticDivider";
 import InfoTabNav from "./components/InfoTabNav";
 import DataDeletionContent from "./components/DataDeletionContent";
 import TermsContent from "./components/TermsContent";
@@ -28,13 +29,16 @@ export const DataDeletion = ({ initialTab = "deletion" }: DataDeletionPageProps)
   }, [location.pathname, initialTab]);
 
   return (
-    <div className="component:DataDeletion flex-1 w-full max-w-[960px] mx-auto px-4 pt-10 md:pt-14 pb-20 font-mono text-ink">
+    <div className="component:DataDeletion flex-1 w-full max-w-[920px] mx-auto px-4 pt-10 md:pt-14 pb-20 font-sans text-ink">
       <InfoTabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="w-full flex justify-start">
-        {activeTab === "deletion" && <DataDeletionContent />}
-        {activeTab === "terms" && <TermsContent />}
-        {activeTab === "privacy" && <PrivacyContent />}
+      <main className="relative w-full mystic-card rounded-2xl p-6 sm:p-10 overflow-hidden">
+        <TarotCorners />
+        <div className="relative z-10">
+          {activeTab === "deletion" && <DataDeletionContent />}
+          {activeTab === "terms" && <TermsContent />}
+          {activeTab === "privacy" && <PrivacyContent />}
+        </div>
       </main>
     </div>
   );

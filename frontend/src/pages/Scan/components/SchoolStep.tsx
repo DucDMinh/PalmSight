@@ -26,7 +26,7 @@ export const SchoolStep: React.FC<SchoolStepProps> = ({
             1. Trường phái
           </h2>
         </div>
-        <span className="text-xs text-[#d4af37]/70 font-rune">SYS::OPT_01</span>
+        <span className="text-xs text-[#d4af37]/70 font-rune">✦ Huyền Học</span>
       </div>
       <div className="flex flex-col gap-3">
         {READING_SCHOOL_LIST.map((school) => {

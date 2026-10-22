@@ -98,7 +98,7 @@ export const TopicsStep: React.FC<TopicsStepProps> = ({
             2. Mục muốn bói
           </h2>
         </div>
-        <span className="text-xs text-[#d4af37]/70 font-rune">SYS::OPT_02</span>
+        <span className="text-xs text-[#d4af37]/70 font-rune">✦ Quẻ Mệnh</span>
       </div>
 
       <button
