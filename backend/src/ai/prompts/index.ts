@@ -61,7 +61,7 @@ export function buildUserPrompt(params: {
       "key": string, // một trong: ${requestedSections.map((s) => `"${s.key}"`).join(", ")}
       "title": string, // tên tiêu đề tiếng Việt của mục
       "observation": string, // mô tả khách quan các đặc điểm nhìn thấy trên bàn tay (tối đa 800 ký tự)
-      "meaning": string // diễn giải ý nghĩa theo trường phái (tối đa 800 ký tự)
+      "meaning": string // diễn giải ý nghĩa theo trường phái, nêu cả điểm cần lưu ý nếu có dấu hiệu tương ứng (tối đa 800 ký tự)
     }
   ],`;
 
@@ -72,7 +72,7 @@ export function buildUserPrompt(params: {
 ${requestedAspects
   .map(
     (a) =>
-      `    "${a.key}": string // bắt buộc: diễn giải khía cạnh ${a.label} (tối đa 800 ký tự)`
+      `    "${a.key}": string // bắt buộc: diễn giải khía cạnh ${a.label}, nêu cả điểm cần lưu ý nếu có dấu hiệu tương ứng (tối đa 800 ký tự)`
   )
   .join(",\n")}
   },`;
@@ -81,10 +81,10 @@ ${requestedAspects
   "isPalm": boolean, // bắt buộc: true nếu là ảnh chụp lòng bàn tay người đủ rõ để đọc chỉ tay, false nếu ảnh không phải hoặc quá mờ/tối
   "rejectReason": string | null, // lý do từ chối thân thiện nếu isPalm = false, ngược lại null
   "imageQuality": "GOOD" | "FAIR" | "POOR", // chất lượng ảnh
-  "summary": string, // tóm tắt tổng quan bài bói, tối đa 300 ký tự
+  "summary": string, // tóm tắt tổng quan, phản ánh đúng cả điểm thuận lợi lẫn điểm cần lưu ý, tối đa 300 ký tự
 ${sectionsSchemaPart}
 ${aspectsSchemaPart}
-  "advice": string, // lời khuyên sinh hoạt / định hướng tích cực (tối đa 800 ký tự)
+  "advice": string, // 2-4 lời khuyên thực tế, cụ thể, bám vào các điểm cần lưu ý đã nêu (tối đa 800 ký tự)
   "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 }`;
 
