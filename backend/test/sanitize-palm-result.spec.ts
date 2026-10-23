@@ -96,4 +96,26 @@ describe("sanitizePalmResult", () => {
     expect(sanitized.isPalm).toBe(false);
     expect(sanitized.rejectReason).toBe("Không phải bàn tay");
   });
+
+  it("ensures default fallback aspects are distinct and not identical across aspects", () => {
+    const rawResult: any = {
+      isPalm: true,
+      summary: "Tổng quan",
+      advice: "Lời khuyên",
+      disclaimer: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.",
+      sections: [],
+      aspects: {},
+    };
+
+    const sanitized = sanitizePalmResult(rawResult, {
+      school: ReadingSchool.EASTERN,
+      hand: HandOrientation.LEFT,
+      topics: ["personality", "love", "career", "finance", "health", "family"],
+    });
+
+    const values = Object.values(sanitized.aspects || {});
+    expect(values.length).toBe(6);
+    const uniqueValues = new Set(values);
+    expect(uniqueValues.size).toBe(6);
+  });
 });

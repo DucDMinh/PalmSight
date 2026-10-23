@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Camera, Upload, RotateCcw, Sparkles, Eye } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
@@ -10,6 +10,7 @@ import {
 } from "@palmsight/shared";
 import { ScanStatus } from "../types";
 import { cn } from "@/lib/utils";
+import { useHandDetection } from "../hooks/useHandDetection";
 
 interface CaptureStepProps {
   school: ReadingSchool;
@@ -69,6 +70,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
 
   useEffect(() => {
     if (isCameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.muted = true;
       videoRef.current.srcObject = streamRef.current;
       videoRef.current.play()?.catch?.(() => {});
     }
@@ -100,6 +102,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       streamRef.current = stream;
       setIsCameraActive(true);
       if (videoRef.current) {
+        videoRef.current.muted = true;
         videoRef.current.srcObject = stream;
         videoRef.current.play()?.catch?.(() => {});
       }
@@ -111,7 +114,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -120,9 +123,9 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       videoRef.current.srcObject = null;
     }
     setIsCameraActive(false);
-  };
+  }, []);
 
-  const capturePhoto = () => {
+  const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
     const canvas = document.createElement("canvas");
     canvas.width = videoRef.current.videoWidth || 1280;
@@ -144,7 +147,20 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       "image/jpeg",
       0.92
     );
-  };
+  }, [stopCamera, onImageChange]);
+
+  const {
+    status: handStatus,
+    feedback: handFeedback,
+    progress: autoCaptureProgress,
+    isAutoCaptureEnabled,
+    setIsAutoCaptureEnabled,
+  } = useHandDetection({
+    videoRef,
+    isCameraActive,
+    targetHand: hand,
+    onCapture: capturePhoto,
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -293,9 +309,61 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
           />
         )}
 
+        {isCameraActive && !imagePreviewUrl && (
+          <div
+            className="absolute top-12 inset-x-4 flex justify-center pointer-events-none select-none z-20"
+            data-testid="hand-detection-feedback"
+          >
+            <div
+              className={cn(
+                "px-3.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 shadow-lg backdrop-blur-md transition-all duration-300",
+                handStatus === "HOLDING" || handStatus === "CAPTURED"
+                  ? "bg-emerald-950/90 text-emerald-300 border border-emerald-500/50"
+                  : handStatus === "WRONG_HAND" ||
+                    handStatus === "ALIGN" ||
+                    handStatus === "TOO_FAR" ||
+                    handStatus === "TOO_CLOSE"
+                  ? "bg-amber-950/90 text-amber-300 border border-amber-500/50"
+                  : "bg-[#0b0716]/80 text-[#f7e7b4] border border-[#d4af37]/40"
+              )}
+            >
+              <span
+                className={cn(
+                  "w-2 h-2 rounded-full",
+                  handStatus === "HOLDING" || handStatus === "CAPTURED"
+                    ? "bg-emerald-400 animate-ping"
+                    : handStatus === "SEARCHING"
+                    ? "bg-[#d4af37] animate-pulse"
+                    : "bg-amber-400"
+                )}
+              />
+              <span>
+                {isAutoCaptureEnabled ? handFeedback : "Chế độ chụp thủ công"}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {isCameraActive && isAutoCaptureEnabled && !imagePreviewUrl && autoCaptureProgress > 0 && (
+          <div className="absolute bottom-12 inset-x-12 z-20 pointer-events-none">
+            <div className="w-full bg-[#0b0716]/80 rounded-full h-2 p-0.5 border border-emerald-500/50 overflow-hidden shadow-lg">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-green-300 h-full rounded-full transition-all duration-100"
+                style={{ width: `${autoCaptureProgress}%` }}
+                data-testid="auto-capture-progress"
+              />
+            </div>
+          </div>
+        )}
+
         {!imagePreviewUrl && (
           <svg
-            className="w-[180px] h-[240px] pointer-events-none relative z-10 drop-shadow-[0_0_12px_rgba(212,175,55,0.4)]"
+            className={cn(
+              "w-[180px] h-[240px] pointer-events-none relative z-10 transition-colors duration-300",
+              handStatus === "HOLDING" || handStatus === "CAPTURED"
+                ? "drop-shadow-[0_0_20px_rgba(34,197,94,0.6)]"
+                : "drop-shadow-[0_0_12px_rgba(212,175,55,0.4)]"
+            )}
             fill="none"
             viewBox="0 0 180 240"
             xmlns="http://www.w3.org/2000/svg"
@@ -321,7 +389,11 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
                  C 135 195 126 230 118 238
                  L 60 238
                  C 52 230 48 200 46 175 Z"
-              stroke="#f5d77f"
+              stroke={
+                handStatus === "HOLDING" || handStatus === "CAPTURED"
+                  ? "#22c55e"
+                  : "#f5d77f"
+              }
               strokeDasharray="4 4"
               strokeWidth="1.5"
               vectorEffect="non-scaling-stroke"
@@ -406,6 +478,18 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
             >
               <Camera aria-hidden="true" className="h-4 w-4" />
               <span>Chụp ảnh</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAutoCaptureEnabled(!isAutoCaptureEnabled)}
+              className={cn(
+                "btn-secondary !min-h-[38px] !px-4 text-sm inline-flex items-center gap-1.5",
+                isAutoCaptureEnabled && "border-emerald-500/60 text-emerald-300 bg-emerald-950/30"
+              )}
+              data-testid="auto-capture-toggle"
+            >
+              <Sparkles aria-hidden="true" className="h-4 w-4 text-emerald-400" />
+              <span>Tự chụp: {isAutoCaptureEnabled ? "Bật" : "Tắt"}</span>
             </button>
             <button
               type="button"

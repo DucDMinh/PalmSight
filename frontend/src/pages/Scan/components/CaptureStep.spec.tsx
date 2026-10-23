@@ -141,6 +141,35 @@ describe("CaptureStep Component", () => {
     expect(video).not.toHaveClass("hidden");
     expect(video.srcObject).toBe(mockStream);
     expect(screen.getByTestId("shutter-button")).toBeInTheDocument();
+    expect(screen.getByTestId("auto-capture-toggle")).toBeInTheDocument();
+    expect(screen.getByTestId("hand-detection-feedback")).toBeInTheDocument();
+  });
+
+  it("should allow toggling auto capture mode when camera is active", async () => {
+    const mockStream = createMockStream();
+    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("auto-capture-toggle")).toBeInTheDocument();
+    });
+
+    const toggleBtn = screen.getByTestId("auto-capture-toggle");
+    expect(toggleBtn).toHaveTextContent("Tự chụp: Bật");
+
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn).toHaveTextContent("Tự chụp: Tắt");
+
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn).toHaveTextContent("Tự chụp: Bật");
   });
 
   it("should fallback to generic camera constraint when environment camera constraint fails", async () => {
@@ -356,5 +385,30 @@ describe("CaptureStep Component", () => {
       "href",
       "/register"
     );
+  });
+
+  it("should automatically submit reading when auto-capture callback finishes with consent", async () => {
+    const onSubmit = vi.fn();
+    const onConsentChange = vi.fn();
+    const onImageChange = vi.fn();
+
+    const mockStream = createMockStream();
+    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    const dummyFile = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
+    renderComponent({
+      onSubmit,
+      onConsentChange,
+      onImageChange,
+      imageFile: dummyFile,
+      aiConsent: true,
+    });
+
+    expect(screen.getByTestId("submit-reading-button")).toBeEnabled();
   });
 });
