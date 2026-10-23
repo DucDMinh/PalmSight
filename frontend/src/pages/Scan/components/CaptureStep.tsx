@@ -324,6 +324,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
                 handStatus === "HOLDING" || handStatus === "CAPTURED"
                   ? "bg-emerald-950/90 text-emerald-300 border border-emerald-500/50"
                   : handStatus === "WRONG_HAND" ||
+                    handStatus === "NOT_PALM" ||
                     handStatus === "ALIGN" ||
                     handStatus === "TOO_FAR" ||
                     handStatus === "TOO_CLOSE"

@@ -42,11 +42,11 @@ export class AiService {
 
     const primaryModel =
       this.config.get<string>("AI_MODEL") ||
-      (primaryName === "gemini" ? "gemini-3.8-flash" : "qwen/qwen3.8-27b");
+      (primaryName === "gemini" ? "gemini-3.5-flash" : "qwen/qwen3.8-27b");
 
     const fallbackModel =
       this.config.get<string>("AI_FALLBACK_MODEL") ||
-      (fallbackName === "groq" ? "qwen/qwen3.8-27b" : "gemini-3.8-flash");
+      (fallbackName === "groq" ? "qwen/qwen3.8-27b" : "gemini-3.5-flash");
 
     try {
       this.logger.log(
@@ -79,7 +79,7 @@ export class AiService {
           };
         } catch (fallbackErr: any) {
           this.logger.error(
-            `Fallback AI provider ${fallbackProvider.name} also failed: ${fallbackErr.message}`
+            `Fallback AI provider ${fallbackProvider.name} also failed: ${fallbackErr.message}. Primary (${primaryProvider.name}) error: ${primaryErr.message}`
           );
           throw fallbackErr;
         }

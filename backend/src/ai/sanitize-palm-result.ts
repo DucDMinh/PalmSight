@@ -31,12 +31,68 @@ export function sanitizePalmResult(
     return result as PalmResult;
   }
 
+  if (
+    !result.imageQuality ||
+    !["POOR", "FAIR", "GOOD"].includes(String(result.imageQuality).toUpperCase())
+  ) {
+    result.imageQuality = "GOOD";
+  } else {
+    result.imageQuality = String(result.imageQuality).toUpperCase();
+  }
+
+  if (
+    !result.summary ||
+    typeof result.summary !== "string" ||
+    !result.summary.trim()
+  ) {
+    result.summary =
+      "Tổng quan bàn tay thể hiện nhiều tiềm năng phát triển tích cực và năng lượng dồi dào.";
+  } else if (result.summary.length > 300) {
+    result.summary = result.summary.slice(0, 297) + "...";
+  }
+
+  if (
+    !result.advice ||
+    typeof result.advice !== "string" ||
+    !result.advice.trim()
+  ) {
+    result.advice =
+      "Hãy tiếp tục kiên trì với những định hướng hiện tại, rèn luyện sự tập trung và phát huy các sở trường vốn có.";
+  } else if (result.advice.length > 800) {
+    result.advice = result.advice.slice(0, 797) + "...";
+  }
+
+  if (
+    !result.disclaimer ||
+    typeof result.disclaimer !== "string" ||
+    !result.disclaimer.trim()
+  ) {
+    result.disclaimer =
+      "Kết quả phân tích mang tính chất tham khảo và chiêm nghiệm, không thay thế cho các lời khuyên chuyên môn y tế, pháp lý hay tài chính.";
+  } else if (result.disclaimer.length > 800) {
+    result.disclaimer = result.disclaimer.slice(0, 797) + "...";
+  }
+
   const allowedTopics = new Set(options.topics || []);
 
   if (Array.isArray(result.sections)) {
-    result.sections = result.sections.filter(
-      (s: any) => s && typeof s.key === "string" && allowedTopics.has(s.key)
-    );
+    result.sections = result.sections
+      .filter(
+        (s: any) => s && typeof s.key === "string" && allowedTopics.has(s.key)
+      )
+      .map((s: any) => ({
+        key: s.key,
+        title:
+          typeof s.title === "string" && s.title.trim() ? s.title : s.key,
+        observation:
+          typeof s.observation === "string" && s.observation.trim()
+            ? s.observation.slice(0, 800)
+            : "Đường chỉ hiển thị rõ ràng trên lòng bàn tay.",
+        meaning:
+          typeof s.meaning === "string" && s.meaning.trim()
+            ? s.meaning.slice(0, 800)
+            : "Dấu hiệu tích cực cho thấy sự phát triển ổn định.",
+      }));
   } else {
     result.sections = [];
   }
@@ -49,7 +105,7 @@ export function sanitizePalmResult(
   const filteredAspects: Record<string, string> = {};
   for (const [key, value] of Object.entries(currentAspects)) {
     if (allowedTopics.has(key) && typeof value === "string") {
-      filteredAspects[key] = value;
+      filteredAspects[key] = value.slice(0, 800);
     }
   }
 
