@@ -6,6 +6,7 @@ export type DetectionStatus =
   | "LOADING"
   | "SEARCHING"
   | "WRONG_HAND"
+  | "NOT_PALM"
   | "TOO_FAR"
   | "TOO_CLOSE"
   | "ALIGN"
@@ -227,6 +228,30 @@ export const useHandDetection = ({
             ? "Vui lòng dùng bàn tay trái"
             : "Vui lòng dùng bàn tay phải"
         );
+        setProgress(0);
+        stableSinceRef.current = null;
+        historyPositionsRef.current = [];
+        animationFrameId = requestAnimationFrame(runDetection);
+        return;
+      }
+
+      const v1x = landmarks[9].x - landmarks[0].x;
+      const v1y = landmarks[9].y - landmarks[0].y;
+      const v2x = landmarks[5].x - landmarks[17].x;
+      const v2y = landmarks[5].y - landmarks[17].y;
+      const len1 = Math.hypot(v1x, v1y);
+      const len2 = Math.hypot(v2x, v2y);
+
+      let isPalmFacing = false;
+      if (len1 > 0.01 && len2 > 0.01) {
+        const cross = (v1x * v2y - v1y * v2x) / (len1 * len2);
+        isPalmFacing =
+          targetHand === HandOrientation.LEFT ? cross > 0.35 : cross < -0.35;
+      }
+
+      if (!isPalmFacing) {
+        setStatus("NOT_PALM");
+        setFeedback("Lật lòng bàn tay hướng về camera");
         setProgress(0);
         stableSinceRef.current = null;
         historyPositionsRef.current = [];
