@@ -52,6 +52,7 @@ export const useHandDetection = ({
 
   const landmarkerRef = useRef<any>(null);
   const isInitializingRef = useRef<boolean>(false);
+  const isMountedRef = useRef<boolean>(true);
   const historyPositionsRef = useRef<Point2D[]>([]);
   const stableSinceRef = useRef<number | null>(null);
   const hasCapturedRef = useRef<boolean>(false);
@@ -61,21 +62,46 @@ export const useHandDetection = ({
     onCaptureRef.current = onCapture;
   }, [onCapture]);
 
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (landmarkerRef.current) {
+        try {
+          landmarkerRef.current.close();
+        } catch {
+          return;
+        }
+        landmarkerRef.current = null;
+      }
+    };
+  }, []);
+
   const initModel = useCallback(async () => {
     if (landmarkerRef.current || isInitializingRef.current) {
       return;
     }
     isInitializingRef.current = true;
-    setStatus("LOADING");
-    setFeedback("Đang tải AI nhận diện...");
+    if (isMountedRef.current && typeof window !== "undefined") {
+      setStatus("LOADING");
+      setFeedback("Đang tải AI nhận diện...");
+    }
 
     try {
       const { FilesetResolver, HandLandmarker } = await import(
         "@mediapipe/tasks-vision"
       );
+      if (!isMountedRef.current || typeof window === "undefined") {
+        return;
+      }
+
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
       );
+      if (!isMountedRef.current || typeof window === "undefined") {
+        return;
+      }
+
       let landmarker: any;
       try {
         landmarker = await HandLandmarker.createFromOptions(vision, {
@@ -88,6 +114,9 @@ export const useHandDetection = ({
           numHands: 1,
         });
       } catch {
+        if (!isMountedRef.current || typeof window === "undefined") {
+          return;
+        }
         landmarker = await HandLandmarker.createFromOptions(vision, {
           baseOptions: {
             modelAssetPath:
@@ -99,14 +128,27 @@ export const useHandDetection = ({
         });
       }
 
+      if (!isMountedRef.current || typeof window === "undefined") {
+        if (landmarker) {
+          try {
+            landmarker.close();
+          } catch {
+            return;
+          }
+        }
+        return;
+      }
+
       landmarkerRef.current = landmarker;
       setIsModelReady(true);
       setStatus("SEARCHING");
       setFeedback("Đưa bàn tay vào khung hình");
     } catch {
-      setIsModelReady(false);
-      setStatus("IDLE");
-      setFeedback("Không thể khởi động AI tự động, vui lòng chụp thủ công");
+      if (isMountedRef.current && typeof window !== "undefined") {
+        setIsModelReady(false);
+        setStatus("IDLE");
+        setFeedback("Không thể khởi động AI tự động, vui lòng chụp thủ công");
+      }
       return;
     } finally {
       isInitializingRef.current = false;
@@ -119,26 +161,15 @@ export const useHandDetection = ({
     }
 
     if (!isCameraActive) {
-      setStatus("IDLE");
-      setProgress(0);
+      if (isMountedRef.current && typeof window !== "undefined") {
+        setStatus("IDLE");
+        setProgress(0);
+      }
       stableSinceRef.current = null;
       historyPositionsRef.current = [];
       hasCapturedRef.current = false;
     }
   }, [isCameraActive, isAutoCaptureEnabled, initModel]);
-
-  useEffect(() => {
-    return () => {
-      if (landmarkerRef.current) {
-        try {
-          landmarkerRef.current.close();
-        } catch {
-          return;
-        }
-        landmarkerRef.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!isCameraActive || !isAutoCaptureEnabled || !isModelReady) {
@@ -148,6 +179,10 @@ export const useHandDetection = ({
     let animationFrameId: number;
 
     const runDetection = () => {
+      if (!isMountedRef.current || typeof window === "undefined") {
+        return;
+      }
+
       const video = videoRef.current;
       const landmarker = landmarkerRef.current;
 

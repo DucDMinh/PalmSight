@@ -1,4 +1,17 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+
+vi.mock('@mediapipe/tasks-vision', () => ({
+  FilesetResolver: {
+    forVisionTasks: vi.fn().mockResolvedValue({}),
+  },
+  HandLandmarker: {
+    createFromOptions: vi.fn().mockResolvedValue({
+      detectForVideo: vi.fn().mockReturnValue({ landmarks: [] }),
+      close: vi.fn(),
+    }),
+  },
+}));
 
 const createStorageMock = () => {
   let store: Record<string, string> = {};
@@ -30,7 +43,6 @@ Object.defineProperty(window, 'sessionStorage', {
   writable: true,
 });
 
-// Also define on globalThis for Node 22 compatibility
 Object.defineProperty(globalThis, 'localStorage', {
   value: window.localStorage,
   writable: true,
@@ -48,4 +60,3 @@ if (typeof URL.createObjectURL === 'undefined') {
 if (typeof URL.revokeObjectURL === 'undefined') {
   URL.revokeObjectURL = () => {};
 }
-
