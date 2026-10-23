@@ -246,7 +246,7 @@ export const useHandDetection = ({
       if (len1 > 0.01 && len2 > 0.01) {
         const cross = (v1x * v2y - v1y * v2x) / (len1 * len2);
         isPalmFacing =
-          targetHand === HandOrientation.LEFT ? cross > 0.35 : cross < -0.35;
+          targetHand === HandOrientation.LEFT ? cross < -0.25 : cross > 0.25;
       }
 
       if (!isPalmFacing) {

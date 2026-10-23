@@ -30,7 +30,7 @@ export class GroqAiProvider implements AiProvider {
         ? this.config.get<string>("AI_MODEL") || "qwen/qwen3.8-27b"
         : this.config.get<string>("AI_FALLBACK_MODEL") || "qwen/qwen3.8-27b";
     const model = modelOverride || configuredModel;
-    const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
+    const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 25000);
     const rawMaxTokens = Number(
       this.config.get<string>("AI_MAX_TOKENS") || 4096
     );
@@ -126,13 +126,24 @@ export class GroqAiProvider implements AiProvider {
         didTimeout ||
         err.name === "AbortError" ||
         controller.signal.aborted;
-      const errorMsg = isAbort
-        ? `Groq request timed out after ${timeoutMs}ms or connection was aborted`
-        : err.cause?.message
-          ? `${err.message} (cause: ${err.cause.message})`
-          : err.message;
-      this.logger.warn(`Groq reading failed: ${errorMsg}`);
+      let errorMsg: string;
       if (isAbort) {
+        errorMsg = `Groq request timed out after ${timeoutMs}ms or connection was aborted`;
+      } else if (err.name === "ValidationError" || Array.isArray(err.errors)) {
+        const validationList =
+          err.inner && err.inner.length > 0
+            ? err.inner
+                .map((e: any) => `${e.path || "root"}: ${e.message}`)
+                .join(", ")
+            : err.errors?.join(", ") || err.message;
+        errorMsg = `Schema validation failed: [${validationList}]`;
+      } else if (err.cause?.message) {
+        errorMsg = `${err.message} (cause: ${err.cause.message})`;
+      } else {
+        errorMsg = err.message;
+      }
+      this.logger.warn(`Groq reading failed: ${errorMsg}`);
+      if (isAbort || err.name === "ValidationError") {
         throw new Error(errorMsg);
       }
       throw err;

@@ -99,8 +99,8 @@ describe("useHandDetection hook", () => {
     const mockBackLandmarks = Array(21).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
     mockBackLandmarks[0] = { x: 0.5, y: 0.7, z: 0 };
     mockBackLandmarks[9] = { x: 0.5, y: 0.4, z: 0 };
-    mockBackLandmarks[5] = { x: 0.4, y: 0.45, z: 0 };
-    mockBackLandmarks[17] = { x: 0.6, y: 0.45, z: 0 };
+    mockBackLandmarks[5] = { x: 0.6, y: 0.45, z: 0 };
+    mockBackLandmarks[17] = { x: 0.4, y: 0.45, z: 0 };
 
     const mockDetect = vi.fn().mockReturnValue({
       landmarks: [mockBackLandmarks],
@@ -148,8 +148,8 @@ describe("useHandDetection hook", () => {
     const mockPalmLandmarks = Array(21).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
     mockPalmLandmarks[0] = { x: 0.5, y: 0.7, z: 0 };
     mockPalmLandmarks[9] = { x: 0.5, y: 0.4, z: 0 };
-    mockPalmLandmarks[5] = { x: 0.6, y: 0.45, z: 0 };
-    mockPalmLandmarks[17] = { x: 0.4, y: 0.45, z: 0 };
+    mockPalmLandmarks[5] = { x: 0.4, y: 0.45, z: 0 };
+    mockPalmLandmarks[17] = { x: 0.6, y: 0.45, z: 0 };
 
     const mockDetect = vi.fn().mockReturnValue({
       landmarks: [mockPalmLandmarks],

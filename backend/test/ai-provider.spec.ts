@@ -44,7 +44,7 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
     configService = new ConfigService({
       AI_PROVIDER: "gemini",
       AI_FALLBACK_PROVIDER: "groq",
-      AI_MODEL: "gemini-3.8-flash",
+      AI_MODEL: "gemini-3.5-flash",
       AI_FALLBACK_MODEL: "qwen/qwen3.8-27b",
       GROQ_API_KEY: "test-groq-key",
       GEMINI_API_KEY: "test-gemini-key",
@@ -134,7 +134,7 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
     expect(geminiProvider.readPalm).toHaveBeenCalledTimes(1);
     expect(groqProvider.readPalm).not.toHaveBeenCalled();
     expect(response.provider).toBe("gemini");
-    expect(response.model).toBe("gemini-3.8-flash");
+    expect(response.model).toBe("gemini-3.5-flash");
     expect(response.result.isPalm).toBe(true);
   });
 
@@ -164,7 +164,7 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
       AI_PROVIDER: "groq",
       AI_FALLBACK_PROVIDER: "gemini",
       AI_MODEL: "qwen/qwen3.8-27b",
-      AI_FALLBACK_MODEL: "gemini-3.8-flash",
+      AI_FALLBACK_MODEL: "gemini-3.5-flash",
       GROQ_API_KEY: "test-groq-key",
       GEMINI_API_KEY: "test-gemini-key",
       AI_TIMEOUT_MS: "2000",
@@ -278,5 +278,31 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
     expect(fetchMock).toHaveBeenCalled();
     const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(requestBody.max_tokens).toBe(1000);
+  });
+
+  it("GroqAiProvider logs detailed validation errors if schema validation fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({ isPalm: null }),
+              },
+            },
+          ],
+        }),
+      })
+    );
+
+    await expect(
+      groqProvider.readPalm("data:image/jpeg;base64,xxxx", {
+        school: ReadingSchool.EASTERN,
+        topics: ["nguHanh", "thienVan", "love"],
+        hand: HandOrientation.LEFT,
+      })
+    ).rejects.toThrow(/Schema validation failed:/);
   });
 });
