@@ -50,7 +50,7 @@ export function buildUserPrompt(params: {
       ? 'Khía cạnh cuộc sống (aspects): Người dùng KHÔNG chọn mục nào trong nhóm này -> BẮT BUỘC trả về object rỗng: "aspects": {}'
       : `Khía cạnh cuộc sống (aspects): BẮT BUỘC phân tích và điền đầy đủ các key sau trong object "aspects": ${requestedAspects
           .map((a) => `${a.key} (${a.label})`)
-          .join(", ")}. KHÔNG ĐƯỢC để trống aspects!`;
+          .join(", ")}. KHÔNG ĐƯỢC để trống aspects! Mỗi khía cạnh phải viết sâu sắc từ 150-350 ký tự, liên hệ trực tiếp với các đường chỉ trên bàn tay, TUYỆT ĐỐI KHÔNG dùng mẫu câu rập khuôn lặp lại.`;
 
   const sectionsSchemaPart =
     requestedSections.length === 0
@@ -72,7 +72,7 @@ export function buildUserPrompt(params: {
 ${requestedAspects
   .map(
     (a) =>
-      `    "${a.key}": string // bắt buộc: diễn giải khía cạnh ${a.label}, nêu cả điểm cần lưu ý nếu có dấu hiệu tương ứng (tối đa 800 ký tự)`
+      `    "${a.key}": string // bắt buộc: diễn giải khía cạnh ${a.label}, phân tích sâu sắc độc lập, nêu cả điểm cần lưu ý nếu có dấu hiệu tương ứng (tối đa 800 ký tự)`
   )
   .join(",\n")}
   },`;

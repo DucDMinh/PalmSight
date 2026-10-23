@@ -28,7 +28,7 @@ export class GeminiAiProvider implements AiProvider {
         : this.config.get<string>("AI_FALLBACK_MODEL") || "gemini-3.8-flash";
     const model = modelOverride || configuredModel;
     const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
-    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 2000);
+    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 4096);
     const temperature = Number(
       this.config.get<string>("AI_TEMPERATURE") || 0.7
     );
