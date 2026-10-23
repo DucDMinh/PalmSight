@@ -79,7 +79,7 @@ export class AiService {
           };
         } catch (fallbackErr: any) {
           this.logger.error(
-            `Fallback AI provider ${fallbackProvider.name} also failed: ${fallbackErr.message}`
+            `Fallback AI provider ${fallbackProvider.name} also failed: ${fallbackErr.message}. Primary (${primaryProvider.name}) error: ${primaryErr.message}`
           );
           throw fallbackErr;
         }

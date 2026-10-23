@@ -208,4 +208,75 @@ describe("US-AI-001: AI Vision Provider & Fallback Pipeline", () => {
       })
     ).rejects.toThrow("Groq unavailable");
   });
+
+  it("GeminiAiProvider formats timeout error descriptively", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => {
+        const error = new Error("This operation was aborted");
+        error.name = "AbortError";
+        return Promise.reject(error);
+      })
+    );
+
+    await expect(
+      geminiProvider.readPalm("data:image/jpeg;base64,xxxx", {
+        school: ReadingSchool.EASTERN,
+        topics: ["nguHanh", "thienVan", "love"],
+        hand: HandOrientation.LEFT,
+      })
+    ).rejects.toThrow("Gemini request timed out after 2000ms or connection was aborted");
+  });
+
+  it("GeminiAiProvider parses error json when response is not ok", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: async () =>
+          JSON.stringify({
+            error: {
+              code: 429,
+              message: "Resource has been exhausted",
+              status: "RESOURCE_EXHAUSTED",
+            },
+          }),
+      })
+    );
+
+    await expect(
+      geminiProvider.readPalm("data:image/jpeg;base64,xxxx", {
+        school: ReadingSchool.EASTERN,
+        topics: ["nguHanh", "thienVan", "love"],
+        hand: HandOrientation.LEFT,
+      })
+    ).rejects.toThrow("Gemini API error HTTP 429: Resource has been exhausted");
+  });
+
+  it("GroqAiProvider caps maxTokens to 1000 for qwen models", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify(mockValidPalmResult),
+            },
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await groqProvider.readPalm("data:image/jpeg;base64,xxxx", {
+      school: ReadingSchool.EASTERN,
+      topics: ["nguHanh", "thienVan", "love"],
+      hand: HandOrientation.LEFT,
+    });
+
+    expect(fetchMock).toHaveBeenCalled();
+    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(requestBody.max_tokens).toBe(1000);
+  });
 });

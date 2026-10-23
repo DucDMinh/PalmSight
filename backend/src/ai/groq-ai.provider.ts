@@ -31,7 +31,12 @@ export class GroqAiProvider implements AiProvider {
         : this.config.get<string>("AI_FALLBACK_MODEL") || "qwen/qwen3.8-27b";
     const model = modelOverride || configuredModel;
     const timeoutMs = Number(this.config.get<string>("AI_TIMEOUT_MS") || 40000);
-    const maxTokens = Number(this.config.get<string>("AI_MAX_TOKENS") || 4096);
+    const rawMaxTokens = Number(
+      this.config.get<string>("AI_MAX_TOKENS") || 4096
+    );
+    const maxTokens = model.includes("qwen")
+      ? Math.min(rawMaxTokens, 1000)
+      : rawMaxTokens;
     const temperature = Number(
       this.config.get<string>("AI_TEMPERATURE") || 0.7
     );
@@ -43,8 +48,12 @@ export class GroqAiProvider implements AiProvider {
     const systemPrompt = buildSystemPrompt(options.school);
     const userPrompt = buildUserPrompt(options);
 
+    let didTimeout = false;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const timeout = setTimeout(() => {
+      didTimeout = true;
+      controller.abort();
+    }, timeoutMs);
 
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
@@ -77,7 +86,16 @@ export class GroqAiProvider implements AiProvider {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Groq API error HTTP ${response.status}: ${errorText}`);
+        let parsedMessage = errorText;
+        try {
+          const errorJson = JSON.parse(errorText);
+          parsedMessage = errorJson?.error?.message
+            ? `${errorJson.error.message} (${errorText})`
+            : errorText;
+        } catch {
+          parsedMessage = errorText;
+        }
+        throw new Error(`Groq API error HTTP ${response.status}: ${parsedMessage}`);
       }
 
       const data = (await response.json()) as any;
@@ -86,7 +104,14 @@ export class GroqAiProvider implements AiProvider {
         throw new Error("Groq API returned empty message content");
       }
 
-      const parsed = JSON.parse(rawContent);
+      let parsed: any;
+      try {
+        parsed = JSON.parse(rawContent);
+      } catch (parseErr: any) {
+        throw new Error(
+          `Groq JSON parse failed: ${parseErr.message}. Raw: ${rawContent.slice(0, 500)}`
+        );
+      }
 
       const sanitized = sanitizePalmResult(parsed, options);
 
@@ -97,7 +122,19 @@ export class GroqAiProvider implements AiProvider {
 
       return validated;
     } catch (err: any) {
-      this.logger.warn(`Groq reading failed: ${err.message}`);
+      const isAbort =
+        didTimeout ||
+        err.name === "AbortError" ||
+        controller.signal.aborted;
+      const errorMsg = isAbort
+        ? `Groq request timed out after ${timeoutMs}ms or connection was aborted`
+        : err.cause?.message
+          ? `${err.message} (cause: ${err.cause.message})`
+          : err.message;
+      this.logger.warn(`Groq reading failed: ${errorMsg}`);
+      if (isAbort) {
+        throw new Error(errorMsg);
+      }
       throw err;
     } finally {
       clearTimeout(timeout);
