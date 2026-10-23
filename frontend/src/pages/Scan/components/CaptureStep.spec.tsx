@@ -79,7 +79,6 @@ describe("CaptureStep Component", () => {
   it("should render viewfinder elements, ASCII brackets, wireframe, and AC 1 prompt text", () => {
     renderComponent();
 
-    // Corner brackets & Framing guide
     expect(screen.getByTestId("viewfinder")).toBeInTheDocument();
     expect(screen.getByText("┌")).toBeInTheDocument();
     expect(screen.getByText("┐")).toBeInTheDocument();
@@ -87,26 +86,21 @@ describe("CaptureStep Component", () => {
     expect(screen.getByText("┘")).toBeInTheDocument();
     expect(screen.getByText("SCAN AREA // 1080P")).toBeInTheDocument();
 
-    // Palm wireframe
     expect(screen.getByTestId("palm-wireframe")).toBeInTheDocument();
 
-    // Telemetry bar
     expect(screen.getByText("FPS: 30.0")).toBeInTheDocument();
     expect(screen.getByText("ALIGN_CENTER")).toBeInTheDocument();
     expect(screen.getByText("ISO_AUTO")).toBeInTheDocument();
 
-    // Exact prompt text under viewfinder matching AC 1
     expect(
       screen.getByText("Đủ sáng, xòe ngón tay, lòng bàn tay hướng thẳng camera.")
     ).toBeInTheDocument();
 
-    // Fallback file input attributes matching AC 2
     const fileInput = screen.getByTestId("file-input");
     expect(fileInput).toHaveAttribute("type", "file");
     expect(fileInput).toHaveAttribute("accept", "image/*");
     expect(fileInput).toHaveAttribute("capture", "environment");
 
-    // Video is always mounted in the DOM, but hidden when camera is inactive
     const video = screen.getByTestId("camera-video");
     expect(video).toBeInTheDocument();
     expect(video).toHaveClass("hidden");
@@ -275,7 +269,7 @@ describe("CaptureStep Component", () => {
     expect(screen.getByText("READY")).toBeInTheDocument();
   });
 
-  it("should capture photo from canvas when shutter button is clicked", async () => {
+  it("should capture photo from canvas and auto submit when shutter button is clicked", async () => {
     const mockStream = createMockStream();
     const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
     Object.defineProperty(navigator, "mediaDevices", {
@@ -285,8 +279,9 @@ describe("CaptureStep Component", () => {
     });
 
     const onImageChange = vi.fn();
+    const onSubmit = vi.fn();
+    const onConsentChange = vi.fn();
 
-    // Mock HTMLCanvasElement
     const drawImageSpy = vi.fn();
     const toBlobSpy = vi.fn((callback: (blob: Blob | null) => void) => {
       callback(new Blob(["mock-image-data"], { type: "image/jpeg" }));
@@ -296,7 +291,7 @@ describe("CaptureStep Component", () => {
     } as any);
     vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(toBlobSpy);
 
-    renderComponent({ onImageChange });
+    renderComponent({ onImageChange, onSubmit, onConsentChange });
 
     fireEvent.click(screen.getByTestId("open-camera-button"));
 
@@ -309,10 +304,12 @@ describe("CaptureStep Component", () => {
     await waitFor(() => {
       expect(drawImageSpy).toHaveBeenCalled();
       expect(toBlobSpy).toHaveBeenCalled();
+      expect(onConsentChange).toHaveBeenCalledWith(true);
       expect(onImageChange).toHaveBeenCalledWith(
         expect.any(File),
         expect.any(String)
       );
+      expect(onSubmit).toHaveBeenCalledWith(expect.any(File));
       expect(mockStream._track.stop).toHaveBeenCalled();
     });
   });
@@ -327,7 +324,6 @@ describe("CaptureStep Component", () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
     expect(onImageChange).toHaveBeenCalledWith(file, expect.any(String));
 
-    // Re-render with preview
     rerender(
       <MemoryRouter>
         <AuthenticationProvider skipInitialRefresh initialUser={mockUser}>
@@ -387,18 +383,10 @@ describe("CaptureStep Component", () => {
     );
   });
 
-  it("should automatically submit reading when auto-capture callback finishes with consent", async () => {
+  it("should enable manual submit button when image is set and consent is granted", async () => {
     const onSubmit = vi.fn();
     const onConsentChange = vi.fn();
     const onImageChange = vi.fn();
-
-    const mockStream = createMockStream();
-    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: { getUserMedia: mockGetUserMedia },
-      writable: true,
-      configurable: true,
-    });
 
     const dummyFile = new File(["dummy"], "palm.jpg", { type: "image/jpeg" });
     renderComponent({

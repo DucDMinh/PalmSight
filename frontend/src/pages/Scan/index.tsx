@@ -197,7 +197,14 @@ export const Scan: React.FC = () => {
                 aiConsent={aiConsent}
                 onConsentChange={setAiConsent}
                 onImageChange={handleImageChange}
-                onSubmit={() => doSubmit(false)}
+                onSubmit={(fileOverride?: File) => {
+                  if (fileOverride) {
+                    setAiConsent(true);
+                    doSubmit(false, fileOverride, true);
+                  } else {
+                    doSubmit(false);
+                  }
+                }}
                 onRetry={() =>
                   status === "AI_UNAVAILABLE" ? doSubmit(false) : doSubmit(true)
                 }

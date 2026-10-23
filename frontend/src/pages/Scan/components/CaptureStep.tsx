@@ -22,7 +22,7 @@ interface CaptureStepProps {
   aiConsent: boolean;
   onConsentChange: (consent: boolean) => void;
   onImageChange: (file: File | null, previewUrl: string | null) => void;
-  onSubmit: () => void;
+  onSubmit: (file?: File) => void;
   onRetry: () => void;
   status: ScanStatus;
   errorMessage?: string | null;
@@ -143,11 +143,15 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
             : "";
         stopCamera();
         onImageChange(file, preview);
+        onConsentChange(true);
+        if (!isOutOfCredits && status !== "LIMIT_REACHED" && status !== "RATE_LIMITED") {
+          onSubmit(file);
+        }
       },
       "image/jpeg",
       0.92
     );
-  }, [stopCamera, onImageChange]);
+  }, [stopCamera, onConsentChange, onImageChange, isOutOfCredits, status, onSubmit]);
 
   const {
     status: handStatus,
@@ -693,7 +697,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         <button
           type="button"
           disabled={!canSubmit}
-          onClick={onSubmit}
+          onClick={() => onSubmit()}
           className={`w-full py-3.5 px-6 text-base font-bold rounded-full transition-all text-center flex items-center justify-center gap-2 ${
             canSubmit
               ? "btn-primary cursor-pointer"
