@@ -71,4 +71,26 @@ describe("useHandDetection hook", () => {
     expect(result.current.status).toBe("IDLE");
     expect(result.current.progress).toBe(0);
   });
+
+  it("should initialize model and update status when camera becomes active", async () => {
+    const videoRef = { current: null };
+    const onCapture = vi.fn();
+
+    const { result } = renderHook(() =>
+      useHandDetection({
+        videoRef,
+        isCameraActive: true,
+        targetHand: HandOrientation.LEFT,
+        onCapture,
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.isModelReady).toBe(true);
+    expect(result.current.status).toBe("SEARCHING");
+    expect(result.current.feedback).toBe("Đưa bàn tay vào khung hình");
+  });
 });
