@@ -119,8 +119,16 @@ export const useScanSubmit = ({
   );
 
   const submitGuestScan = useCallback(
-    async (key: string, topics?: string[]) => {
-      if (!imageFile) return;
+    async (
+      key: string,
+      topics?: string[],
+      activeFile?: File,
+      activeConsent?: boolean
+    ) => {
+      const targetFile = activeFile || imageFile;
+      if (!targetFile) return;
+      const targetConsent =
+        activeConsent !== undefined ? activeConsent : aiConsent;
       const fingerprint = await getFingerprint();
       const formData = new FormData();
       formData.append("school", school);
@@ -128,13 +136,16 @@ export const useScanSubmit = ({
       if (topics && topics.length > 0) {
         formData.append("topics", topics.join(","));
       }
-      formData.append("aiConsent", String(aiConsent));
-      formData.append("image", imageFile);
+      formData.append("aiConsent", String(targetConsent));
+      formData.append("image", targetFile);
       formData.append("fingerprint", fingerprint);
 
       try {
         const res = await readingsService.createGuestReading(formData, key);
-        if (res.reading?.status === ReadingStatus.REJECTED || (res.reading as any)?.status === "REJECTED") {
+        if (
+          res.reading?.status === ReadingStatus.REJECTED ||
+          (res.reading as any)?.status === "REJECTED"
+        ) {
           setStatus("REJECTED");
           const reason =
             res.reading.rejectReason ||
@@ -151,7 +162,7 @@ export const useScanSubmit = ({
             sessionStorage.setItem("ps_claim_token", claimToken);
             localStorage.setItem("ps_claim_token", claimToken);
           } catch {
-            // Storage may be unavailable in private browsing mode
+            return;
           }
           navigate(`/guest/reading/${claimToken}`);
         }
@@ -159,19 +170,36 @@ export const useScanSubmit = ({
         handleGuestError(err);
       }
     },
-    [aiConsent, hand, handleGuestError, imageFile, navigate, school, setRejectReason, setStatus]
+    [
+      aiConsent,
+      hand,
+      handleGuestError,
+      imageFile,
+      navigate,
+      school,
+      setRejectReason,
+      setStatus,
+    ]
   );
 
   const submitMemberScan = useCallback(
-    async (key: string, topics?: string[]) => {
-      if (!imageFile) return;
+    async (
+      key: string,
+      topics?: string[],
+      activeFile?: File,
+      activeConsent?: boolean
+    ) => {
+      const targetFile = activeFile || imageFile;
+      if (!targetFile) return;
+      const targetConsent =
+        activeConsent !== undefined ? activeConsent : aiConsent;
       try {
         const response = await createReading({
           school,
           hand,
           topics,
-          aiConsent,
-          image: imageFile,
+          aiConsent: targetConsent,
+          image: targetFile,
           idempotencyKey: key,
         });
 
@@ -190,12 +218,31 @@ export const useScanSubmit = ({
         handleMemberError(err);
       }
     },
-    [aiConsent, createReading, hand, handleMemberError, imageFile, navigate, school, setRejectReason, setStatus, updateUser]
+    [
+      aiConsent,
+      createReading,
+      hand,
+      handleMemberError,
+      imageFile,
+      navigate,
+      school,
+      setRejectReason,
+      setStatus,
+      updateUser,
+    ]
   );
 
   const doSubmit = useCallback(
-    async (reuseKey = false) => {
-      if (!imageFile) return;
+    async (
+      reuseKey = false,
+      fileOverride?: File,
+      consentOverride?: boolean
+    ) => {
+      const activeFile = fileOverride || imageFile;
+      if (!activeFile) return;
+
+      const activeConsent =
+        consentOverride !== undefined ? consentOverride : aiConsent;
 
       if (!reuseKey || !idempotencyKeyRef.current) {
         idempotencyKeyRef.current = crypto.randomUUID();
@@ -208,12 +255,22 @@ export const useScanSubmit = ({
 
       const topics = getTopicsParam();
       if (!isLogged) {
-        await submitGuestScan(key, topics);
+        await submitGuestScan(key, topics, activeFile, activeConsent);
       } else {
-        await submitMemberScan(key, topics);
+        await submitMemberScan(key, topics, activeFile, activeConsent);
       }
     },
-    [getTopicsParam, imageFile, isLogged, setErrorMessage, setRejectReason, setStatus, submitGuestScan, submitMemberScan]
+    [
+      aiConsent,
+      getTopicsParam,
+      imageFile,
+      isLogged,
+      setErrorMessage,
+      setRejectReason,
+      setStatus,
+      submitGuestScan,
+      submitMemberScan,
+    ]
   );
 
   const resetIdempotencyKey = useCallback(() => {
