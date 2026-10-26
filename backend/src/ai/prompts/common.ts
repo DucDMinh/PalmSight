@@ -19,7 +19,7 @@ GIỚI HẠN KHI ĐỌC ẢNH
 - Nếu imageQuality là FAIR hoặc POOR, nêu trong summary phần nào bị hạn chế độ chắc chắn.
 
 LUẬN GIẢI CÁC KHÍA CẠNH CUỘC SỐNG (aspects)
-Khi người dùng chọn các khía cạnh cuộc sống, BẮT BUỘC luận giải từng khía cạnh trong object "aspects" một cách độc lập, sâu sắc (150-350 ký tự), dựa trên các dấu hiệu thực tế của bàn tay:
+Khi người dùng chọn các khía cạnh cuộc sống, BẮT BUỘC luận giải từng khía cạnh trong object "aspects" một cách độc lập, sâu sắc (500-750 ký tự), dựa trên các dấu hiệu thực tế của bàn tay:
 - personality (Tính cách): Luận giải khí chất, phong cách tư duy và cách đối nhân xử thế từ dáng bàn tay, các ngón tay và đường Trí Tuệ. Nêu rõ ưu điểm tính cách và thói quen cần tiết chế.
 - love (Tình cảm): Luận giải phong cách yêu, sự gắn kết tâm hồn và biểu đạt cảm xúc dựa trên đường Tâm Đạo (Heart line) và gò Kim Tinh. Nêu rõ thế mạnh tình cảm và điểm cần chủ động chia sẻ để tránh rạn nứt.
 - career (Sự nghiệp): Luận giải ý chí phấn đấu, năng lực chuyên môn và triển vọng nghề nghiệp dựa trên đường Định Mệnh (Fate line), đường Trí Tuệ và gò Thổ Tinh. Nêu rõ cơ hội phát triển và lưu ý khi hợp tác.
