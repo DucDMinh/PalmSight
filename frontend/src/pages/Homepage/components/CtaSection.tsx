@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Hand } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import { TarotCorners } from "@/components/mystic/MysticDivider";
@@ -34,7 +34,7 @@ export const CtaSection = () => {
               data-testid="bottom-guest-trial-cta"
               className="btn-primary text-base px-6 py-3"
             >
-              <span className="">[#]</span>
+              <Hand aria-hidden="true" className="h-4 w-4" />
               <span>Bói thử 1 lần</span>
             </Link>
           )}

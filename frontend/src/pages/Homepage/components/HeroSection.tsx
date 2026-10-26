@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Eye, Compass, Stars } from "lucide-react";
+import { Sparkles, Eye, Compass, Stars, Hand } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import MysticPalmOracle from "@/components/mystic/MysticPalmOracle";
@@ -60,7 +60,7 @@ export const HeroSection = () => {
                   data-testid="hero-guest-trial-cta"
                   className="btn-primary text-base px-6 py-3"
                 >
-                  <span className="">[#]</span>
+                  <Hand aria-hidden="true" className="h-4 w-4" />
                   <span>Bói thử 1 lần</span>
                 </Link>
               )}
