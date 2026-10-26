@@ -23,7 +23,7 @@ export const CtaSection = () => {
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             to={isLogged ? BaseUrl.Scan : BaseUrl.Login}
-            className="btn-primary text-base px-8 py-3"
+            className="btn-secondary text-base px-8 py-3"
           >
             <Sparkles aria-hidden="true" className="h-4 w-4" />
             <span>Bắt đầu xem bói</span>
@@ -32,9 +32,9 @@ export const CtaSection = () => {
             <Link
               to={BaseUrl.Scan}
               data-testid="bottom-guest-trial-cta"
-              className="btn-secondary text-base px-6 py-3"
+              className="btn-primary text-base px-6 py-3"
             >
-              <span className="text-[#d4af37]">[#]</span>
+              <span className="">[#]</span>
               <span>Bói thử 1 lần</span>
             </Link>
           )}
