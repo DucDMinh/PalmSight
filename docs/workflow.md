@@ -146,28 +146,33 @@ flowchart TB
 
 Ghi referral, cộng credits cho cả hai người và ghi sổ cái chạy trong một MongoDB transaction. Unique index trên `referrals.refereeId` chặn việc một người gửi hai request nhập mã cùng lúc.
 
-## 3. Xem bói
+## 3. Xem bói & Vẽ đường chỉ tay bằng ONNX
+
+Luồng nhận diện và vẽ chỉ tay trên client kết hợp với luận giải AI và lưu trữ Cloudinary trên server ([ADR-0011](adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)):
 
 ```mermaid
 flowchart TB
-    choose["Client chọn trường phái<br/>Tây / Đông / Ấn Độ"]
-    topics["Tích các mục muốn bói<br/>hoặc Bói toàn bộ<br/>chọn tay trái / phải"]
-    capture["Chụp ảnh<br/>khung căn lòng bàn tay<br/>hoặc chọn ảnh có sẵn"]
-    post["POST /readings<br/>multipart: image, school, topics, hand, aiConsent<br/>header Idempotency-Key"]
+    choose["Client chọn trường phái<br/>Tây / Đông / Ấn Độ + mục muốn bói + tay"]
+    cam["[Camera Frame / Ảnh tải lên]"]
+    mp["[MediaPipe Hands]<br/>Tìm 21 tọa độ bàn tay · kiểm tra mặt lòng bàn tay"]
+    cv["[OpenCV / Canvas Affine]<br/>Cắt & xoay thẳng vùng lòng bàn tay 512×512"]
+    onnx["[Mô hình AI đã train (palm_lines.onnx)]<br/>Phân đoạn nét · skeletonize · vẽ đè Sinh đạo / Trí đạo / Tâm đạo"]
+    post["POST /readings<br/>multipart: image, annotatedImage?, palmLines?, school, topics, hand, aiConsent<br/>header Idempotency-Key"]
     key{"Key đã dùng?"}
     inProgress["409 READING_IN_PROGRESS<br/>client hỏi lại GET /readings/{id}"]
     replay["Trả lại kết quả cũ<br/>200 hoặc 503, không trừ thêm credit"]
-    validate["Validate<br/>ảnh ≤ 8 MB · JPEG/PNG/WebP/HEIC<br/>school hợp lệ, topics thuộc school<br/>topics rỗng → điền toàn bộ<br/>hand LEFT/RIGHT · aiConsent = true"]
+    validate["Validate<br/>ảnh ≤ 8 MB · JPEG/PNG/WebP/HEIC<br/>school hợp lệ, topics thuộc school<br/>hand LEFT/RIGHT · aiConsent = true"]
     badReq["400 / 413 / 415<br/>không trừ credit"]
     spend["Trừ 1 credit + tạo reading<br/>PROCESSING + READING_SPEND<br/>trong 1 transaction"]
     noCredit["402<br/>INSUFFICIENT_CREDITS"]
-    ai["Xử lý ảnh + gọi AI<br/>xoay, xoá EXIF, resize 1280 px<br/>prompt theo trường phái + mục đã chọn<br/>Groq → Gemini, timeout 40 s"]
+    ai["Xử lý ảnh + gọi AI luận giải<br/>xoay, xoá EXIF, resize 1280 px<br/>Gemini → Groq, timeout 40 s"]
     result{"Kết quả AI?"}
-    rejected["REJECTED<br/>hoàn 1 credit<br/>200, gợi ý chụp lại"]
-    failed["FAILED<br/>hoàn 1 credit<br/>503 AI_UNAVAILABLE"]
-    done["DONE<br/>lưu result, trả 200"]
+    rejected["REJECTED<br/>hoàn 1 credit, không lưu ảnh<br/>200, gợi ý chụp lại"]
+    failed["FAILED<br/>hoàn 1 credit, không lưu ảnh<br/>503 AI_UNAVAILABLE"]
+    cloud["Upload ảnh (đã xoá EXIF) & ảnh vẽ chỉ tay<br/>lên Cloudinary"]
+    done["DONE<br/>lưu result + imageUrl + annotatedImageUrl + palmLines<br/>Hiển thị kết quả bói toán & hình vẽ chỉ tay lên màn hình"]
 
-    choose --> topics --> capture --> post --> key
+    choose --> cam --> mp --> cv --> onnx --> post --> key
     key -->|có, đang PROCESSING| inProgress
     key -->|có, đã xong| replay
     key -->|chưa| validate
@@ -177,12 +182,12 @@ flowchart TB
     spend --> ai --> result
     result -->|ảnh sai| rejected
     result -->|lỗi| failed
-    result -->|hợp lệ| done
+    result -->|hợp lệ| cloud --> done
 
     classDef accent stroke:#2f6fde,stroke-width:2px
     classDef warn stroke:#e0a100,stroke-width:2px
     classDef bad stroke:#d64545,stroke-width:2px
-    class done accent
+    class done,onnx accent
     class rejected,failed,inProgress warn
     class badReq,noCredit bad
 ```

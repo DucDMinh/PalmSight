@@ -3,6 +3,7 @@
 - Trạng thái: Accepted
 - Ngày: 2026-10-14
 - Sửa đổi 2026-10-15: server không còn lưu ảnh ([ADR-0010](0010-no-image-storage.md)), nên `users:delete` không còn bước xoá ảnh.
+- Sửa đổi 2026-10-27: theo [ADR-0011](0011-cloudinary-image-storage-and-onnx-palm-lines.md), ảnh lòng bàn tay và ảnh vẽ đường chỉ tay được lưu trên Cloudinary, nên `users:delete` bổ sung bước xoá toàn bộ ảnh trên Cloudinary của user.
 
 ## Bối cảnh
 
@@ -25,7 +26,7 @@ Tuy vậy, vẫn không thể bỏ hẳn việc xoá dữ liệu:
   - Trang `/data-deletion` hướng dẫn người dùng gửi email tới `SUPPORT_EMAIL`, từ chính địa chỉ email của tài khoản.
   - Tài khoản không có email (chỉ đăng nhập Facebook): gửi kèm **ID tài khoản** hiển thị ở `/account`; dev xác minh chủ tài khoản thủ công trước khi xoá.
   - Dev chạy `pnpm --filter backend users:delete --user <id> --note "<lý do / link yêu cầu>"`, trong vòng 30 ngày kể từ khi nhận yêu cầu.
-- Script xoá làm đúng những việc `DELETE /me` cũ từng làm: xoá kết quả bói (từ [ADR-0010](0010-no-image-storage.md) server không còn lưu ảnh), mật khẩu, identity, session, token; ẩn danh hoá user. Thêm một bước: **ghi các định danh đã xoá vào `deleted_identities`**.
+- Script xoá thực hiện: xoá toàn bộ ảnh lòng bàn tay và ảnh vẽ chỉ tay của user trên Cloudinary ([ADR-0011](0011-cloudinary-image-storage-and-onnx-palm-lines.md)), xoá kết quả bói và tọa độ đường chỉ tay (`palmLines`), mật khẩu, identity, session, token; ẩn danh hoá user. Thêm một bước: **ghi các định danh đã xoá vào `deleted_identities`**.
   - Mỗi định danh lưu dạng HMAC-SHA256 với secret `IDENTITY_HASH_SECRET`: email (chữ thường), Google `sub`, Facebook `id`.
   - Không lưu giá trị gốc. HMAC (thay vì SHA-256 trần) để không ai dò ngược email từ bảng hash được.
 - **Tài khoản tạo lại** từ một định danh nằm trong `deleted_identities` (đăng ký email, Google hoặc Facebook):
@@ -49,5 +50,5 @@ Tuy vậy, vẫn không thể bỏ hẳn việc xoá dữ liệu:
 - `deleted_identities` được giữ vô thời hạn. Trang `/privacy` phải ghi rõ: "Sau khi xoá, chúng tôi giữ một mã băm không thể đảo ngược của email/ID đăng nhập để ngăn nhận lại khuyến mãi đăng ký".
 - Người dùng muốn "làm lại từ đầu" bằng tài khoản mới sẽ bắt đầu với 0 credits.
 - Thêm biến môi trường `IDENTITY_HASH_SECRET` và `SUPPORT_EMAIL`. Đổi `IDENTITY_HASH_SECRET` làm mất hiệu lực toàn bộ bảng chặn, nên **không bao giờ đổi** sau khi đã có dữ liệu.
-- Xoá **chỉ** bằng `users:delete`, không bao giờ xoá thẳng document trong database. Xoá thẳng sẽ bỏ qua bước ghi `deleted_identities` (mở lại lỗ farm), để lại kết quả bói và dữ liệu mồ côi. `db:check` phát hiện các trường hợp này.
+- Xoá **chỉ** bằng `users:delete`, không bao giờ xoá thẳng document trong database. Xoá thẳng sẽ bỏ qua bước ghi `deleted_identities` (mở lại lỗ farm), để lại ảnh trên Cloudinary, kết quả bói và dữ liệu mồ côi. `db:check` phát hiện các trường hợp này.
 - Script không thu hồi được access token đã cấp (sống tối đa 15 phút). Auth guard đóng khe hở này bằng cách kiểm tra `deletedAt` ở mỗi request.

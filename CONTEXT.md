@@ -9,7 +9,7 @@ PalmSight là web app (PWA) cho người dùng Việt Nam:
 1. Chọn 1 trong 3 trường phái bói.
 2. Tích các mục muốn bói, hoặc chọn bói toàn bộ.
 3. Chụp ảnh lòng bàn tay.
-4. Nhận bài bói chỉ tay do AI viết.
+4. Nhận hình ảnh lòng bàn tay đã được AI vẽ đè các đường chỉ tay chính (Sinh đạo, Trí đạo, Tâm đạo) cùng bài bói chỉ tay chi tiết do AI viết.
 
 App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credits khi đăng ký (+3), khi nhập mã giới thiệu của người khác (+1), và khi có người nhập mã giới thiệu của mình (+2). MVP không bán credits.
 
@@ -17,10 +17,9 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 
 ## Trạng thái hiện tại
 
-- Giai đoạn: **thiết kế xong, bắt đầu Phase 0** (cập nhật 2026-10-14).
-- `frontend/` mới là boilerplate React + Vite, **chưa** theo thiết kế: đăng nhập giả, token lưu `localStorage`, phân quyền role, trang mẫu. Danh sách giữ/bỏ ở [ADR-0007](docs/adr/0007-vite-spa-frontend.md). `backend/` và `shared/` chưa có.
+- Giai đoạn: **đang phát triển & tích hợp AI vẽ chỉ tay ONNX + lưu trữ Cloudinary** (cập nhật 2026-10-27).
 - Tài liệu thiết kế: `docs/` là nguồn duy nhất.
-- Việc tiếp theo: Phase 0 trong [docs/roadmap.md](docs/roadmap.md).
+- Việc tiếp theo: xem [docs/roadmap.md](docs/roadmap.md).
 
 ## Yêu cầu đã chốt với chủ dự án
 
@@ -33,10 +32,10 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | 5 | Mỗi lần xem tốn 1 credit; AI lỗi hoặc ảnh không phải bàn tay thì hoàn credit (người dùng không mất credit) |
 | 6 | Người khác nhập mã giới thiệu của mình → mình được +2 **ngay**; người nhập được +1 (kể cả khi chủ mã hết lượt trong ngày) |
 | 7 | Nhập mã bất cứ lúc nào, mỗi tài khoản một lần; mỗi chủ mã tối đa 10 lượt thưởng/ngày |
-| 8 | Không cần chống gian lận chặt (không kiểm tra thiết bị/IP), không cần trang admin |
+| 8 | Không cần chống gian lận chặt (không kiểm tra thiết bị/IP ngoài luồng bói thử khách vãng lai), không cần trang admin |
 | 9 | Người dùng chọn 1 trong 3 trường phái, rồi tích các mục muốn bói (hoặc bói toàn bộ); kết quả chỉ gồm các mục đã chọn; chụp 1 tay |
-| 10 | AI dùng API key miễn phí của **Groq** |
-| 11 | Chỉ tiếng Việt; không lưu ảnh lòng bàn tay trên server |
+| 10 | **Hai mô hình AI kết hợp**: (1) Model **ONNX (`palm_lines.onnx`)** kết hợp MediaPipe Hands + OpenCV/Canvas để cắt lòng bàn tay và **chỉ vẽ các đường chỉ tay** (không luận giải); (2) **Google Gemini API** (chính) và **Groq** (dự phòng) để viết bài luận giải |
+| 11 | Chỉ tiếng Việt; ảnh lòng bàn tay (đã xoá sạch EXIF) và ảnh vẽ đường chỉ tay được lưu trên **Cloudinary** ([ADR-0011](docs/adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)) |
 | 12 | Giữ ngrok cho dev; deploy ưu tiên gói miễn phí |
 | 13 | Tên app: **PalmSight** |
 | 14 | **Không có tự xoá tài khoản** trong app (chặn xoá–đăng ký lại để farm credits). Xoá thủ công theo yêu cầu qua email; tài khoản tạo lại từ định danh đã xoá có 0 credits và không được nhập mã |
@@ -51,7 +50,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Referrer | Chủ mã giới thiệu, người được thưởng +2. |
 | Referee | Người nhập mã của referrer. Được thưởng +1 (`REFEREE_BONUS`). |
 | Referral code | Mã 8 ký tự in hoa, mỗi user một mã, sinh khi tạo tài khoản. |
-| Reading | Một lần xem bói: trường phái + các mục đã chọn + tay + kết quả AI + trạng thái. Không chứa ảnh. |
+| Reading | Một lần xem bói: trường phái + các mục đã chọn + tay + URL ảnh Cloudinary (`imageUrl`, `annotatedImageUrl`) + tọa độ đường chỉ tay (`palmLines`) + kết quả AI (`result`) + trạng thái. |
 | Trường phái (`school`) | Cách diễn giải chỉ tay: `WESTERN`, `EASTERN`, `VEDIC`. Định nghĩa trong `READING_SCHOOLS`. |
 | Mục bói (`topic`) | Một thứ người dùng tích để bói: mục riêng của trường phái hoặc một khía cạnh cuộc sống. |
 | Section | Mục riêng của trường phái (ví dụ `nguHanh`, `heartLine`), trả về trong `result.sections`. |
@@ -59,7 +58,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Idempotency-Key | UUID v4 client gửi trong header của `POST /readings`. Chỉ dùng lại khi không nhận được response, để gửi lại không bị trừ credit hai lần. |
 | Identity | Một liên kết Google hoặc Facebook, nhúng trong document user. Mật khẩu không phải identity mà là field `users.passwordHash`. |
 | Đăng ký chờ (`pending_registrations`) | Đăng ký email/mật khẩu chưa bấm link xác minh. Chưa phải user, chưa có credits; tự xoá sau 24 giờ. |
-| `PalmResult` | JSON kết quả AI trả về, lưu trong `readings.result`. |
+| `PalmResult` | JSON kết quả luận giải do AI ngôn ngữ trả về, lưu trong `readings.result`. |
+| `PalmLine` (`palmLines`) | Dữ liệu các đường chỉ tay (`life`, `head`, `heart`, `other`) gồm tọa độ điểm và đặc trưng hình học do model ONNX (`palm_lines.onnx`) trích xuất để vẽ đè lên ảnh. |
 
 ## Quy tắc bất biến (không được phá)
 
@@ -70,8 +70,8 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 5. `SIGNUP_BONUS` chỉ cộng khi **tạo user** (xác minh email đăng ký, hoặc lần đầu đăng nhập Google/Facebook), một lần mỗi user. Gắn thêm mật khẩu hoặc Google/Facebook vào user cũ không cộng thêm. User tạo lại từ định danh có trong `deleted_identities` không được cộng.
 6. Mỗi user chỉ nhập mã giới thiệu **một lần**. Không được nhập mã của chính mình hoặc của người mình đã mời. Thưởng người nhập (+1) và chủ mã (+2) ghi trong cùng một transaction với document `referrals`.
 7. Mọi reading có `school` và `topics` (≥ 1 mục, đã chuẩn hoá). Kết quả AI phải có **đúng** các mục trong `topics`: không thiếu, không thừa. Giá luôn 1 credit, dù chọn bao nhiêu mục.
-8. API key AI, secret OAuth, mật khẩu SMTP và chuỗi kết nối MongoDB **chỉ nằm trên server**. Repo công khai: không bao giờ commit `.env`.
-9. **Server không lưu ảnh lòng bàn tay** ([ADR-0010](docs/adr/0010-no-image-storage.md)). Ảnh chỉ nằm trong bộ nhớ trong lúc xử lý request (multer `memoryStorage`, `sharp` xử lý buffer), được xoá EXIF trước khi gửi AI, và không được ghi ra ổ đĩa, thư mục tạm, storage, database hay log.
+8. API key AI, Cloudinary API secret, secret OAuth, mật khẩu SMTP và chuỗi kết nối MongoDB **chỉ nằm trên server**. Repo công khai: không bao giờ commit `.env`.
+9. **Ảnh lòng bàn tay phải được xoá sạch EXIF trước khi lưu lên Cloudinary** ([ADR-0011](docs/adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)). Server xử lý ảnh trong bộ nhớ (`multer` `memoryStorage` + `sharp`), không ghi ra ổ đĩa local của server. Chỉ lưu ảnh lên Cloudinary khi bài bói hợp lệ (`isPalm === true`); khi xoá reading (`DELETE /readings/:id`) hoặc xoá tài khoản (`users:delete`), phải xoá luôn ảnh tương ứng trên Cloudinary qua `imagePublicId`.
 10. Mọi trang kết quả hiển thị câu miễn trừ: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 11. **Không lưu mật khẩu thô hay token thô.** Mật khẩu hash bằng argon2id. Token trong link email và refresh token chỉ lưu bản hash SHA-256.
 12. **Không sửa hay xoá dữ liệu trực tiếp trên database** (Compass, Atlas UI, mongosh) với `users`, `credit_transactions`, `referrals`, `readings`, `deleted_identities`. Thay đổi phải đi qua API hoặc script: xoá user bằng `users:delete`, chỉnh credits bằng `credits:adjust`. MongoDB không có khoá ngoại, nên xoá tay sẽ để lại dữ liệu mồ côi, sổ cái lệch và bỏ qua bước chặn nhận thưởng lại. Xem dữ liệu hằng ngày bằng user database **chỉ đọc**.
@@ -83,14 +83,15 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | --- | --- |
 | [0001](docs/adr/0001-credit-ledger.md) | Credits dùng sổ cái append-only + số dư cache |
 | [0002](docs/adr/0002-token-based-oauth.md) | Client lấy token từ SDK Google/Facebook, server tự xác minh; tự cấp JWT |
-| [0003](docs/adr/0003-groq-as-ai-provider.md) | Groq là nhà cung cấp AI chính, Gemini dự phòng, qua interface `AiProvider` |
+| [0003](docs/adr/0003-groq-as-ai-provider.md) | Groq / Gemini là nhà cung cấp AI luận giải qua interface `AiProvider` |
 | [0004](docs/adr/0004-synchronous-readings.md) | `POST /readings` xử lý đồng bộ trong MVP |
 | [0005](docs/adr/0005-monorepo-nextjs-nestjs.md) | pnpm workspaces, NestJS + MongoDB (Mongoose), không Redis. Phần Next.js đã bị ADR-0007 thay thế |
 | [0006](docs/adr/0006-reading-schools.md) | Trường phái bói, chọn mục bói; kết quả dạng `sections` chung |
 | [0007](docs/adr/0007-vite-spa-frontend.md) | Frontend là SPA React + Vite; repo `frontend/` · `backend/` · `shared/`; web và API chung một domain qua proxy/rewrite |
 | [0008](docs/adr/0008-email-password-auth.md) | Đăng ký email/username + mật khẩu, bắt buộc xác minh email; Google/Facebook là cách đăng nhập phụ; gộp theo email đã xác minh; gửi mail qua Gmail SMTP |
 | [0009](docs/adr/0009-manual-account-deletion.md) | Không cho tự xoá tài khoản; xoá thủ công theo yêu cầu; HMAC định danh đã xoá để chặn nhận thưởng lại |
-| [0010](docs/adr/0010-no-image-storage.md) | Không lưu ảnh lòng bàn tay trên server; xử lý trong bộ nhớ, gửi AI rồi bỏ |
+| [0010](docs/adr/0010-no-image-storage.md) | Không lưu ảnh lòng bàn tay trên server *(Superseded by ADR-0011)* |
+| [0011](docs/adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md) | Tích hợp ONNX vẽ đường chỉ tay và lưu ảnh trên Cloudinary |
 
 ## Quy ước code
 
@@ -125,7 +126,7 @@ App dùng **credits**: mỗi lần xem trừ 1 credit. Người dùng có credit
 | Thứ tự các bước của một luồng | [docs/workflow.md](docs/workflow.md) |
 | Collection, field, index | [docs/database-erd.md](docs/database-erd.md) |
 | Request/response, mã lỗi | [docs/api-contract.md](docs/api-contract.md) |
-| Trường phái, mục bói, prompt, schema kết quả AI | [docs/ai-integration.md](docs/ai-integration.md) |
+| Trường phái, mục bói, prompt, ONNX vẽ chỉ tay, schema kết quả AI | [docs/ai-integration.md](docs/ai-integration.md) |
 | Màn hình và trạng thái UI | [docs/screens.md](docs/screens.md) |
 | Biến môi trường | [backend/.env.example](backend/.env.example) (secret của server), [frontend/.env.example](frontend/.env.example) (chỉ biến công khai `VITE_*`) |
 

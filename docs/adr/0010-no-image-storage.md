@@ -1,6 +1,6 @@
 # ADR-0010: Không lưu ảnh lòng bàn tay trên server
 
-- Trạng thái: Accepted
+- Trạng thái: Superseded by [ADR-0011](0011-cloudinary-image-storage-and-onnx-palm-lines.md)
 - Ngày: 2026-10-15
 
 ## Bối cảnh

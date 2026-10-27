@@ -1,7 +1,5 @@
 # Getting started — Chạy dự án ở máy local
 
-> Các lệnh dưới đây mô tả cấu trúc dự kiến; chúng chạy được sau khi Phase 0 trong [roadmap](roadmap.md) hoàn thành.
-
 ## 1. Cài đặt công cụ
 
 | Công cụ | Phiên bản | Ghi chú |
@@ -18,15 +16,15 @@
 git clone <repo-url> palmsight
 cd palmsight
 pnpm install
-cp backend/.env.example backend/.env      # secret của server
-cp frontend/.env.example frontend/.env    # chỉ biến công khai VITE_* và biến dùng khi dev
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
 
 Mỗi phía có file env riêng, khớp với lúc deploy: backend tương ứng Environment của Render, frontend tương ứng Environment của Vercel.
 
 | File | Ai đọc | Chứa |
 | --- | --- | --- |
-| `backend/.env` | NestJS (`@nestjs/config` đọc `.env` ở thư mục đang chạy) | MongoDB, JWT, OAuth secret, SMTP, AI, hằng số credits |
+| `backend/.env` | NestJS (`@nestjs/config` đọc `.env` ở thư mục đang chạy) | MongoDB, JWT, OAuth secret, SMTP, AI, Cloudinary, hằng số credits |
 | `frontend/.env` | Vite | `VITE_*` (bị nhúng vào bundle, **không** đặt secret), `API_PROXY_TARGET`, `DEV_ALLOWED_HOSTS` |
 
 Google client ID và Facebook app ID có mặt ở cả hai file (`GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID`…), với cùng giá trị. Đây là giá trị công khai nên lặp lại không sao.
@@ -65,11 +63,11 @@ MONGODB_URI=mongodb://localhost:27019/palmsight?directConnection=true
 ## 4. Tạo index và dữ liệu mẫu
 
 ```bash
-pnpm --filter backend db:sync-indexes    # tạo index + validator theo schema
-pnpm --filter backend db:seed            # vài user mẫu đã xác minh, có sẵn credits, mật khẩu in ra màn hình
+pnpm --filter backend db:sync-indexes
+pnpm --filter backend db:seed
 ```
 
-## 5. Lấy API key và cấu hình đăng nhập
+## 5. Lấy API key và cấu hình dịch vụ
 
 ### ngrok (làm trước, vì đăng nhập Facebook cần URL HTTPS)
 
@@ -77,6 +75,19 @@ pnpm --filter backend db:seed            # vài user mẫu đã xác minh, có s
 2. Dashboard → **Domains** → nhận static domain miễn phí, ví dụ `palmsight-dev.ngrok-free.app`. Mỗi thành viên nên có domain riêng.
 3. Trong `backend/.env`: đặt `PUBLIC_BASE_URL=https://palmsight-dev.ngrok-free.app`.
 4. Trong `frontend/.env`: đặt `DEV_ALLOWED_HOSTS=palmsight-dev.ngrok-free.app`. `vite.config.ts` đọc biến này để điền `server.allowedHosts`. Nếu thiếu, Vite chặn request với lỗi "Blocked request. This host is not allowed".
+
+### Cloudinary (lưu ảnh lòng bàn tay & ảnh vẽ chỉ tay)
+
+1. Đăng ký tài khoản miễn phí tại cloudinary.com (không yêu cầu thẻ tín dụng).
+2. Mở **Dashboard** (hoặc **Settings → API Keys**) để lấy `Cloud Name`, `API Key` và `API Secret`.
+3. Điền vào `backend/.env`:
+
+   ```bash
+   CLOUDINARY_CLOUD_NAME=<cloud_name>
+   CLOUDINARY_API_KEY=<api_key>
+   CLOUDINARY_API_SECRET=<api_secret>
+   CLOUDINARY_FOLDER=palmsight/readings
+   ```
 
 ### Gmail SMTP (chỉ cần khi muốn gửi email thật)
 
@@ -98,10 +109,10 @@ Khi dev, Mailpit là đủ. Chỉ làm bước này khi muốn thử gửi tới
 
 Gmail ghi đè địa chỉ người gửi bằng `SMTP_USER`, nên `MAIL_FROM` phải dùng đúng địa chỉ đó.
 
-### Groq
+### Gemini & Groq
 
-1. Tạo key tại console.groq.com → **API Keys**, điền `GROQ_API_KEY` trong `backend/.env`.
-2. Kiểm tra trang **Models**, chọn một model hỗ trợ ảnh (vision), điền `AI_MODEL` trong `backend/.env`.
+1. Tạo key tại aistudio.google.com → điền `GEMINI_API_KEY` trong `backend/.env`.
+2. Tạo key tại console.groq.com → **API Keys**, điền `GROQ_API_KEY` trong `backend/.env`.
 
 ### Google
 
@@ -124,7 +135,7 @@ Hai thành viên có thể dùng chung một Google project và một Facebook A
 ## 6. Chạy app
 
 ```bash
-pnpm dev                       # shared (watch), frontend :5173, backend :4000 chạy song song
+pnpm dev
 ngrok http 5173 --url=palmsight-dev.ngrok-free.app
 ```
 
@@ -166,4 +177,4 @@ Kể cả khi dev, đừng sửa tay `users` hay `credit_transactions` trong Com
 | Gmail báo `535 Username and Password not accepted` | Dùng App Password, không dùng mật khẩu Gmail; tài khoản phải bật xác minh 2 bước |
 | Link trong email trỏ về `localhost` khi mở trên điện thoại | Đặt `PUBLIC_BASE_URL` là domain ngrok rồi gửi lại email |
 | Camera không mở trên điện thoại | Phải mở qua HTTPS (ngrok), không dùng địa chỉ IP trong mạng LAN |
-| `AI_UNAVAILABLE` liên tục | Kiểm tra `GROQ_API_KEY`, tên model, hạn mức free tier |
+| `AI_UNAVAILABLE` liên tục | Kiểm tra `GEMINI_API_KEY`, `GROQ_API_KEY`, tên model, hạn mức free tier |
