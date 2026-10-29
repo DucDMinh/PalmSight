@@ -87,16 +87,14 @@ ${aspectsSchemaPart}
   "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 }`;
 
-  const targetHandVi = params.hand === HandOrientation.LEFT ? "TRÁI" : "PHẢI";
-  const oppositeHandVi = params.hand === HandOrientation.LEFT ? "PHẢI" : "TRÁI";
-
   return `Trường phái: ${params.school}.
-Bàn tay người dùng đã chọn: BÀN TAY ${targetHandVi}.
 Mục cần bói: ${topicsText}.
 
-YÊU CẦU THẨM ĐỊNH BẮT BUỘC TRƯỚC KHI ĐỌC:
-1. Xác định bàn tay trong ảnh: Lòng bàn tay hướng lên, ngón cái ở bên TRÁI là tay trái, ngón cái ở bên PHẢI là tay phải. Nếu ảnh là bàn tay ${oppositeHandVi} (ngược với bàn tay ${targetHandVi} người dùng chọn), BẮT BUỘC trả về isPalm: false và rejectReason nêu rõ người dùng đã chọn tay ${targetHandVi.toLowerCase()} nhưng chụp tay ${oppositeHandVi.toLowerCase()}.
-2. Kiểm tra tư thế: Lòng bàn tay phải xòe mở phẳng tự nhiên. Nếu có ngón tay gập che lòng bàn tay, có bàn tay khác nắm vào, hoặc bàn tay nắm lại, BẮT BUỘC trả về isPalm: false và rejectReason yêu cầu mở rộng lòng bàn tay.
+QUY TẮC THẨM ĐỊNH LÒNG BÀN TAY (CHỈ QUAN TÂM CHẤT LƯỢNG ẢNH):
+- TUYỆT ĐỐI KHÔNG kiểm tra hay từ chối vì lý do tay trái hay tay phải (do camera có thể chụp ảnh gương). Dù ảnh chụp bàn tay nào, BẮT BUỘC chấp nhận và tiến hành luận giải bình thường.
+- CHỈ từ chối (đặt isPalm = false) nếu vi phạm:
+1. Lòng bàn tay bị che khuất hoặc tư thế bất thường: ngón tay gập che lòng bàn tay, có bàn tay khác nắm vào, bàn tay nắm lại không xòe phẳng, hoặc là mu bàn tay.
+2. Ảnh không phải bàn tay người, hoặc quá mờ/tối/chói sáng không thấy rõ đường chỉ.
 
 Hướng dẫn chi tiết:
 - ${sectionsInstruction}

@@ -99,12 +99,12 @@ describe("useHandDetection hook", () => {
     const mockBackLandmarks = Array(21).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
     mockBackLandmarks[0] = { x: 0.5, y: 0.7, z: 0 };
     mockBackLandmarks[9] = { x: 0.5, y: 0.4, z: 0 };
+    mockBackLandmarks[4] = { x: 0.4, y: 0.5, z: 0 };
     mockBackLandmarks[5] = { x: 0.6, y: 0.45, z: 0 };
-    mockBackLandmarks[17] = { x: 0.4, y: 0.45, z: 0 };
+    mockBackLandmarks[17] = { x: 0.45, y: 0.45, z: 0 };
 
     const mockDetect = vi.fn().mockReturnValue({
       landmarks: [mockBackLandmarks],
-      handedness: [[{ categoryName: "Left" }]],
     });
 
     vi.spyOn(HandLandmarker, "createFromOptions").mockResolvedValueOnce({
@@ -126,6 +126,7 @@ describe("useHandDetection hook", () => {
       useHandDetection({
         videoRef,
         isCameraActive: true,
+        isFrontCamera: true,
         targetHand: HandOrientation.LEFT,
         onCapture,
       })
@@ -148,12 +149,12 @@ describe("useHandDetection hook", () => {
     const mockPalmLandmarks = Array(21).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
     mockPalmLandmarks[0] = { x: 0.5, y: 0.7, z: 0 };
     mockPalmLandmarks[9] = { x: 0.5, y: 0.4, z: 0 };
-    mockPalmLandmarks[5] = { x: 0.4, y: 0.45, z: 0 };
-    mockPalmLandmarks[17] = { x: 0.6, y: 0.45, z: 0 };
+    mockPalmLandmarks[4] = { x: 0.4, y: 0.5, z: 0 };
+    mockPalmLandmarks[5] = { x: 0.45, y: 0.45, z: 0 };
+    mockPalmLandmarks[17] = { x: 0.55, y: 0.45, z: 0 };
 
     const mockDetect = vi.fn().mockReturnValue({
       landmarks: [mockPalmLandmarks],
-      handedness: [[{ categoryName: "Left" }]],
     });
 
     vi.spyOn(HandLandmarker, "createFromOptions").mockResolvedValueOnce({
@@ -175,6 +176,7 @@ describe("useHandDetection hook", () => {
       useHandDetection({
         videoRef,
         isCameraActive: true,
+        isFrontCamera: true,
         targetHand: HandOrientation.LEFT,
         onCapture,
       })
@@ -190,5 +192,55 @@ describe("useHandDetection hook", () => {
 
     expect(result.current.status).not.toBe("NOT_PALM");
     expect(result.current.status).not.toBe("WRONG_HAND");
+  });
+
+  it("should detect wrong hand when user presents wrong hand", async () => {
+    const { HandLandmarker } = await import("@mediapipe/tasks-vision");
+    const mockPalmLandmarks = Array(21).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
+    mockPalmLandmarks[0] = { x: 0.5, y: 0.7, z: 0 };
+    mockPalmLandmarks[9] = { x: 0.5, y: 0.4, z: 0 };
+    mockPalmLandmarks[4] = { x: 0.4, y: 0.5, z: 0 };
+    mockPalmLandmarks[5] = { x: 0.45, y: 0.45, z: 0 };
+    mockPalmLandmarks[17] = { x: 0.55, y: 0.45, z: 0 };
+
+    const mockDetect = vi.fn().mockReturnValue({
+      landmarks: [mockPalmLandmarks],
+    });
+
+    vi.spyOn(HandLandmarker, "createFromOptions").mockResolvedValueOnce({
+      detectForVideo: mockDetect,
+      close: vi.fn(),
+    } as any);
+
+    const mockVideo = { readyState: 4 } as HTMLVideoElement;
+    const videoRef = { current: mockVideo };
+    const onCapture = vi.fn();
+
+    let rafCallback: FrameRequestCallback = () => {};
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => {
+      rafCallback = cb;
+      return 1;
+    });
+
+    const { result } = renderHook(() =>
+      useHandDetection({
+        videoRef,
+        isCameraActive: true,
+        isFrontCamera: true,
+        targetHand: HandOrientation.RIGHT,
+        onCapture,
+      })
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      rafCallback(100);
+    });
+
+    expect(result.current.status).toBe("WRONG_HAND");
+    expect(result.current.feedback).toBe("Vui lòng dùng bàn tay phải");
   });
 });

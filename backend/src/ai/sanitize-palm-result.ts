@@ -28,6 +28,17 @@ export function sanitizePalmResult(
   result.topics = options.topics;
 
   if (result.isPalm === false) {
+    if (typeof result.rejectReason === "string") {
+      result.rejectReason = result.rejectReason
+        .replace(/Ảnh chụp là bàn tay (PHẢI|TRÁI)[^.]*\.\s*/gi, "")
+        .replace(/Vui lòng giơ đúng bàn tay (trái|phải) và\s*/gi, "Vui lòng ")
+        .replace(/Bạn đã chọn bàn tay [^.]*\.\s*/gi, "")
+        .trim();
+      if (!result.rejectReason) {
+        result.rejectReason =
+          "Lòng bàn tay chưa đủ rõ nét hoặc bị mờ/chói sáng. Vui lòng chụp lại nơi đủ sáng và xòe phẳng bàn tay!";
+      }
+    }
     return result as PalmResult;
   }
 
