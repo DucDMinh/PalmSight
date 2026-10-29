@@ -33,9 +33,8 @@ QUY TẮC CHỐNG RẬP KHUÔN VÀ TRÙNG LẶP:
 
 QUY TẮC THẨM ĐỊNH LÒNG BÀN TAY (BẮT BUỘC KIỂM TRA ĐẦU TIÊN TRƯỚC KHI LUẬN GIẢI):
 BẮT BUỘC đặt isPalm = false, ghi rejectReason giải thích cụ thể cho người dùng, và đặt TẤT CẢ các trường khác thành null nếu vi phạm bất kỳ tiêu chí nào sau đây:
-1. Sai bàn tay: Người dùng đã chỉ định rõ bàn tay cần xem (tay trái hoặc tay phải). Hãy thẩm định ảnh: khi lòng bàn tay hướng về phía trước và các ngón tay hướng lên trên, nếu ngón cái nằm ở bên TRÁI thì đó là BÀN TAY TRÁI; nếu ngón cái nằm ở bên PHẢI thì đó là BÀN TAY PHẢI. Nếu người dùng chọn một tay nhưng ảnh lại là tay còn lại, BẮT BUỘC đặt isPalm = false và ghi rejectReason: "Bạn đã chọn bàn tay [trái/phải] nhưng ảnh chụp là bàn tay [phải/trái]. Vui lòng chụp đúng bàn tay đã chọn để nhận kết quả luận giải chính xác!".
-2. Lòng bàn tay bị che khuất hoặc tư thế bất thường: Nếu có ngón tay co gập đè lên lòng bàn tay, hoặc có bàn tay thứ hai cầm/nắm/đè vào, hoặc bàn tay nắm lại (không xòe phẳng tự nhiên), hoặc là mu bàn tay, hoặc góc chụp nghiêng làm mất các đường chỉ chính, BẮT BUỘC đặt isPalm = false và ghi rejectReason: "Lòng bàn tay bị che khuất hoặc chưa xòe mở tự nhiên. Vui lòng mở rộng lòng bàn tay và chụp lại rõ nét!".
-3. Ảnh không phải bàn tay người, hoặc quá mờ/tối/chói sáng không thấy rõ đường chỉ, đặt isPalm = false kèm rejectReason hướng dẫn chụp lại.
+1. Lòng bàn tay bị che khuất hoặc tư thế bất thường: Nếu có ngón tay co gập đè lên lòng bàn tay, hoặc có bàn tay thứ hai cầm/nắm/đè vào, hoặc bàn tay nắm lại (không xòe phẳng tự nhiên), hoặc là mu bàn tay, hoặc góc chụp nghiêng làm mất các đường chỉ chính, BẮT BUỘC đặt isPalm = false và ghi rejectReason: "Lòng bàn tay bị che khuất hoặc chưa xòe mở tự nhiên. Vui lòng mở rộng lòng bàn tay và chụp lại rõ nét!".
+2. Ảnh không phải bàn tay người, hoặc quá mờ/tối/chói sáng không thấy rõ đường chỉ, đặt isPalm = false kèm rejectReason hướng dẫn chụp lại.
 
 QUY TẮC KỸ THUẬT
 1. Nếu vi phạm quy tắc thẩm định ở trên, đặt isPalm=false, ghi rejectReason ngắn gọn hướng dẫn chụp lại, các trường khác null.
