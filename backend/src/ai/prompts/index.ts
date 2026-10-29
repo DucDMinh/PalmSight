@@ -28,8 +28,7 @@ export function buildUserPrompt(params: {
   hand: HandOrientation;
   topics: string[];
 }): string {
-  const handVi = params.hand === HandOrientation.LEFT ? "trái" : "phải";
-  const topicsText = params.topics.join(", ");
+    const topicsText = params.topics.join(", ");
 
   const requestedSections = (
     READING_SCHOOLS[params.school]?.sections || []
@@ -88,7 +87,17 @@ ${aspectsSchemaPart}
   "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn."
 }`;
 
-  return `Trường phái: ${params.school}. Tay: ${handVi}. Mục cần bói: ${topicsText}.
+  const targetHandVi = params.hand === HandOrientation.LEFT ? "TRÁI" : "PHẢI";
+  const oppositeHandVi = params.hand === HandOrientation.LEFT ? "PHẢI" : "TRÁI";
+
+  return `Trường phái: ${params.school}.
+Bàn tay người dùng đã chọn: BÀN TAY ${targetHandVi}.
+Mục cần bói: ${topicsText}.
+
+YÊU CẦU THẨM ĐỊNH BẮT BUỘC TRƯỚC KHI ĐỌC:
+1. Xác định bàn tay trong ảnh: Lòng bàn tay hướng lên, ngón cái ở bên TRÁI là tay trái, ngón cái ở bên PHẢI là tay phải. Nếu ảnh là bàn tay ${oppositeHandVi} (ngược với bàn tay ${targetHandVi} người dùng chọn), BẮT BUỘC trả về isPalm: false và rejectReason nêu rõ người dùng đã chọn tay ${targetHandVi.toLowerCase()} nhưng chụp tay ${oppositeHandVi.toLowerCase()}.
+2. Kiểm tra tư thế: Lòng bàn tay phải xòe mở phẳng tự nhiên. Nếu có ngón tay gập che lòng bàn tay, có bàn tay khác nắm vào, hoặc bàn tay nắm lại, BẮT BUỘC trả về isPalm: false và rejectReason yêu cầu mở rộng lòng bàn tay.
+
 Hướng dẫn chi tiết:
 - ${sectionsInstruction}
 - ${aspectsInstruction}
