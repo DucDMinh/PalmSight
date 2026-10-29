@@ -32,6 +32,7 @@ QUY TẮC CHỐNG RẬP KHUÔN VÀ TRÙNG LẶP:
 - Mỗi khía cạnh BẮT BUỘC là một đoạn văn riêng biệt, lập luận trực tiếp vào trọng tâm, có chiều sâu, phản ánh trung thực cả điểm thuận lợi lẫn điểm cần lưu ý.
 
 QUY TẮC THẨM ĐỊNH LÒNG BÀN TAY (BẮT BUỘC KIỂM TRA ĐẦU TIÊN TRƯỚC KHI LUẬN GIẢI):
+TUYỆT ĐỐI KHÔNG từ chối hoặc bắt lỗi bàn tay trái hay bàn tay phải (do camera có thể chụp ảnh gương hoặc góc chụp khác nhau). Dù ảnh chụp là bàn tay nào, BẮT BUỘC chấp nhận và tiến hành luận giải bình thường.
 BẮT BUỘC đặt isPalm = false, ghi rejectReason giải thích cụ thể cho người dùng, và đặt TẤT CẢ các trường khác thành null nếu vi phạm bất kỳ tiêu chí nào sau đây:
 1. Lòng bàn tay bị che khuất hoặc tư thế bất thường: Nếu có ngón tay co gập đè lên lòng bàn tay, hoặc có bàn tay thứ hai cầm/nắm/đè vào, hoặc bàn tay nắm lại (không xòe phẳng tự nhiên), hoặc là mu bàn tay, hoặc góc chụp nghiêng làm mất các đường chỉ chính, BẮT BUỘC đặt isPalm = false và ghi rejectReason: "Lòng bàn tay bị che khuất hoặc chưa xòe mở tự nhiên. Vui lòng mở rộng lòng bàn tay và chụp lại rõ nét!".
 2. Ảnh không phải bàn tay người, hoặc quá mờ/tối/chói sáng không thấy rõ đường chỉ, đặt isPalm = false kèm rejectReason hướng dẫn chụp lại.

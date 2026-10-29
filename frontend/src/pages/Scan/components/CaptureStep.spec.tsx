@@ -66,12 +66,20 @@ describe("CaptureStep Component", () => {
     );
   };
 
-  const createMockStream = () => {
+  const createMockStream = (facingMode?: string) => {
     const track = {
       stop: vi.fn(),
+      getSettings: vi.fn().mockReturnValue(facingMode ? { facingMode } : {}),
+      label:
+        facingMode === "user"
+          ? "front camera"
+          : facingMode === "environment"
+          ? "back camera"
+          : "",
     };
     return {
       getTracks: vi.fn().mockReturnValue([track]),
+      getVideoTracks: vi.fn().mockReturnValue([track]),
       _track: track,
     } as unknown as MediaStream & { _track: typeof track };
   };
@@ -106,7 +114,7 @@ describe("CaptureStep Component", () => {
     expect(video).toHaveClass("hidden");
   });
 
-  it("should start camera with environment constraints and attach stream to video element", async () => {
+  it("should start camera with user constraints and attach stream to video element", async () => {
     const mockStream = createMockStream();
     const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
     Object.defineProperty(navigator, "mediaDevices", {
@@ -123,7 +131,7 @@ describe("CaptureStep Component", () => {
     await waitFor(() => {
       expect(mockGetUserMedia).toHaveBeenCalledWith({
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: "user" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -187,7 +195,7 @@ describe("CaptureStep Component", () => {
       expect(mockGetUserMedia).toHaveBeenCalledTimes(2);
       expect(mockGetUserMedia).toHaveBeenNthCalledWith(1, {
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: "user" },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
@@ -398,5 +406,133 @@ describe("CaptureStep Component", () => {
     });
 
     expect(screen.getByTestId("submit-reading-button")).toBeEnabled();
+  });
+
+  it("should mirror front camera preview and flip canvas when captured", async () => {
+    const frontStream = createMockStream("user");
+    const mockGetUserMedia = vi.fn().mockResolvedValue(frontStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    const translateSpy = vi.fn();
+    const scaleSpy = vi.fn();
+    const drawImageSpy = vi.fn();
+    const toBlobSpy = vi.fn((callback: (blob: Blob | null) => void) => {
+      callback(new Blob(["mock-image-data"], { type: "image/jpeg" }));
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      translate: translateSpy,
+      scale: scaleSpy,
+      drawImage: drawImageSpy,
+    } as any);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(toBlobSpy);
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-video")).toHaveClass("-scale-x-100");
+      expect(screen.getByTestId("shutter-button")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("shutter-button"));
+
+    await waitFor(() => {
+      expect(scaleSpy).toHaveBeenCalledWith(-1, 1);
+      expect(drawImageSpy).toHaveBeenCalled();
+    });
+  });
+
+  it("should not flip canvas when capturing from back camera", async () => {
+    const backStream = createMockStream("environment");
+    const mockGetUserMedia = vi.fn().mockResolvedValue(backStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    const translateSpy = vi.fn();
+    const scaleSpy = vi.fn();
+    const drawImageSpy = vi.fn();
+    const toBlobSpy = vi.fn((callback: (blob: Blob | null) => void) => {
+      callback(new Blob(["mock-image-data"], { type: "image/jpeg" }));
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      translate: translateSpy,
+      scale: scaleSpy,
+      drawImage: drawImageSpy,
+    } as any);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(toBlobSpy);
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-video")).not.toHaveClass("-scale-x-100");
+      expect(screen.getByTestId("shutter-button")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("shutter-button"));
+
+    await waitFor(() => {
+      expect(scaleSpy).not.toHaveBeenCalled();
+      expect(drawImageSpy).toHaveBeenCalled();
+    });
+  });
+
+  it("should not display switch camera button on desktop", async () => {
+    const mockStream = createMockStream("user");
+    const mockGetUserMedia = vi.fn().mockResolvedValue(mockStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-video")).toBeInTheDocument();
+      expect(screen.queryByTestId("switch-camera-button")).not.toBeInTheDocument();
+    });
+  });
+
+  it("should switch between back camera and front camera on mobile", async () => {
+    vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+    );
+    const backStream = createMockStream("environment");
+    const frontStream = createMockStream("user");
+    const mockGetUserMedia = vi
+      .fn()
+      .mockResolvedValueOnce(backStream)
+      .mockResolvedValueOnce(frontStream);
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      writable: true,
+      configurable: true,
+    });
+
+    renderComponent();
+
+    fireEvent.click(screen.getByTestId("open-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("switch-camera-button")).toBeInTheDocument();
+      expect(screen.getByTestId("camera-video")).not.toHaveClass("-scale-x-100");
+    });
+
+    fireEvent.click(screen.getByTestId("switch-camera-button"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-video")).toHaveClass("-scale-x-100");
+    });
   });
 });

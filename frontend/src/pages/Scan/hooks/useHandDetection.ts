@@ -18,6 +18,7 @@ export interface UseHandDetectionOptions {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   isCameraActive: boolean;
   targetHand: HandOrientation;
+  isFrontCamera?: boolean;
   onCapture: () => void;
   holdDurationMs?: number;
   enabled?: boolean;
@@ -41,6 +42,7 @@ export const useHandDetection = ({
   videoRef,
   isCameraActive,
   targetHand,
+  isFrontCamera = true,
   onCapture,
   holdDurationMs = 1000,
   enabled = true,
@@ -216,12 +218,18 @@ export const useHandDetection = ({
       }
 
       const landmarks = results.landmarks[0];
-      const handednessCategories = results.handedness?.[0];
-      const detectedHandCategory = handednessCategories?.[0]?.categoryName;
+      const getScreenX = (rawX: number) => (isFrontCamera ? 1 - rawX : rawX);
 
-      const expectedCategory =
-        targetHand === HandOrientation.LEFT ? "Left" : "Right";
-      if (detectedHandCategory && detectedHandCategory !== expectedCategory) {
+      const thumbScreenX = getScreenX(landmarks[4].x);
+      const pinkyScreenX = getScreenX(landmarks[17].x);
+
+      const isLeftHandOnScreen = thumbScreenX > pinkyScreenX;
+      const matchesTargetHand =
+        targetHand === HandOrientation.LEFT
+          ? isLeftHandOnScreen
+          : !isLeftHandOnScreen;
+
+      if (!matchesTargetHand) {
         setStatus("WRONG_HAND");
         setFeedback(
           targetHand === HandOrientation.LEFT
@@ -235,10 +243,15 @@ export const useHandDetection = ({
         return;
       }
 
-      const v1x = landmarks[9].x - landmarks[0].x;
-      const v1y = landmarks[9].y - landmarks[0].y;
-      const v2x = landmarks[5].x - landmarks[17].x;
-      const v2y = landmarks[5].y - landmarks[17].y;
+      const p0 = { x: getScreenX(landmarks[0].x), y: landmarks[0].y };
+      const p9 = { x: getScreenX(landmarks[9].x), y: landmarks[9].y };
+      const p5 = { x: getScreenX(landmarks[5].x), y: landmarks[5].y };
+      const p17 = { x: getScreenX(landmarks[17].x), y: landmarks[17].y };
+
+      const v1x = p9.x - p0.x;
+      const v1y = p9.y - p0.y;
+      const v2x = p5.x - p17.x;
+      const v2y = p5.y - p17.y;
       const len1 = Math.hypot(v1x, v1y);
       const len2 = Math.hypot(v2x, v2y);
 
@@ -246,7 +259,7 @@ export const useHandDetection = ({
       if (len1 > 0.01 && len2 > 0.01) {
         const cross = (v1x * v2y - v1y * v2x) / (len1 * len2);
         isPalmFacing =
-          targetHand === HandOrientation.LEFT ? cross < -0.25 : cross > 0.25;
+          targetHand === HandOrientation.LEFT ? cross > 0.05 : cross < -0.05;
       }
 
       if (!isPalmFacing) {
@@ -265,11 +278,12 @@ export const useHandDetection = ({
       let maxY = 0;
 
       for (let i = 0; i < landmarks.length; i++) {
-        const point = landmarks[i];
-        if (point.x < minX) minX = point.x;
-        if (point.x > maxX) maxX = point.x;
-        if (point.y < minY) minY = point.y;
-        if (point.y > maxY) maxY = point.y;
+        const sx = getScreenX(landmarks[i].x);
+        const sy = landmarks[i].y;
+        if (sx < minX) minX = sx;
+        if (sx > maxX) maxX = sx;
+        if (sy < minY) minY = sy;
+        if (sy > maxY) maxY = sy;
       }
 
       const boxWidth = maxX - minX;
@@ -374,6 +388,7 @@ export const useHandDetection = ({
     isAutoCaptureEnabled,
     isModelReady,
     targetHand,
+    isFrontCamera,
     holdDurationMs,
     videoRef,
   ]);

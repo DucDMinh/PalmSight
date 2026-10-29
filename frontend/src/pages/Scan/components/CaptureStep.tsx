@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Camera, Upload, RotateCcw, Sparkles, Eye } from "lucide-react";
+import { Camera, Upload, RotateCcw, Sparkles, Eye, SwitchCamera } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import {
@@ -49,8 +49,17 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [preferredFacingMode, setPreferredFacingMode] = useState<"environment" | "user">("user");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const isMobileDevice = useMemo(() => {
+    return (
+      typeof navigator !== "undefined" &&
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+    );
+  }, []);
 
   const schoolConfig = READING_SCHOOLS[school];
   const handLabel = hand === HandOrientation.LEFT ? "Tay trái" : "Tay phải";
@@ -76,7 +85,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     }
   }, [isCameraActive]);
 
-  const startCamera = async () => {
+  const startCamera = async (targetFacingMode?: "environment" | "user" | unknown) => {
     setCameraError(null);
     try {
       if (!navigator?.mediaDevices?.getUserMedia) {
@@ -86,11 +95,20 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         return;
       }
 
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+
+      const requestedFacing =
+        targetFacingMode === "user" || targetFacingMode === "environment"
+          ? targetFacingMode
+          : preferredFacingMode;
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: "environment" },
+            facingMode: { ideal: requestedFacing },
             width: { ideal: 1280 },
             height: { ideal: 720 },
           },
@@ -98,6 +116,53 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       } catch {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
       }
+
+      const tracks =
+        typeof stream.getVideoTracks === "function"
+          ? stream.getVideoTracks()
+          : typeof stream.getTracks === "function"
+          ? stream.getTracks()
+          : [];
+      const videoTrack = tracks[0];
+      const settings =
+        typeof videoTrack?.getSettings === "function"
+          ? videoTrack.getSettings()
+          : undefined;
+      const detectedFacingMode = settings?.facingMode;
+      const label = (videoTrack?.label || "").toLowerCase();
+
+      const isMobile =
+        typeof navigator !== "undefined" &&
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+      let isFront = true;
+      if (detectedFacingMode === "user") {
+        isFront = true;
+      } else if (detectedFacingMode === "environment") {
+        isFront = false;
+      } else if (
+        label.includes("front") ||
+        label.includes("user") ||
+        label.includes("facetime") ||
+        label.includes("integrated") ||
+        label.includes("selfie") ||
+        label.includes("truoc") ||
+        label.includes("trước")
+      ) {
+        isFront = true;
+      } else if (
+        label.includes("back") ||
+        label.includes("rear") ||
+        label.includes("environment") ||
+        label.includes("sau")
+      ) {
+        isFront = false;
+      } else {
+        isFront = isMobile ? requestedFacing === "user" : true;
+      }
+
+      setIsFrontCamera(isFront);
+      setPreferredFacingMode(isFront ? "user" : "environment");
 
       streamRef.current = stream;
       setIsCameraActive(true);
@@ -112,6 +177,13 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       );
       setIsCameraActive(false);
     }
+  };
+
+  const handleSwitchCamera = async () => {
+    const nextFacing =
+      preferredFacingMode === "environment" ? "user" : "environment";
+    setPreferredFacingMode(nextFacing);
+    await startCamera(nextFacing);
   };
 
   const stopCamera = useCallback(() => {
@@ -132,6 +204,10 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
     canvas.height = videoRef.current.videoHeight || 960;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    if (isFrontCamera) {
+      ctx.translate?.(canvas.width, 0);
+      ctx.scale?.(-1, 1);
+    }
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(
       (blob) => {
@@ -156,6 +232,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
       0.92
     );
   }, [
+    isFrontCamera,
     stopCamera,
     onConsentChange,
     onImageChange,
@@ -173,6 +250,7 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
   } = useHandDetection({
     videoRef,
     isCameraActive,
+
     targetHand: hand,
     onCapture: capturePhoto,
   });
@@ -309,7 +387,8 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
           playsInline
           muted
           className={cn(
-            "absolute inset-0 w-full h-full object-cover z-10",
+            "absolute inset-0 w-full h-full object-cover z-10 transition-transform duration-300",
+            isFrontCamera && "-scale-x-100",
             !isCameraActive && "hidden"
           )}
           data-testid="camera-video"
@@ -498,6 +577,18 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
               <Camera aria-hidden="true" className="h-4 w-4" />
               <span>Chụp ảnh</span>
             </button>
+            {isMobileDevice && (
+              <button
+                type="button"
+                onClick={handleSwitchCamera}
+                className="btn-secondary !min-h-[38px] !px-3 text-sm inline-flex items-center gap-1.5"
+                data-testid="switch-camera-button"
+                title="Đổi camera trước / sau"
+              >
+                <SwitchCamera aria-hidden="true" className="h-4 w-4 text-[#d4af37]" />
+                <span className="hidden sm:inline">Đổi camera</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsAutoCaptureEnabled(!isAutoCaptureEnabled)}
@@ -599,7 +690,13 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
             <span>[!] Không nhìn rõ lòng bàn tay</span>
           </div>
           <p className="m-0 text-body">
-            {rejectReason || "Hãy chụp lại nơi đủ sáng, xoè thẳng bàn tay."}
+            {rejectReason
+              ? rejectReason
+                  .replace(/Ảnh chụp là bàn tay (PHẢI|TRÁI)[^.]*\.\s*/gi, "")
+                  .replace(/Vui lòng giơ đúng bàn tay (trái|phải) và\s*/gi, "Vui lòng ")
+                  .replace(/Bạn đã chọn bàn tay [^.]*\.\s*/gi, "")
+                  .trim() || "Hãy chụp lại nơi đủ sáng, xoè thẳng bàn tay."
+              : "Hãy chụp lại nơi đủ sáng, xoè thẳng bàn tay."}
           </p>
           <p className="m-0 text-success text-xs font-rune">
             [+] Đã hoàn 1 credit
