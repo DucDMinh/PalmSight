@@ -1493,6 +1493,51 @@ const ONNX_MODEL_URL =
   (import.meta.env?.VITE_PALM_MODEL_URL as string | undefined) ||
   DEFAULT_R2_MODEL_URL;
 
+async function fetchOnnxModelBuffer(url: string): Promise<Uint8Array | null> {
+  try {
+    if (typeof caches !== "undefined") {
+      try {
+        const cache = await caches.open("palmsight-onnx-v1");
+        const cachedResp = await cache.match(url);
+        if (cachedResp && cachedResp.ok) {
+          const buf = await cachedResp.arrayBuffer();
+          if (buf.byteLength > 1_000_000) {
+            return new Uint8Array(buf);
+          }
+        }
+        const netResp = await fetch(url, { mode: "cors" });
+        if (netResp.ok) {
+          const clone = netResp.clone();
+          const buf = await netResp.arrayBuffer();
+          if (buf.byteLength > 1_000_000) {
+            cache.put(url, clone).catch(() => {});
+            return new Uint8Array(buf);
+          }
+        }
+      } catch {
+        const fallbackResp = await fetch(url);
+        if (fallbackResp.ok) {
+          const buf = await fallbackResp.arrayBuffer();
+          if (buf.byteLength > 1_000_000) {
+            return new Uint8Array(buf);
+          }
+        }
+      }
+    } else {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        if (buf.byteLength > 1_000_000) {
+          return new Uint8Array(buf);
+        }
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 async function getOnnxSession(): Promise<any | null> {
   if (typeof window === "undefined") {
     return null;
@@ -1502,34 +1547,25 @@ async function getOnnxSession(): Promise<any | null> {
       try {
         const ort = await import("onnxruntime-web");
         ort.env.wasm.numThreads = 1;
-        ort.env.wasm.wasmPaths = "/onnx/";
+        ort.env.wasm.proxy = false;
+
+        const modelBuffer =
+          (await fetchOnnxModelBuffer(ONNX_MODEL_URL)) ||
+          (await fetchOnnxModelBuffer("/models/palm_lines.onnx"));
+
+        const modelSource: any = modelBuffer ?? ONNX_MODEL_URL;
+
         try {
-          ort.env.wasm.proxy = true;
-          return await ort.InferenceSession.create(ONNX_MODEL_URL, {
+          ort.env.wasm.wasmPaths =
+            "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/";
+          return await ort.InferenceSession.create(modelSource, {
             executionProviders: ["wasm"],
           });
         } catch {
-          ort.env.wasm.proxy = false;
-          try {
-            return await ort.InferenceSession.create(ONNX_MODEL_URL, {
-              executionProviders: ["wasm"],
-            });
-          } catch {
-            ort.env.wasm.wasmPaths =
-              "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/";
-            try {
-              return await ort.InferenceSession.create(ONNX_MODEL_URL, {
-                executionProviders: ["wasm"],
-              });
-            } catch {
-              return await ort.InferenceSession.create(
-                "/models/palm_lines.onnx",
-                {
-                  executionProviders: ["wasm"],
-                }
-              );
-            }
-          }
+          ort.env.wasm.wasmPaths = "/onnx/";
+          return await ort.InferenceSession.create(modelSource, {
+            executionProviders: ["wasm"],
+          });
         }
       } catch {
         cachedOrtSessionPromise = null;
@@ -1679,48 +1715,57 @@ async function detectHandLandmarksFromElement(
         const { FilesetResolver, HandLandmarker } = await import(
           "@mediapipe/tasks-vision"
         );
-        let vision: any;
-        try {
-          vision = await FilesetResolver.forVisionTasks("/mediapipe");
-        } catch {
-          vision = await FilesetResolver.forVisionTasks(
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/wasm"
-          );
-        }
-        try {
-          return await HandLandmarker.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath: "/models/hand_landmarker.task",
-              delegate: "GPU",
-            },
-            runningMode: "IMAGE",
-            numHands: 1,
-            minHandDetectionConfidence: 0.35,
-          });
-        } catch {
+        const configs: Array<{
+          wasmUrl: string;
+          modelUrl: string;
+          delegate: "GPU" | "CPU";
+        }> = [
+          {
+            wasmUrl:
+              "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/wasm",
+            modelUrl:
+              "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU",
+          },
+          {
+            wasmUrl:
+              "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/wasm",
+            modelUrl:
+              "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "CPU",
+          },
+          {
+            wasmUrl:
+              "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
+            modelUrl:
+              "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "CPU",
+          },
+          {
+            wasmUrl: "/mediapipe",
+            modelUrl: "/models/hand_landmarker.task",
+            delegate: "CPU",
+          },
+        ];
+
+        let lastErr: unknown = null;
+        for (const cfg of configs) {
           try {
+            const vision = await FilesetResolver.forVisionTasks(cfg.wasmUrl);
             return await HandLandmarker.createFromOptions(vision, {
               baseOptions: {
-                modelAssetPath: "/models/hand_landmarker.task",
-                delegate: "CPU",
+                modelAssetPath: cfg.modelUrl,
+                delegate: cfg.delegate,
               },
               runningMode: "IMAGE",
               numHands: 1,
               minHandDetectionConfidence: 0.35,
             });
-          } catch {
-            return await HandLandmarker.createFromOptions(vision, {
-              baseOptions: {
-                modelAssetPath:
-                  "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-                delegate: "CPU",
-              },
-              runningMode: "IMAGE",
-              numHands: 1,
-              minHandDetectionConfidence: 0.35,
-            });
+          } catch (err) {
+            lastErr = err;
           }
         }
+        throw lastErr;
       })();
     }
 
@@ -1839,6 +1884,11 @@ export async function runClientPalmPipeline(
         OUT_SIZE,
         OUT_SIZE
       );
+
+      if (!usedOnnx) {
+        pipelineCache.delete(file);
+        return null;
+      }
 
       await yieldToMain();
 

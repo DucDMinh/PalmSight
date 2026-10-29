@@ -159,7 +159,31 @@ export const useScanSubmit = ({
       formData.append("fingerprint", fingerprint);
 
       try {
-        const res = await readingsService.createGuestReading(formData, key);
+        let res: any;
+        try {
+          res = await readingsService.createGuestReading(formData, key);
+        } catch (firstErr: any) {
+          const errMsg = String(
+            firstErr?.response?.data?.error?.message || ""
+          );
+          if (targetAnnotated && /Unexpected file field/i.test(errMsg)) {
+            const fallbackForm = new FormData();
+            fallbackForm.append("school", school);
+            fallbackForm.append("hand", hand);
+            if (topics && topics.length > 0) {
+              fallbackForm.append("topics", topics.join(","));
+            }
+            fallbackForm.append("aiConsent", String(targetConsent));
+            fallbackForm.append("image", targetFile);
+            fallbackForm.append("fingerprint", fingerprint);
+            res = await readingsService.createGuestReading(
+              fallbackForm,
+              crypto.randomUUID()
+            );
+          } else {
+            throw firstErr;
+          }
+        }
         if (
           res.reading?.status === ReadingStatus.REJECTED ||
           (res.reading as any)?.status === "REJECTED"
@@ -220,16 +244,35 @@ export const useScanSubmit = ({
       const targetLines =
         overrideLines !== undefined ? overrideLines : palmLines;
       try {
-        const response = await createReading({
-          school,
-          hand,
-          topics,
-          aiConsent: targetConsent,
-          image: targetFile,
-          annotatedImage: targetAnnotated,
-          palmLines: targetLines,
-          idempotencyKey: key,
-        });
+        let response: any;
+        try {
+          response = await createReading({
+            school,
+            hand,
+            topics,
+            aiConsent: targetConsent,
+            image: targetFile,
+            annotatedImage: targetAnnotated,
+            palmLines: targetLines,
+            idempotencyKey: key,
+          });
+        } catch (firstErr: any) {
+          const errMsg = String(
+            firstErr?.response?.data?.error?.message || ""
+          );
+          if (targetAnnotated && /Unexpected file field/i.test(errMsg)) {
+            response = await createReading({
+              school,
+              hand,
+              topics,
+              aiConsent: targetConsent,
+              image: targetFile,
+              idempotencyKey: crypto.randomUUID(),
+            });
+          } else {
+            throw firstErr;
+          }
+        }
 
         if (response.creditBalance !== undefined) {
           updateUser({ creditBalance: response.creditBalance });
