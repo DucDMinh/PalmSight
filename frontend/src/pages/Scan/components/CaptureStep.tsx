@@ -144,14 +144,25 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
         stopCamera();
         onImageChange(file, preview);
         onConsentChange(true);
-        if (!isOutOfCredits && status !== "LIMIT_REACHED" && status !== "RATE_LIMITED") {
+        if (
+          !isOutOfCredits &&
+          status !== "LIMIT_REACHED" &&
+          status !== "RATE_LIMITED"
+        ) {
           onSubmit(file);
         }
       },
       "image/jpeg",
       0.92
     );
-  }, [stopCamera, onConsentChange, onImageChange, isOutOfCredits, status, onSubmit]);
+  }, [
+    stopCamera,
+    onConsentChange,
+    onImageChange,
+    isOutOfCredits,
+    status,
+    onSubmit,
+  ]);
 
   const {
     status: handStatus,
@@ -349,17 +360,20 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
           </div>
         )}
 
-        {isCameraActive && isAutoCaptureEnabled && !imagePreviewUrl && autoCaptureProgress > 0 && (
-          <div className="absolute bottom-12 inset-x-12 z-20 pointer-events-none">
-            <div className="w-full bg-[#0b0716]/80 rounded-full h-2 p-0.5 border border-emerald-500/50 overflow-hidden shadow-lg">
-              <div
-                className="bg-gradient-to-r from-emerald-500 to-green-300 h-full rounded-full transition-all duration-100"
-                style={{ width: `${autoCaptureProgress}%` }}
-                data-testid="auto-capture-progress"
-              />
+        {isCameraActive &&
+          isAutoCaptureEnabled &&
+          !imagePreviewUrl &&
+          autoCaptureProgress > 0 && (
+            <div className="absolute bottom-12 inset-x-12 z-20 pointer-events-none">
+              <div className="w-full bg-[#0b0716]/80 rounded-full h-2 p-0.5 border border-emerald-500/50 overflow-hidden shadow-lg">
+                <div
+                  className="bg-gradient-to-r from-emerald-500 to-green-300 h-full rounded-full transition-all duration-100"
+                  style={{ width: `${autoCaptureProgress}%` }}
+                  data-testid="auto-capture-progress"
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {!imagePreviewUrl && (
           <svg
@@ -489,7 +503,8 @@ export const CaptureStep: React.FC<CaptureStepProps> = ({
               onClick={() => setIsAutoCaptureEnabled(!isAutoCaptureEnabled)}
               className={cn(
                 "btn-secondary !min-h-[38px] !px-4 text-sm inline-flex items-center gap-1.5",
-                isAutoCaptureEnabled && "border-emerald-500/60 text-emerald-300 bg-emerald-950/30"
+                isAutoCaptureEnabled &&
+                  "border-emerald-500/60 text-emerald-300 bg-emerald-950/30"
               )}
               data-testid="auto-capture-toggle"
             >

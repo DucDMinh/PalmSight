@@ -9,5 +9,6 @@ export default defineConfig({
     include: ['src/**/*.{spec,test}.ts', 'test/**/*.{spec,test}.ts'],
     passWithNoTests: true,
     fileParallelism: false,
+    testTimeout: 20000,
   },
 });

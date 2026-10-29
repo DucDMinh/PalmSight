@@ -1,11 +1,12 @@
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ScrollText, Compass, RefreshCcw } from "lucide-react";
+import { ScrollText, RefreshCcw } from "lucide-react";
 import BaseUrl from "@/consts/baseUrl";
 import { READING_SCHOOLS, HandOrientation } from "@palmsight/shared";
 import { TarotCorners } from "@/components/mystic/MysticDivider";
 import readingsService from "@/services/readingsService";
+import PalmViewer from "@/components/palm/PalmViewer";
 import CountdownBanner from "./components/CountdownBanner";
 import PreviewSections from "./components/PreviewSections";
 import PreviewAspectsAdvice from "./components/PreviewAspectsAdvice";
@@ -77,7 +78,13 @@ export const GuestReadingPreview: React.FC = () => {
 
   const schoolConfig = READING_SCHOOLS[preview.school];
   const schoolName = schoolConfig?.name ?? preview.school;
-  const handName = preview.hand === HandOrientation.LEFT ? "Tay trái" : "Tay phải";
+  const handName =
+    preview.hand === HandOrientation.LEFT ? "Tay trái" : "Tay phải";
+  const hasVisuals = Boolean(
+    preview.imageUrl ||
+      preview.annotatedImageUrl ||
+      (preview.palmLines && preview.palmLines.length > 0)
+  );
 
   return (
     <main className="w-full min-h-[calc(100vh-72px)] py-8 sm:py-12 text-ink">
@@ -88,7 +95,6 @@ export const GuestReadingPreview: React.FC = () => {
         <div className="relative mystic-card rounded p-6 sm:p-9 flex flex-col text-left">
           <TarotCorners />
 
-          {/* Subheader info bar */}
           <div className="text-xs sm:text-sm text-[#d4af37] pb-4 border-b border-hairline flex flex-wrap justify-between items-center gap-2 select-none font-rune">
             <span className="inline-flex items-center gap-2 font-bold tracking-wide">
               <ScrollText aria-hidden="true" className="h-4 w-4" />
@@ -104,14 +110,30 @@ export const GuestReadingPreview: React.FC = () => {
             </div>
           </div>
 
-          {/* Palm Summary (100% visible) */}
+          {hasVisuals && (
+            <div
+              className="mt-6"
+              data-testid="guest-preview-palm-viewer"
+            >
+              <PalmViewer
+                imageUrl={preview.imageUrl}
+                annotatedImageUrl={preview.annotatedImageUrl}
+                palmLines={preview.palmLines}
+                hand={preview.hand}
+                school={preview.school}
+                sections={preview.sections}
+                compact
+              />
+            </div>
+          )}
+
           {preview.summary && (
             <div
               className="mt-6 p-5 sm:p-6 rounded bg-[#140d26]/85 border border-[#d4af37]/30"
               data-testid="preview-summary-card"
             >
               <div className="flex items-center gap-2 mb-3">
-                <Compass aria-hidden="true" className="h-4 w-4 text-[#d4af37]" />
+                <ScrollText aria-hidden="true" className="h-4 w-4 text-[#d4af37]" />
                 <h2 className="font-display text-xl sm:text-2xl text-[#f7e7b4] font-bold m-0">
                   Tổng quan năng lượng lòng bàn tay
                 </h2>
@@ -122,26 +144,24 @@ export const GuestReadingPreview: React.FC = () => {
             </div>
           )}
 
-          {/* First 2 sections (unlocked) + remaining sections (locked) */}
           <PreviewSections sections={preview.sections} />
 
-          {/* Locked aspects and advice */}
-          <PreviewAspectsAdvice aspects={preview.aspects} advice={preview.advice} />
+          <PreviewAspectsAdvice
+            aspects={preview.aspects}
+            advice={preview.advice}
+          />
 
-          {/* Disclaimer */}
           {preview.disclaimer && (
-            <div
+            <p
+              className="text-xs text-mute/80 italic mt-8 pt-4 border-t border-hairline text-center select-none"
               data-testid="preview-disclaimer"
-              className="mt-8 pt-4 border-t border-hairline text-xs font-rune text-mute leading-relaxed"
             >
-              <span className="text-[#d4af37] mr-1">[*]</span>
-              <span>{preview.disclaimer}</span>
-            </div>
+              {preview.disclaimer}
+            </p>
           )}
-        </div>
 
-        {/* Sticky Unlock Card */}
-        <StickyUnlockCard claimToken={preview.claimToken || token || ""} />
+          <StickyUnlockCard claimToken={token || ""} />
+        </div>
       </div>
     </main>
   );

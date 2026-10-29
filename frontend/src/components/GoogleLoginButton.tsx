@@ -19,8 +19,6 @@ export const GoogleLoginButton = () => {
   const codeClientRef = useRef<GoogleCodeClient | null>(null);
   const [status, setStatus] = useState<ButtonStatus>(clientId ? "loading" : "unavailable");
 
-  //! Google calls this with an authorization code after the user picks an account in the popup
-  // Kept in a ref so the code client created once always sees the latest navigate/toast
   const handleCodeRef = useRef<(response: GoogleCodeResponse) => void>();
   handleCodeRef.current = async ({ code, error }: GoogleCodeResponse) => {
     if (!code) {
@@ -38,7 +36,7 @@ export const GoogleLoginButton = () => {
           sessionStorage.getItem("ps_claim_token") ||
           localStorage.getItem("ps_claim_token");
       } catch {
-        // Storage fallback
+        claimToken = null;
       }
     }
 
@@ -52,7 +50,7 @@ export const GoogleLoginButton = () => {
           sessionStorage.removeItem("ps_claim_token");
           localStorage.removeItem("ps_claim_token");
         } catch {
-          // Storage fallback
+          claimToken = null;
         }
       }
       setAuthSession({ accessToken: data.accessToken, user: data.user });
@@ -89,7 +87,6 @@ export const GoogleLoginButton = () => {
           scope: GOOGLE_SCOPES,
           ux_mode: "popup",
           callback: (response) => handleCodeRef.current?.(response),
-          // Fired when the popup is closed or blocked before an account is picked
           error_callback: () => setStatus("ready"),
         });
         setStatus("ready");

@@ -47,7 +47,8 @@ describe("ReadingDetail Page (/readings/:id)", () => {
       hand: HandOrientation.LEFT,
       imageQuality: ImageQuality.GOOD,
       topics: ["nguHanh", "thienVan"],
-      summary: "Tay Thổ, thực tế và đáng tin cậy. Tình cảm chân thành, chậm mà chắc.",
+      summary:
+        "Tay Thổ, thực tế và đáng tin cậy. Tình cảm chân thành, chậm mà chắc.",
       sections: [
         {
           key: "nguHanh",
@@ -66,14 +67,18 @@ describe("ReadingDetail Page (/readings/:id)", () => {
         love: "Bạn coi trọng sự bền vững hơn những rung động nhất thời.",
       },
       advice: "Dành thời gian nói ra điều bạn nghĩ với người thân.",
-      disclaimer: "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.",
+      disclaimer:
+        "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.",
     },
     rejectReason: null,
     createdAt: "2026-10-14T08:31:00Z",
     completedAt: "2026-10-14T08:31:07Z",
   };
 
-  const renderComponent = (readingData: any = mockReading, errorToThrow: any = null) => {
+  const renderComponent = (
+    readingData: any = mockReading,
+    errorToThrow: any = null
+  ) => {
     if (errorToThrow) {
       vi.spyOn(httpService, "get").mockRejectedValue(errorToThrow);
     } else {
@@ -88,8 +93,16 @@ describe("ReadingDetail Page (/readings/:id)", () => {
           <AuthenticationProvider skipInitialRefresh initialUser={mockUser}>
             <Routes>
               <Route path="/readings/:id" element={<ReadingDetail />} />
-              <Route path="/readings" element={<div data-testid="readings-history-page">History Page</div>} />
-              <Route path="/scan" element={<div data-testid="scan-page">Scan Page</div>} />
+              <Route
+                path="/readings"
+                element={
+                  <div data-testid="readings-history-page">History Page</div>
+                }
+              />
+              <Route
+                path="/scan"
+                element={<div data-testid="scan-page">Scan Page</div>}
+              />
             </Routes>
           </AuthenticationProvider>
         </MemoryRouter>
@@ -101,26 +114,31 @@ describe("ReadingDetail Page (/readings/:id)", () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getAllByText("Chỉ tay phương Đông").length).toBeGreaterThan(0);
+      expect(
+        screen.getAllByText("Chỉ tay phương Đông").length
+      ).toBeGreaterThan(0);
       expect(screen.getByText("Tóm tắt")).toBeInTheDocument();
       expect(
-        screen.getByText("Tay Thổ, thực tế và đáng tin cậy. Tình cảm chân thành, chậm mà chắc.")
+        screen.getByText(
+          "Tay Thổ, thực tế và đáng tin cậy. Tình cảm chân thành, chậm mà chắc."
+        )
       ).toBeInTheDocument();
 
-      // Sections
-      expect(screen.getAllByText("Dáng tay ngũ hành").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Dáng tay ngũ hành").length).toBeGreaterThan(
+        0
+      );
       expect(screen.getAllByText("Thiên văn").length).toBeGreaterThan(0);
       expect(
         screen.getByText("Lòng bàn tay vuông, ngón ngắn và chắc.")
       ).toBeInTheDocument();
 
-      // Aspects
       expect(screen.getByText("Khía cạnh cuộc sống")).toBeInTheDocument();
       expect(
-        screen.getByText("Bạn coi trọng sự bền vững hơn những rung động nhất thời.")
+        screen.getByText(
+          "Bạn coi trọng sự bền vững hơn những rung động nhất thời."
+        )
       ).toBeInTheDocument();
 
-      // Advice & disclaimer
       expect(screen.getByText("Lời khuyên")).toBeInTheDocument();
       expect(
         screen.getByText("Dành thời gian nói ra điều bạn nghĩ với người thân.")
@@ -130,9 +148,61 @@ describe("ReadingDetail Page (/readings/:id)", () => {
       );
     });
 
-    // Verify NO palm photo is rendered per ADR-0010
     expect(screen.queryByAltText(/palm/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId("reading-emblem")).toHaveTextContent("NO_IMAGE_STORED // ADR-0010");
+    expect(screen.getByTestId("reading-emblem")).toHaveTextContent(
+      "NO_IMAGE_STORED // ADR-0010"
+    );
+  });
+
+  it("should render palm image and AI palm lines toggle when imageUrl and palmLines are stored (ADR-0011)", async () => {
+    const readingWithImage: ReadingDto = {
+      ...mockReading,
+      imageUrl: "https://res.cloudinary.com/demo/image/upload/palm.jpg",
+      annotatedImageUrl:
+        "https://res.cloudinary.com/demo/image/upload/palm_lines.jpg",
+      palmLines: [
+        {
+          name: "life",
+          points: [
+            [0.6, 0.4],
+            [0.55, 0.8],
+          ],
+          lengthRel: 0.45,
+          curvature: 1.15,
+          branches: 1,
+        },
+        {
+          name: "head",
+          points: [
+            [0.3, 0.45],
+            [0.7, 0.42],
+          ],
+          lengthRel: 0.4,
+          curvature: 1.05,
+          branches: 0,
+        },
+      ],
+    };
+
+    renderComponent(readingWithImage);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("reading-palm-viewer")).toBeInTheDocument();
+      const img = screen.getByTestId("reading-palm-image") as HTMLImageElement;
+      expect(img.src).toContain("palm_lines.jpg");
+      expect(screen.getByTestId("reading-palm-legend")).toHaveTextContent(
+        "Sinh đạo"
+      );
+      expect(screen.getByTestId("reading-palm-legend")).toHaveTextContent(
+        "Trí đạo"
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("reading-toggle-lines-button"));
+    const imgAfterToggle = screen.getByTestId(
+      "reading-palm-image"
+    ) as HTMLImageElement;
+    expect(imgAfterToggle.src).toContain("palm.jpg");
   });
 
   it("should show warning banner when image quality is POOR", async () => {
@@ -215,7 +285,9 @@ describe("ReadingDetail Page (/readings/:id)", () => {
   });
 
   it("should open delete modal and call delete API when confirmed", async () => {
-    const deleteSpy = vi.spyOn(httpService, "delete").mockResolvedValue({} as any);
+    const deleteSpy = vi
+      .spyOn(httpService, "delete")
+      .mockResolvedValue({} as any);
 
     renderComponent();
 
@@ -225,13 +297,11 @@ describe("ReadingDetail Page (/readings/:id)", () => {
 
     fireEvent.click(screen.getByTestId("delete-button"));
 
-    // Modal is opened
     expect(screen.getByTestId("delete-modal")).toBeInTheDocument();
     expect(
       screen.getByText(/Bạn có chắc chắn muốn xoá lần xem bói này\?/i)
     ).toBeInTheDocument();
 
-    // Confirm deletion
     fireEvent.click(screen.getByTestId("confirm-delete-button"));
 
     await waitFor(() => {
@@ -246,7 +316,9 @@ describe("ReadingDetail Page (/readings/:id)", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("[!] Không tìm thấy lần xem bói")).toBeInTheDocument();
+      expect(
+        screen.getByText("[!] Không tìm thấy lần xem bói")
+      ).toBeInTheDocument();
       expect(
         screen.getByText("Lần xem bói này không tồn tại hoặc đã bị xoá.")
       ).toBeInTheDocument();

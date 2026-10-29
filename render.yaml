@@ -84,3 +84,11 @@ services:
         value: 8388608
       - key: IMAGE_MAX_DIMENSION
         value: 1280
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        value: palmsight/readings

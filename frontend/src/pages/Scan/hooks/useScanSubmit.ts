@@ -4,11 +4,13 @@ import {
   ReadingSchool,
   HandOrientation,
   ReadingStatus,
+  PalmLineDto,
 } from "@palmsight/shared";
 import { useAuth } from "@/providers/AuthenticationProvider";
 import { showError } from "@/helpers/toast";
 import { getFingerprint } from "@/helpers/fingerprint";
 import readingsService, { CreateReadingParams } from "@/services/readingsService";
+import { runClientPalmPipeline } from "../utils/palmLinePipeline";
 import { ScanStatus } from "../types";
 
 export interface UseScanSubmitOptions {
@@ -18,6 +20,8 @@ export interface UseScanSubmitOptions {
   selectedSections: string[];
   selectedAspects: string[];
   imageFile: File | null;
+  annotatedFile?: File | null;
+  palmLines?: PalmLineDto[] | null;
   aiConsent: boolean;
   setStatus: (status: ScanStatus) => void;
   setErrorMessage: (msg: string | null) => void;
@@ -33,6 +37,8 @@ export const useScanSubmit = ({
   selectedSections,
   selectedAspects,
   imageFile,
+  annotatedFile,
+  palmLines,
   aiConsent,
   setStatus,
   setErrorMessage,
@@ -123,12 +129,18 @@ export const useScanSubmit = ({
       key: string,
       topics?: string[],
       activeFile?: File,
-      activeConsent?: boolean
+      activeConsent?: boolean,
+      overrideAnnotated?: File | null,
+      overrideLines?: PalmLineDto[] | null
     ) => {
       const targetFile = activeFile || imageFile;
       if (!targetFile) return;
       const targetConsent =
         activeConsent !== undefined ? activeConsent : aiConsent;
+      const targetAnnotated =
+        overrideAnnotated !== undefined ? overrideAnnotated : annotatedFile;
+      const targetLines =
+        overrideLines !== undefined ? overrideLines : palmLines;
       const fingerprint = await getFingerprint();
       const formData = new FormData();
       formData.append("school", school);
@@ -138,6 +150,12 @@ export const useScanSubmit = ({
       }
       formData.append("aiConsent", String(targetConsent));
       formData.append("image", targetFile);
+      if (targetAnnotated) {
+        formData.append("annotatedImage", targetAnnotated);
+      }
+      if (targetLines && targetLines.length > 0) {
+        formData.append("palmLines", JSON.stringify(targetLines));
+      }
       formData.append("fingerprint", fingerprint);
 
       try {
@@ -172,10 +190,12 @@ export const useScanSubmit = ({
     },
     [
       aiConsent,
+      annotatedFile,
       hand,
       handleGuestError,
       imageFile,
       navigate,
+      palmLines,
       school,
       setRejectReason,
       setStatus,
@@ -187,12 +207,18 @@ export const useScanSubmit = ({
       key: string,
       topics?: string[],
       activeFile?: File,
-      activeConsent?: boolean
+      activeConsent?: boolean,
+      overrideAnnotated?: File | null,
+      overrideLines?: PalmLineDto[] | null
     ) => {
       const targetFile = activeFile || imageFile;
       if (!targetFile) return;
       const targetConsent =
         activeConsent !== undefined ? activeConsent : aiConsent;
+      const targetAnnotated =
+        overrideAnnotated !== undefined ? overrideAnnotated : annotatedFile;
+      const targetLines =
+        overrideLines !== undefined ? overrideLines : palmLines;
       try {
         const response = await createReading({
           school,
@@ -200,6 +226,8 @@ export const useScanSubmit = ({
           topics,
           aiConsent: targetConsent,
           image: targetFile,
+          annotatedImage: targetAnnotated,
+          palmLines: targetLines,
           idempotencyKey: key,
         });
 
@@ -220,11 +248,13 @@ export const useScanSubmit = ({
     },
     [
       aiConsent,
+      annotatedFile,
       createReading,
       hand,
       handleMemberError,
       imageFile,
       navigate,
+      palmLines,
       school,
       setRejectReason,
       setStatus,
@@ -253,18 +283,55 @@ export const useScanSubmit = ({
       setErrorMessage(null);
       setRejectReason(null);
 
+      let activeAnnotated = annotatedFile;
+      let activeLines = palmLines;
+      if (
+        !activeAnnotated &&
+        activeFile &&
+        !(
+          typeof navigator !== "undefined" &&
+          /jsdom/i.test(navigator.userAgent || "")
+        )
+      ) {
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 40));
+          const res = await runClientPalmPipeline(activeFile);
+          activeAnnotated = res?.annotatedFile ?? null;
+          activeLines = res?.palmLines ?? null;
+        } catch {
+          activeAnnotated = null;
+          activeLines = null;
+        }
+      }
+
       const topics = getTopicsParam();
       if (!isLogged) {
-        await submitGuestScan(key, topics, activeFile, activeConsent);
+        await submitGuestScan(
+          key,
+          topics,
+          activeFile,
+          activeConsent,
+          activeAnnotated,
+          activeLines
+        );
       } else {
-        await submitMemberScan(key, topics, activeFile, activeConsent);
+        await submitMemberScan(
+          key,
+          topics,
+          activeFile,
+          activeConsent,
+          activeAnnotated,
+          activeLines
+        );
       }
     },
     [
       aiConsent,
+      annotatedFile,
       getTopicsParam,
       imageFile,
       isLogged,
+      palmLines,
       setErrorMessage,
       setRejectReason,
       setStatus,

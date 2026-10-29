@@ -6,6 +6,16 @@ import {
 } from "../enums";
 import { PaginatedResponseDto } from "./common.dto";
 
+export type PalmLineName = "life" | "head" | "heart" | "other";
+
+export interface PalmLineDto {
+  name: PalmLineName;
+  points: [number, number][];
+  lengthRel: number;
+  curvature: number;
+  branches: number;
+}
+
 export interface ReadingSectionResult {
   key: string;
   title: string;
@@ -34,6 +44,7 @@ export interface CreateReadingRequestDto {
   topics?: string;
   hand: HandOrientation;
   aiConsent: boolean | string;
+  palmLines?: string | PalmLineDto[];
 }
 
 export interface ReadingDto {
@@ -44,6 +55,9 @@ export interface ReadingDto {
   hand: HandOrientation;
   result: PalmResult | null;
   rejectReason: string | null;
+  imageUrl?: string | null;
+  annotatedImageUrl?: string | null;
+  palmLines?: PalmLineDto[] | null;
   createdAt: string;
   completedAt: string | null;
 }
@@ -55,6 +69,8 @@ export interface ReadingListItemDto {
   topics: string[];
   hand: HandOrientation;
   summary: string | null;
+  imageUrl?: string | null;
+  annotatedImageUrl?: string | null;
   createdAt: string;
 }
 
@@ -95,6 +111,9 @@ export interface GuestReadingPreviewDto {
   aspects: Record<string, ReadingAspectPreviewDto>;
   advice: ReadingAdvicePreviewDto | null;
   disclaimer: string;
+  imageUrl?: string | null;
+  annotatedImageUrl?: string | null;
+  palmLines?: PalmLineDto[] | null;
   previewExpiresAt: string;
   createdAt: string;
   claimToken?: string;

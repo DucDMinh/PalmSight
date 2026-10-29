@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types, SchemaTypes } from 'mongoose';
-import { HandOrientation, ReadingSchool, ReadingStatus } from '@palmsight/shared';
+import { HandOrientation, PalmLineDto, ReadingSchool, ReadingStatus } from '@palmsight/shared';
 
 @Schema({ collection: 'readings', timestamps: { createdAt: true, updatedAt: false } })
 export class Reading {
@@ -51,6 +51,21 @@ export class Reading {
   result?: Record<string, unknown> | null;
 
   @Prop({ type: String, default: null, trim: true })
+  imageUrl?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  annotatedImageUrl?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  imagePublicId?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  annotatedImagePublicId?: string | null;
+
+  @Prop({ type: SchemaTypes.Mixed, default: null })
+  palmLines?: PalmLineDto[] | null;
+
+  @Prop({ type: String, default: null, trim: true })
   rejectReason?: string | null;
 
   @Prop({ type: String, default: null, trim: true })
@@ -86,23 +101,17 @@ export class Reading {
 export type ReadingDocument = HydratedDocument<Reading>;
 export const ReadingSchema = SchemaFactory.createForClass(Reading);
 
-// Indexes:
-// - Partial unique index on { userId: 1, idempotencyKey: 1 } where userId exists
 ReadingSchema.index(
   { userId: 1, idempotencyKey: 1 },
   { unique: true, partialFilterExpression: { userId: { $type: 'objectId' } } },
 );
 
-// - { userId: 1, createdAt: -1 }
 ReadingSchema.index({ userId: 1, createdAt: -1 });
 
-// - { status: 1, createdAt: 1 }
 ReadingSchema.index({ status: 1, createdAt: 1 });
 
-// - Guest token lookup
 ReadingSchema.index({ guestTokenHash: 1 }, { sparse: true });
 
-// - TTL Index for unclaimed guest previews (7 days)
 ReadingSchema.index(
   { previewExpiresAt: 1 },
   { expireAfterSeconds: 0, partialFilterExpression: { previewExpiresAt: { $type: 'date' } } },
