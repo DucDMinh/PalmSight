@@ -16,7 +16,7 @@
 | **Header** | `Authorization` (access token), `Idempotency-Key` (chỉ `POST /readings`) | Xem bảng header bên dưới |
 | **Cookie** | Refresh token `rt`, chỉ dùng ở `/auth/*` | Trình duyệt tự gửi; client không đọc được (HttpOnly) |
 | **Body JSON** | Mọi `POST /auth/*` trừ refresh/logout; `PUT /me/password`; `POST /me/referral` | `Content-Type: application/json`. Có trường lạ hoặc thiếu trường bắt buộc → `400 VALIDATION_ERROR` |
-| **Body multipart** | Chỉ `POST /readings` (có file ảnh) | `Content-Type: multipart/form-data`. Mọi giá trị không phải file đều là chuỗi |
+| **Body multipart** | Chỉ `POST /readings`, `POST /readings/guest` (có file ảnh) | `Content-Type: multipart/form-data`. Mọi giá trị không phải file đều là chuỗi |
 | **Không có body** | `POST /auth/refresh`, `POST /auth/logout`, mọi `GET` và `DELETE` | Body gửi kèm (nếu có) bị bỏ qua |
 
 Tóm tắt các request `POST`/`PUT`:
@@ -35,8 +35,8 @@ Tóm tắt các request `POST`/`PUT`:
 | `POST /auth/logout` | — | — | `Origin` | `rt` (nếu có) | — |
 | `PUT /me/password` | — | — | `Authorization` | — | JSON `{ currentPassword, newPassword }` |
 | `POST /me/referral` | — | — | `Authorization` | — | JSON `{ code }` |
-| `POST /readings` | — | — | `Authorization`, `Idempotency-Key` | — | multipart `school`, `topics`, `hand`, `aiConsent`, `image` |
-| `POST /readings/guest` | — | — | `Idempotency-Key` | `ps_guest_trial` (nếu có) | multipart `school`, `topics`, `hand`, `fingerprint`, `aiConsent`, `image` |
+| `POST /readings` | — | — | `Authorization`, `Idempotency-Key` | — | multipart `school`, `topics`, `hand`, `aiConsent`, `palmLines?`, `image`, `annotatedImage?` |
+| `POST /readings/guest` | — | — | `Idempotency-Key` | `ps_guest_trial` (nếu có) | multipart `school`, `topics`, `hand`, `fingerprint`, `aiConsent`, `palmLines?`, `image`, `annotatedImage?` |
 
 ### Header
 
@@ -175,11 +175,11 @@ Với `VALIDATION_ERROR`, `details.fields` liệt kê từng trường lỗi. `f
 | POST | `/me/referral` | Bearer | body JSON | Nhập mã giới thiệu |
 | GET | `/me/referrals` | Bearer | query phân trang | Danh sách người mình đã giới thiệu |
 | GET | `/me/credit-transactions` | Bearer | query phân trang | Lịch sử biến động credits |
-| POST | `/readings` | Bearer | header + body multipart | Gửi ảnh + trường phái + các mục muốn bói, trừ 1 credit, nhận kết quả |
+| POST | `/readings` | Bearer | header + body multipart | Gửi ảnh + dữ liệu vẽ chỉ tay ONNX + trường phái + các mục muốn bói, trừ 1 credit, lưu ảnh lên Cloudinary, nhận kết quả |
 | GET | `/readings` | Bearer | query phân trang | Lịch sử các lần xem |
-| GET | `/readings/{id}` | Bearer | path | Chi tiết một lần xem |
-| DELETE | `/readings/{id}` | Bearer | path | Xoá kết quả, ẩn khỏi lịch sử |
-| POST | `/readings/guest` | — | header + body multipart | Bói thử 1 lần cho khách vãng lai (không cần đăng nhập), xem trước 50% kết quả |
+| GET | `/readings/{id}` | Bearer | path | Chi tiết một lần xem (kèm URL ảnh Cloudinary và đường chỉ tay) |
+| DELETE | `/readings/{id}` | Bearer | path | Xoá ảnh trên Cloudinary, xoá kết quả, ẩn khỏi lịch sử |
+| POST | `/readings/guest` | — | header + body multipart | Bói thử 1 lần cho khách vãng lai (không cần đăng nhập), lưu ảnh lên Cloudinary, xem trước 50% kết quả |
 | GET | `/readings/guest/{token}` | — | path | Xem lại bản xem trước 50% bằng claimToken trong thời hạn 7 ngày |
 
 Danh sách trường phái và các mục bói không có endpoint riêng: web đọc từ `@palmsight/shared` (`READING_SCHOOLS`, `LIFE_ASPECTS`).
@@ -189,8 +189,6 @@ Danh sách trường phái và các mục bói không có endpoint riêng: web �
 `POST /auth/verify-email`, `/auth/login`, `/auth/google`, `/auth/facebook` thành công đều trả cùng một dạng:
 
 ```json
-// 200 OK
-// Set-Cookie: rt=<refresh token>; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/auth; Max-Age=2592000
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIs...",
   "expiresIn": 900,
@@ -253,7 +251,6 @@ Content-Type: application/json
 ```
 
 ```json
-// 202 Accepted
 { "email": "a@example.com", "verificationExpiresAt": "2026-10-15T08:30:00Z" }
 ```
 
@@ -405,8 +402,6 @@ Không có body. Trình duyệt tự gửi cookie `rt` (cùng domain) và header
 | header | `Origin` | có | Khớp `PUBLIC_BASE_URL` |
 
 ```json
-// 200 OK
-// Set-Cookie: rt=<refresh token mới>; ...
 { "accessToken": "eyJhbGciOiJIUzI1NiIs...", "expiresIn": 900 }
 ```
 
@@ -434,7 +429,6 @@ Không cần đăng nhập. Trả `200 { "status": "ok", "db": "ok" }`, hoặc `
 ### GET /me
 
 ```json
-// 200 OK
 {
   "id": "6710a1b2c3d4e5f6a7b8c9d0",
   "displayName": "Nguyễn Văn A",
@@ -509,7 +503,6 @@ Content-Type: application/json
 ```
 
 ```json
-// 201 Created
 {
   "accepted": true,
   "referrer": { "displayName": "Trần B" },
@@ -532,7 +525,6 @@ Lỗi: `VALIDATION_ERROR` (thiếu `code` hoặc `code` không phải chuỗi), 
 Query: `cursor`, `limit` (xem [Phân trang](#phân-trang)).
 
 ```json
-// 200 OK
 {
   "totalRewarded": 3,
   "totalCreditsEarned": 6,
@@ -553,7 +545,6 @@ Query: `cursor`, `limit` (xem [Phân trang](#phân-trang)).
 Query: `cursor`, `limit`.
 
 ```json
-// 200 OK
 {
   "items": [
     { "id": "6710c3d4e5f6a7b8c9d0e1f2", "type": "READING_SPEND", "amount": -1, "balanceAfter": 4, "readingId": "6710c3d4e5f6a7b8c9d0e1aa", "createdAt": "2026-10-14T08:31:02Z" },
@@ -586,53 +577,9 @@ Xử lý đồng bộ, timeout phía server 45 giây. Client đặt timeout **60
 | `topics` | text | không | Các key cách nhau bởi dấu phẩy, không có khoảng trắng, ví dụ `nguHanh,thienVan,love`. Thiếu part này hoặc chuỗi rỗng = **bói toàn bộ**. Mỗi key phải là mục riêng của `school` đã chọn hoặc một khía cạnh trong `LIFE_ASPECTS`. Server bỏ trùng và sắp lại theo thứ tự chuẩn. Xem [ai-integration.md](ai-integration.md#chọn-mục-bói) |
 | `hand` | text | có | `LEFT` \| `RIGHT`, do người dùng chọn ở bước 3. Đây là giá trị cuối cùng: server ghi đè `result.hand` bằng giá trị này |
 | `aiConsent` | text | có | Phải là `true`: người dùng đã tích đồng ý gửi ảnh cho nhà cung cấp AI. Giá trị khác → `400 VALIDATION_ERROR` |
+| `palmLines` | text (JSON) | không | Chuỗi JSON mảng `PalmLine[]` (tọa độ `points`, `name`: `life`/`head`/`heart`/`other`, `lengthRel`, `curvature`, `branches`) trích xuất bởi model `palm_lines.onnx` |
 | `image` | file | có | Đúng 1 file, ≤ 8 MB, nội dung JPEG/PNG/WebP/HEIC (kiểm tra bằng magic bytes, không tin `Content-Type` của part). Tên file bị bỏ qua |
-
-Part lạ hoặc gửi nhiều hơn 1 file → `400 VALIDATION_ERROR`. Nên append part `image` **cuối cùng**, để server đọc các trường text trước file.
-
-```ts
-const form = new FormData();
-form.append("school", "EASTERN");
-form.append("topics", "nguHanh,thienVan,love"); // bỏ dòng này = bói toàn bộ
-form.append("hand", "LEFT");
-form.append("aiConsent", "true");
-form.append("image", file); // File/Blob từ camera hoặc <input type="file">
-
-await api.post("/readings", form, {
-  headers: { "Idempotency-Key": idempotencyKey }, // không tự đặt Content-Type
-  timeout: 60_000,
-});
-```
-
-```http
-POST /api/v1/readings
-Authorization: Bearer eyJhbGciOiJIUzI1NiIs...
-Idempotency-Key: 3f6c2a9e-8b1d-4c7a-9e2f-5d4b3a2c1e0f
-Content-Type: multipart/form-data; boundary=----palm
-
-------palm
-Content-Disposition: form-data; name="school"
-
-EASTERN
-------palm
-Content-Disposition: form-data; name="topics"
-
-nguHanh,thienVan,love
-------palm
-Content-Disposition: form-data; name="hand"
-
-LEFT
-------palm
-Content-Disposition: form-data; name="aiConsent"
-
-true
-------palm
-Content-Disposition: form-data; name="image"; filename="palm.jpg"
-Content-Type: image/jpeg
-
-<dữ liệu nhị phân>
-------palm--
-```
+| `annotatedImage` | file | không | Ảnh vùng lòng bàn tay `512×512` đã vẽ đè các đường chỉ tay từ model ONNX (JPEG/PNG, ≤ 2 MB) để lưu lên Cloudinary |
 
 **Thứ tự xử lý phía server**
 
@@ -643,18 +590,15 @@ Content-Type: image/jpeg
 | 3 | Kiểm tra header `Idempotency-Key` | `400 IDEMPOTENCY_KEY_REQUIRED` / `VALIDATION_ERROR` | Không |
 | 4 | Tìm reading cùng `(userId, Idempotency-Key)` | Có rồi → trả theo bảng **Gửi lại cùng key** bên dưới, bỏ qua các bước sau | Không |
 | 5 | Đọc multipart: kích thước ảnh | `413 IMAGE_TOO_LARGE` | Không |
-| 6 | Validate `school`, `topics`, `hand`, `aiConsent` | `400 VALIDATION_ERROR` | Không |
+| 6 | Validate `school`, `topics`, `hand`, `aiConsent`, `palmLines` | `400 VALIDATION_ERROR` | Không |
 | 7 | Kiểm tra loại ảnh bằng magic bytes | `415 UNSUPPORTED_IMAGE_TYPE` | Không |
 | 8 | Trừ 1 credit + tạo reading `PROCESSING` trong 1 transaction | `402 INSUFFICIENT_CREDITS` | — |
-| 9 | Xử lý ảnh trong bộ nhớ, gọi AI (ảnh không được lưu, xem [ADR-0010](adr/0010-no-image-storage.md)) | `REJECTED` → `200`; `FAILED` → `503`; cả hai đều hoàn credit | Có, rồi hoàn |
-| 10 | Lưu kết quả | `DONE` → `200` | Có |
-
-Ở bước 5, multer (dùng `memoryStorage`, không ghi ra đĩa) có thể dừng đọc và trả `413` ngay khi luồng upload vượt 8 MB.
+| 9 | Xử lý ảnh trong bộ nhớ (xoá EXIF), gọi AI luận giải | `REJECTED` → `200`; `FAILED` → `503`; cả hai đều hoàn credit và **không** lưu ảnh lên Cloudinary | Có, rồi hoàn |
+| 10 | Upload ảnh lòng bàn tay (đã xoá EXIF) và ảnh vẽ chỉ tay lên **Cloudinary** ([ADR-0011](adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)), lưu `result`, `imageUrl`, `annotatedImageUrl`, `palmLines` | `DONE` → `200` | Có |
 
 **Response**
 
 ```json
-// 200 OK — bói thành công
 {
   "reading": {
     "id": "6710c3d4e5f6a7b8c9d0e1aa",
@@ -662,49 +606,20 @@ Content-Type: image/jpeg
     "school": "EASTERN",
     "topics": ["nguHanh", "thienVan", "love"],
     "hand": "LEFT",
+    "imageUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/palmsight/readings/6710c3d4e5f6a7b8c9d0e1aa_palm.jpg",
+    "annotatedImageUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/palmsight/readings/6710c3d4e5f6a7b8c9d0e1aa_lines.jpg",
+    "palmLines": [
+      { "name": "life", "lengthRel": 0.82, "curvature": 1.18, "branches": 1, "points": [[310, 120], [295, 220], [260, 390]] },
+      { "name": "head", "lengthRel": 0.68, "curvature": 1.06, "branches": 1, "points": [[305, 135], [210, 180], [115, 215]] },
+      { "name": "heart", "lengthRel": 0.71, "curvature": 1.09, "branches": 1, "points": [[95, 110], [190, 105], [285, 85]] }
+    ],
     "result": { "...": "PalmResult, xem ai-integration.md" },
     "createdAt": "2026-10-14T08:31:00Z",
     "completedAt": "2026-10-14T08:31:07Z"
   },
   "creditBalance": 3
 }
-
-// 200 OK — ảnh không phải lòng bàn tay, credit đã hoàn
-{
-  "reading": {
-    "id": "6710c3d4e5f6a7b8c9d0e1ab",
-    "status": "REJECTED",
-    "school": "EASTERN",
-    "topics": ["nguHanh", "thienVan", "love"],
-    "hand": "LEFT",
-    "rejectReason": "Không nhìn rõ lòng bàn tay. Hãy chụp lại nơi đủ sáng.",
-    "result": null,
-    "createdAt": "2026-10-14T08:31:00Z",
-    "completedAt": "2026-10-14T08:31:05Z"
-  },
-  "creditBalance": 4
-}
-
-// 503 Service Unavailable — AI lỗi, credit đã hoàn
-{
-  "error": {
-    "code": "AI_UNAVAILABLE",
-    "message": "Hệ thống bận, đã hoàn 1 credit. Thử lại sau ít phút.",
-    "details": { "readingId": "6710c3d4e5f6a7b8c9d0e1ac", "refunded": true, "creditBalance": 4 }
-  }
-}
-
-// 409 Conflict — gửi lại cùng key khi reading trước vẫn đang xử lý
-{
-  "error": {
-    "code": "READING_IN_PROGRESS",
-    "message": "Lần xem bói trước vẫn đang xử lý.",
-    "details": { "readingId": "6710c3d4e5f6a7b8c9d0e1ad" }
-  }
-}
 ```
-
-`creditBalance` là số dư **sau** khi xử lý xong. Client dùng giá trị này cập nhật số credits trên màn hình.
 
 **Idempotency-Key — quy tắc cho client**
 
@@ -732,7 +647,6 @@ Lỗi: `VALIDATION_ERROR`, `IDEMPOTENCY_KEY_REQUIRED`, `INSUFFICIENT_CREDITS`, `
 Query: `cursor`, `limit`. Trả mọi reading **chưa bị xoá** của user, ở mọi trạng thái, mới nhất trước.
 
 ```json
-// 200 OK
 {
   "items": [
     {
@@ -741,43 +655,34 @@ Query: `cursor`, `limit`. Trả mọi reading **chưa bị xoá** của user, �
       "school": "EASTERN",
       "topics": ["nguHanh", "thienVan", "love"],
       "hand": "LEFT",
+      "imageUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/palmsight/readings/6710c3d4e5f6a7b8c9d0e1aa_palm.jpg",
+      "annotatedImageUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/palmsight/readings/6710c3d4e5f6a7b8c9d0e1aa_lines.jpg",
       "summary": "Tay Thổ, thực tế và đáng tin cậy...",
       "createdAt": "2026-10-14T08:31:00Z"
-    },
-    {
-      "id": "6710c3d4e5f6a7b8c9d0e1ac",
-      "status": "FAILED",
-      "school": "WESTERN",
-      "topics": ["heartLine"],
-      "hand": "RIGHT",
-      "summary": null,
-      "createdAt": "2026-10-13T10:02:00Z"
     }
   ],
   "nextCursor": null
 }
 ```
 
-| Trường | Ghi chú |
-| --- | --- |
-| `summary` | Chỉ có khi `DONE`; trạng thái khác là `null` |
-
-Reading không có trường ảnh nào, vì server không lưu ảnh.
-
-Khi đọc danh sách, reading kẹt `PROCESSING` quá 2 phút được chuyển sang `FAILED` và hoàn credit trước khi trả về. Xem [workflow.md](workflow.md#3-xem-bói).
+Khi đọc danh sách, reading kẹt `PROCESSING` quá 2 phút được chuyển sang `FAILED` và hoàn credit trước khi trả về. Xem [workflow.md](workflow.md#3-xem-bói--vẽ-đường-chỉ-tay-bằng-onnx).
 
 ### GET /readings/{id}
 
 Path: `id` là ObjectId của reading. ID sai định dạng, không tồn tại, đã xoá, hoặc thuộc user khác → `404 NOT_FOUND`.
 
 ```json
-// 200 OK
 {
   "id": "6710c3d4e5f6a7b8c9d0e1aa",
   "status": "DONE",
   "school": "EASTERN",
   "topics": ["nguHanh", "thienVan", "love"],
   "hand": "LEFT",
+  "imageUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/palmsight/readings/6710c3d4e5f6a7b8c9d0e1aa_palm.jpg",
+  "annotatedImageUrl": "https://res.cloudinary.com/<cloud>/image/upload/v1/palmsight/readings/6710c3d4e5f6a7b8c9d0e1aa_lines.jpg",
+  "palmLines": [
+    { "name": "life", "lengthRel": 0.82, "curvature": 1.18, "branches": 1, "points": [[310, 120], [295, 220], [260, 390]] }
+  ],
   "result": { "...": "PalmResult" },
   "rejectReason": null,
   "createdAt": "2026-10-14T08:31:00Z",
@@ -785,12 +690,12 @@ Path: `id` là ObjectId của reading. ID sai định dạng, không tồn tại
 }
 ```
 
-| Trạng thái | `result` | `rejectReason` | `completedAt` |
-| --- | --- | --- | --- |
-| `PROCESSING` | `null` | `null` | `null` |
-| `DONE` | `PalmResult` | `null` | có |
-| `REJECTED` | `null` | có | có |
-| `FAILED` | `null` | `null` | có |
+| Trạng thái | `result` | `imageUrl` / `annotatedImageUrl` | `rejectReason` | `completedAt` |
+| --- | --- | --- | --- | --- |
+| `PROCESSING` | `null` | `null` | `null` | `null` |
+| `DONE` | `PalmResult` | có | `null` | có |
+| `REJECTED` | `null` | `null` | có | có |
+| `FAILED` | `null` | `null` | `null` | có |
 
 Reading kẹt `PROCESSING` quá 2 phút được dọn như ở `GET /readings`.
 
@@ -798,7 +703,8 @@ Reading kẹt `PROCESSING` quá 2 phút được dọn như ở `GET /readings`.
 
 Path: `id`. Không có body.
 
-- Server đặt `result = null`, `deletedAt = now`, rồi trả `204`.
+- Server gọi Cloudinary API xoá ảnh theo `imagePublicId` và `annotatedImagePublicId` (nếu có).
+- Server đặt `result = null`, `imageUrl = null`, `annotatedImageUrl = null`, `imagePublicId = null`, `annotatedImagePublicId = null`, `palmLines = null`, `deletedAt = now`, rồi trả `204`.
 - Reading bị **ẩn hẳn**: không còn trong `GET /readings`; `GET`/`DELETE /readings/{id}` trả `404`.
 - Document vẫn được giữ, vì sổ cái credits tham chiếu tới nó.
 - Không hoàn credit.
@@ -811,7 +717,7 @@ Path: `id`. Không có body.
 
 ### POST /readings/guest
 
-Endpoint công khai cho khách vãng lai bói thử 1 lần không cần đăng nhập. Xử lý đồng bộ và trả về bản xem trước 50% kết quả (`summary` và 2 sections đầu tiên mở; các phần còn lại bị khóa và gán `null` ở cấp server DTO để ngăn ngừa lộ dữ liệu qua DevTools).
+Endpoint công khai cho khách vãng lai bói thử 1 lần không cần đăng nhập. Xử lý đồng bộ, lưu ảnh lòng bàn tay & ảnh vẽ chỉ tay lên Cloudinary, và trả về bản xem trước 50% kết quả (`summary` và 2 sections đầu tiên mở; các phần còn lại bị khóa và gán `null` ở cấp server DTO để ngăn ngừa lộ dữ liệu qua DevTools).
 
 **Header**
 
@@ -830,82 +736,19 @@ Endpoint công khai cho khách vãng lai bói thử 1 lần không cần đăng 
 | `topics` | text | không | Các key cách nhau bởi dấu phẩy, ví dụ `lifeLine,headLine,career`. Mặc định bói toàn bộ |
 | `fingerprint` | text | có | Chuỗi nhận diện thiết bị FingerprintJS (tối thiểu 16 ký tự) |
 | `aiConsent` | text | có | Phải là `true` |
+| `palmLines` | text (JSON) | không | Chuỗi JSON mảng `PalmLine[]` từ model ONNX |
 | `image` | file | có | Đúng 1 file ảnh, ≤ 8 MB (JPEG/PNG/WebP/HEIC) |
+| `annotatedImage` | file | không | Ảnh vùng lòng bàn tay đã vẽ đường chỉ tay từ model ONNX |
 
 **Bảo vệ chống lạm dụng (`GuestTrialGuard` & `GuestTrialRateLimitGuard`)**
 1. Kiểm tra cookie ký HMAC `ps_guest_trial` và hash SHA-256 của `fingerprint`: nếu đã từng có lượt thử thành công → chặn ngay với `403 GUEST_TRIAL_LIMIT_REACHED`.
 2. Kiểm tra IP sliding rate limit: tối đa 5 lượt bói thử thành công/IP trong vòng 24 giờ → vượt quá trả `429 IP_TRIAL_LIMIT_EXCEEDED`.
 
-**Response**
-
-```json
-// 201 Created — Bói thử thành công, trả 50% preview và Set-Cookie ps_guest_trial
-// Set-Cookie: ps_guest_trial=<signed_claim_token>; Path=/api/v1; Max-Age=604800; HttpOnly; SameSite=Lax; Secure
-{
-  "reading": {
-    "id": "67139f7e-c885-4463-a62a-3a5e1fb83001",
-    "school": "WESTERN",
-    "hand": "LEFT",
-    "topics": ["lifeLine", "headLine", "heartLine", "career", "love"],
-    "status": "GUEST_PREVIEW",
-    "summary": "Bàn tay của bạn mang năng lượng Thổ với đường sinh đạo sâu và rõ nét...",
-    "sections": [
-      {
-        "key": "lifeLine",
-        "title": "Đường Sinh Đạo (Life Line)",
-        "observation": "Đường cong sâu, rõ, không đứt đoạn.",
-        "meaning": "Bạn có thể chất dẻo dai và năng lượng dồi dào.",
-        "isLocked": false
-      },
-      {
-        "key": "headLine",
-        "title": "Đường Trí Đạo (Head Line)",
-        "observation": "Đường trí đạo thẳng và dài.",
-        "meaning": "Tư duy logic, thực tế.",
-        "isLocked": false
-      },
-      {
-        "key": "heartLine",
-        "title": "Đường Tâm Đạo (Heart Line)",
-        "observation": null,
-        "meaning": null,
-        "isLocked": true
-      }
-    ],
-    "aspects": {
-      "career": { "title": "Sự nghiệp & Công danh", "content": null, "isLocked": true },
-      "love": { "title": "Tình duyên & Mối quan hệ", "content": null, "isLocked": true }
-    },
-    "advice": {
-      "content": null,
-      "isLocked": true
-    },
-    "disclaimer": "Kết quả mang tính giải trí, không thay thế tư vấn chuyên môn.",
-    "previewExpiresAt": "2026-10-26T14:00:00.000Z",
-    "createdAt": "2026-10-19T14:00:00.000Z",
-    "claimToken": "e4b8a21f-82df-4db3-9824-7128cf4291f0"
-  },
-  "claimToken": "e4b8a21f-82df-4db3-9824-7128cf4291f0"
-}
-
-// 200 OK — Ảnh không phải bàn tay (isPalm = false), không tính lượt, không cấp cookie
-{
-  "reading": {
-    "id": "67139f7e-c885-4463-a62a-3a5e1fb83002",
-    "status": "REJECTED",
-    "rejectReason": "Không nhận diện được lòng bàn tay. Vui lòng chụp rõ lòng bàn tay và thử lại!"
-  }
-}
-```
-
-Lỗi: `VALIDATION_ERROR`, `IDEMPOTENCY_KEY_REQUIRED`, `GUEST_TRIAL_LIMIT_REACHED`, `IP_TRIAL_LIMIT_EXCEEDED`, `IMAGE_TOO_LARGE`, `UNSUPPORTED_IMAGE_TYPE`.
-
 ### GET /readings/guest/{token}
 
-Cho phép khách vãng lai xem lại bản xem trước 50% trong thời hạn lưu trữ 7 ngày (`previewExpiresAt`).
+Cho phép khách vãng lai xem lại bản xem trước 50% (bao gồm cả ảnh vẽ chỉ tay từ Cloudinary) trong thời hạn lưu trữ 7 ngày (`previewExpiresAt`).
 
 - **Path**: `token` là UUID v4 `claimToken`.
-- **Response**: `200 OK` trả về `GuestReadingPreviewDto` (cấu trúc tương tự response của `POST /readings/guest`).
+- **Response**: `200 OK` trả về `GuestReadingPreviewDto`.
 - **Lỗi**:
   - `404 NOT_FOUND`: Token không tồn tại, sai định dạng UUID v4, đã bị TTL index dọn dẹp sau 7 ngày, hoặc đã được tài khoản khác claim.
-

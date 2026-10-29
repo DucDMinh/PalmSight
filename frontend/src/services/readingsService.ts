@@ -7,6 +7,7 @@ import type {
   ReadingDto,
   ReadingSchool,
   HandOrientation,
+  PalmLineDto,
 } from "@palmsight/shared";
 
 export interface CreateReadingParams {
@@ -15,13 +16,12 @@ export interface CreateReadingParams {
   topics?: string[];
   aiConsent: boolean;
   image: File | Blob;
+  annotatedImage?: File | Blob | null;
+  palmLines?: PalmLineDto[] | null;
   idempotencyKey: string;
 }
 
 export class ReadingsService {
-  /**
-   * Submit guest trial reading request (multipart/form-data with signed cookie and Idempotency-Key)
-   */
   async createGuestReading(
     formData: FormData,
     idempotencyKey: string
@@ -40,9 +40,6 @@ export class ReadingsService {
     return response.data;
   }
 
-  /**
-   * Retrieve 50% teaser preview for a guest reading by claimToken
-   */
   async getGuestReadingPreview(token: string): Promise<GuestReadingPreviewDto> {
     const response = await httpService.axios.get<GuestReadingPreviewDto>(
       `${READINGS_GUEST_URL}/${token}`,
@@ -53,9 +50,6 @@ export class ReadingsService {
     return response.data;
   }
 
-  /**
-   * Authenticated member reading creation
-   */
   async createReading(params: CreateReadingParams): Promise<CreateReadingResponseDto> {
     const formData = new FormData();
     formData.append("school", params.school);
@@ -65,6 +59,12 @@ export class ReadingsService {
     formData.append("hand", params.hand);
     formData.append("aiConsent", String(params.aiConsent));
     formData.append("image", params.image);
+    if (params.annotatedImage) {
+      formData.append("annotatedImage", params.annotatedImage);
+    }
+    if (params.palmLines && params.palmLines.length > 0) {
+      formData.append("palmLines", JSON.stringify(params.palmLines));
+    }
 
     const response = await httpService.axios.post<CreateReadingResponseDto>(
       READINGS_URL,
@@ -80,9 +80,6 @@ export class ReadingsService {
     return response.data;
   }
 
-  /**
-   * Retrieve full reading by ID
-   */
   async getReadingById(readingId: string): Promise<ReadingDto> {
     const response = await httpService.axios.get<ReadingDto>(
       `${READINGS_URL}/${readingId}`,

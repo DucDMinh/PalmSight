@@ -8,6 +8,7 @@ import {
   PasswordResetSchema,
   ReadingSchema,
 } from '../src/schemas';
+import { CloudinaryService } from '../src/readings/cloudinary.service';
 import { loadEnv } from './db-check';
 
 export { loadEnv };
@@ -41,6 +42,11 @@ export async function deleteUserAccount(
   const secret =
     identitySecret || process.env.IDENTITY_HASH_SECRET || 'palmsight-identity-secret';
 
+  const userReadings = await readingModel
+    .find({ userId: userObjectId })
+    .select('imagePublicId annotatedImagePublicId')
+    .lean();
+
   const session = await conn.startSession();
   session.startTransaction();
 
@@ -53,7 +59,6 @@ export async function deleteUserAccount(
       throw new Error(`User not found or already deleted: ${userId}`);
     }
 
-    // 1. Compute HMAC-SHA256 for all user identities using secret
     const identitiesToRecord: Array<{ kind: DeletedIdentityKind; input: string }> = [];
 
     if (user.email) {
@@ -83,7 +88,6 @@ export async function deleteUserAccount(
       }
     }
 
-    // Deduplicate by HMAC
     const uniqueIdentities = new Map<
       string,
       { kind: DeletedIdentityKind; valueHmac: string }
@@ -127,21 +131,26 @@ export async function deleteUserAccount(
       }
     }
 
-    // 2. Delete all sessions for user
     await sessionModel.deleteMany({ userId: userObjectId }, { session });
 
-    // 3. Delete all password_resets for user
     await passwordResetModel.deleteMany({ userId: userObjectId }, { session });
 
-    // 4. Clear readings results and mark deletedAt
     await readingModel.updateMany(
       { userId: userObjectId },
-      { $set: { result: null, deletedAt: now } },
+      {
+        $set: {
+          result: null,
+          imageUrl: null,
+          annotatedImageUrl: null,
+          imagePublicId: null,
+          annotatedImagePublicId: null,
+          palmLines: null,
+          deletedAt: now,
+        },
+      },
       { session },
     );
 
-    // 5. Anonymize user document
-    // Keep _id, creditBalance, and referralCode intact so credit ledger and referrals remain referentially valid
     await userModel.updateOne(
       { _id: userObjectId },
       {
@@ -159,8 +168,17 @@ export async function deleteUserAccount(
       { session },
     );
 
-    // 6. Commit transaction
     await session.commitTransaction();
+
+    const cloudinary = new CloudinaryService();
+    if (cloudinary.isConfigured() && userReadings.length > 0) {
+      await Promise.all(
+        userReadings.flatMap((doc: any) => [
+          cloudinary.deleteImage(doc.imagePublicId),
+          cloudinary.deleteImage(doc.annotatedImagePublicId),
+        ]),
+      );
+    }
 
     return {
       ok: true,

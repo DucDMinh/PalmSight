@@ -1,6 +1,6 @@
 # security-privacy — Bảo mật và quyền riêng tư
 
-Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ ảnh của người dùng và không để credits bị cộng sai. Chống gian lận referral ở mức cơ bản là đủ; không có kiểm tra thiết bị/IP.
+Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, bảo vệ ảnh của người dùng và không để credits bị cộng sai. Chống gian lận referral ở mức cơ bản là đủ.
 
 ## Dữ liệu thu thập
 
@@ -11,21 +11,24 @@ Dự án nhỏ, repo công khai: mục tiêu là không lộ secret, không lộ
 | Đăng ký chưa xác minh | Người dùng nhập | Chờ xác minh email | Tự xoá sau 24 giờ |
 | Tên, ảnh đại diện, email | Google / Facebook | Hiển thị hồ sơ, gộp tài khoản | Tới khi xoá tài khoản |
 | ID tài khoản Google/Facebook | Google / Facebook | Đăng nhập | Tới khi xoá tài khoản |
-| Ảnh lòng bàn tay | Người dùng tải lên | Phân tích bói | **Không lưu.** Chỉ nằm trong bộ nhớ server trong lúc xử lý request, rồi bị bỏ. Bản đã xoá EXIF được gửi tới Groq (dự phòng Gemini) và chịu chính sách lưu giữ của nhà cung cấp đó |
-| Kết quả bói | AI | Hiển thị, lịch sử | Tới khi người dùng xoá reading/tài khoản |
+| Ảnh lòng bàn tay & ảnh đã vẽ đường chỉ tay | Người dùng tải lên + Model ONNX vẽ chỉ tay | Hiển thị trực quan đường chỉ tay trên trang kết quả và lịch sử; gửi AI phân tích bói | **Lưu trên Cloudinary** sau khi đã xoá toàn bộ EXIF/GPS ([ADR-0011](adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)). Xoá ngay khỏi Cloudinary khi người dùng xoá reading, xoá tài khoản, hoặc khi bài bói thử hết hạn 7 ngày |
+| Kết quả bói & tọa độ đường chỉ tay (`palmLines`) | AI (Gemini/Groq) + Model ONNX | Hiển thị, lịch sử | Tới khi người dùng xoá reading/tài khoản |
 | Lịch sử credits | Hệ thống | Đối soát | Giữ cả sau khi xoá tài khoản (đã ẩn danh) |
 | HMAC của email và ID Google/Facebook đã xoá | Hệ thống, lúc xoá tài khoản | Không cho tài khoản tạo lại nhận credits khuyến mãi | Vô thời hạn; không đảo ngược được |
 
-Ảnh lòng bàn tay có thể bị xem là dữ liệu sinh trắc học. Nếu app được dùng rộng rãi, nên tìm hiểu quy định bảo vệ dữ liệu cá nhân của Việt Nam (Nghị định 13/2023/NĐ-CP và luật bảo vệ dữ liệu cá nhân mới). Thiết kế dưới đây giảm rủi ro bằng cách không lưu ảnh trên server ([ADR-0010](adr/0010-no-image-storage.md)).
+Ảnh lòng bàn tay có thể bị xem là dữ liệu sinh trắc học. Nếu app được dùng rộng rãi, nên tìm hiểu quy định bảo vệ dữ liệu cá nhân của Việt Nam (Nghị định 13/2023/NĐ-CP và luật bảo vệ dữ liệu cá nhân mới).
 
-## Bảo vệ ảnh
+## Bảo vệ ảnh & Lưu trữ Cloudinary
 
-- Màn chụp ảnh có checkbox đồng ý: ảnh được gửi tới nhà cung cấp AI bên thứ ba (Groq, dự phòng Google Gemini) để phân tích. Server cũng kiểm tra: `POST /readings` thiếu `aiConsent=true` thì bị từ chối.
-- Trang `/privacy` nêu rõ: server không lưu ảnh, nhưng ảnh được gửi cho Groq/Gemini và chịu chính sách lưu giữ của họ. Kiểm tra điều khoản free tier của từng nhà cung cấp (có dùng dữ liệu gửi lên để cải thiện model không) trước khi ra mắt.
-- Server không lưu ảnh: multer dùng `memoryStorage`, `sharp` xử lý buffer trong bộ nhớ. Không ghi ảnh ra ổ đĩa, thư mục tạm (`/tmp`), object storage hay database. Buffer bị bỏ khi request kết thúc.
-- Xoá toàn bộ EXIF (có GPS) trước khi gửi AI.
-- Client chỉ giữ ảnh vừa chụp trong bộ nhớ của app (để gửi lại khi mất mạng, hoặc "Bói thêm"); không lưu vào `localStorage` hay IndexedDB.
-- `DELETE /readings/{id}` xoá kết quả ngay lập tức, ẩn reading khỏi API. Chỉ giữ lại document rỗng (trường phái, mục, trạng thái, thời gian) để sổ cái credits còn tham chiếu được.
+- Màn chụp ảnh có checkbox đồng ý: ảnh được gửi tới hệ thống AI (Gemini/Groq) để phân tích và lưu trữ trên Cloudinary để hiển thị kết quả vẽ chỉ tay. Server kiểm tra: `POST /readings` thiếu `aiConsent=true` thì bị từ chối.
+- **Xoá sạch EXIF trước khi lưu và trước khi gửi AI**:
+  - Server nhận ảnh qua `multer` `memoryStorage` và dùng `sharp` trong bộ nhớ để xoay đúng chiều rồi **xoá toàn bộ metadata EXIF (bao gồm tọa độ GPS, thông tin thiết bị)** trước khi gửi AI hoặc upload lên Cloudinary.
+  - Không bao giờ ghi file tạm ra ổ đĩa local của server (`/tmp`).
+- **Chỉ lưu ảnh của lượt bói thành công**:
+  - Nếu ảnh không phải lòng bàn tay (`REJECTED`) hoặc AI lỗi (`FAILED`), server bỏ buffer ảnh ngay lập tức, **không** upload lên Cloudinary.
+- **Xoá đồng bộ khỏi Cloudinary**:
+  - `DELETE /readings/{id}` gọi Cloudinary API (`cloudinary.uploader.destroy`) xoá ngay `imagePublicId` / `annotatedImagePublicId`, đồng thời đặt `result = null`, `imageUrl = null`, `annotatedImageUrl = null`, `palmLines = null` và ẩn reading khỏi API.
+  - Khi xoá tài khoản bằng `users:delete`, script xoá toàn bộ ảnh trên Cloudinary của user đó.
 - Không log ảnh, base64 ảnh hay toàn bộ response AI.
 
 ## Xoá tài khoản
@@ -39,7 +42,8 @@ Không có tính năng tự xoá trong app, để chặn vòng xoá–đăng ký
    - email người gửi khớp `users.email`; hoặc
    - với tài khoản không có email: hỏi thêm thông tin chỉ chủ tài khoản biết, ví dụ số credits hiện tại, ngày xem bói gần nhất.
 3. Trong vòng 30 ngày, dev chạy `pnpm --filter backend users:delete --user <id> --note "<link yêu cầu>"`. Script:
-   - xoá kết quả bói, mật khẩu, identity, session, token đặt lại mật khẩu;
+   - xoá toàn bộ ảnh lòng bàn tay của user trên Cloudinary;
+   - xoá kết quả bói, tọa độ đường chỉ tay, mật khẩu, identity, session, token đặt lại mật khẩu;
    - ẩn danh hoá user (xoá tên, username, email, avatar; đặt `deletedAt`);
    - ghi HMAC của email và ID Google/Facebook vào `deleted_identities`.
 4. Trả lời email xác nhận đã xoá.
@@ -48,7 +52,7 @@ Không có tính năng tự xoá trong app, để chặn vòng xoá–đăng ký
 
 - `_id` và sổ cái credits, để đối soát.
 - HMAC của các định danh, dùng khoá `IDENTITY_HASH_SECRET`. Nhờ đó tài khoản tạo lại từ cùng email/Google/Facebook bắt đầu với 0 credits và không được nhập mã giới thiệu.
-- Không giữ email hay ID gốc. Trang `/privacy` phải nói rõ việc giữ mã băm này.
+- Không giữ email, ID gốc hay ảnh bàn tay. Trang `/privacy` phải nói rõ việc giữ mã băm này.
 
 Facebook bắt buộc cung cấp **Data Deletion Instructions URL**: dùng trang `/data-deletion`.
 
@@ -71,6 +75,7 @@ Facebook bắt buộc cung cấp **Data Deletion Instructions URL**: dùng trang
 - **Gộp tài khoản theo email** chỉ dùng email đã xác minh: link xác minh của ta, hoặc `email_verified` của Google, hoặc email Facebook trả về. Không ai gắn được mật khẩu vào tài khoản của người khác, vì phải bấm link trong hộp thư của email đó.
 - **`IDENTITY_HASH_SECRET`:** secret ≥ 32 byte chỉ nằm trên server, dùng làm khoá HMAC cho `deleted_identities`. Không bao giờ đổi sau khi đã có dữ liệu.
 - **SMTP:** App Password của Gmail là secret, chỉ nằm trong env của server. Dùng tài khoản Gmail riêng cho dự án.
+- **Cloudinary:** `CLOUDINARY_API_SECRET` chỉ nằm trong env của server, không bao giờ lộ xuống client.
 - **Google:** xác minh ID token phía server bằng thư viện chính thức, kiểm tra `aud` = `GOOGLE_CLIENT_ID`, `iss`, `exp`, `email_verified`.
 - **Facebook:** gọi `debug_token` với app access token để chắc token được cấp cho **đúng app này**, rồi gọi `/me?fields=id,name,email,picture`.
 - **Access token:** JWT 15 phút, giữ trong bộ nhớ trình duyệt (không lưu localStorage). Khi mở app hoặc tải lại trang, SPA gọi `/auth/refresh` để lấy access token mới từ cookie `rt`.
@@ -108,6 +113,7 @@ Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từn
 - Output phải qua Yup schema `PalmResult`; chuỗi bị giới hạn độ dài; UI chỉ hiển thị dạng text, không render HTML hay markdown từ AI.
 - Cấm nội dung: chẩn đoán bệnh, tuổi thọ, cái chết, tai nạn, lời khuyên tài chính/pháp lý cụ thể.
 - API key chỉ ở server; rate limit 5 lần/phút/user để bảo vệ hạn mức miễn phí.
+- Model ONNX vẽ chỉ tay (`palm_lines.onnx`) chạy hoàn toàn với dữ liệu pixel ảnh, chỉ xuất ra tọa độ hình học và hình vẽ các đường chỉ tay, không sinh văn bản.
 
 ## Repo công khai
 
@@ -120,12 +126,12 @@ Script `credits:reconcile` so tổng sổ cái với `creditBalance` của từn
 
 - HTTPS bắt buộc. Các header bảo mật cần đặt. Header của web khai báo trong `frontend/vercel.json`; header của API do NestJS đặt (ví dụ `helmet`):
   - `Strict-Transport-Security`
-  - `Content-Security-Policy`, cho phép domain SDK của Google/Facebook
+  - `Content-Security-Policy`, cho phép domain SDK của Google/Facebook và ảnh từ `res.cloudinary.com`
   - `X-Content-Type-Options: nosniff`
   - `Referrer-Policy: strict-origin-when-cross-origin`
 - Xác định loại ảnh bằng magic bytes, không tin header `Content-Type`; giải mã qua `sharp` với giới hạn số pixel.
 - Không đặt secret trong biến `VITE_*`: Vite nhúng chúng vào bundle trình duyệt lúc build.
-- Service worker của PWA không cache response của `/api/v1/*`.
+- Service worker của PWA không cache response của `/api/v1/*`, nhưng có thể cache file model tĩnh `palm_lines.onnx` và WASM của MediaPipe/ONNX Runtime để tăng tốc các lần quét sau.
 - MongoDB Atlas: Network Access chỉ mở cho IP của server nếu nền tảng cho IP cố định. Nếu không (gói free thường không có), dùng mật khẩu mạnh và user database chỉ có quyền trên database của app.
 - Tách hai user database:
   - `palmsight-app` (`readWrite`) chỉ cho API và script;

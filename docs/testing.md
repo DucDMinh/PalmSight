@@ -6,10 +6,10 @@
 
 | Tầng | Công cụ | Phạm vi | Chạy khi |
 | --- | --- | --- | --- |
-| Unit | Vitest | Hàm thuần: sinh mã giới thiệu, kiểm tra quy tắc referral, map lỗi, Yup schema `PalmResult` cho từng trường phái, mọi trường phái trong `READING_SCHOOLS` đều có prompt chứa đủ key mục riêng | Mỗi commit |
-| Integration | Vitest + `mongodb-memory-server` (`MongoMemoryReplSet`) + Supertest | Service và endpoint NestJS với MongoDB thật chạy trong bộ nhớ; AI, OAuth và `MailService` được mock. Mock mail giữ email đã gửi trong bộ nhớ, để test lấy token từ link | Mỗi PR |
+| Unit | Vitest | Hàm thuần: sinh mã giới thiệu, kiểm tra quy tắc referral, map lỗi, Yup schema `PalmResult` & `PalmLine` cho từng trường phái, mọi trường phái trong `READING_SCHOOLS` đều có prompt chứa đủ key mục riêng | Mỗi commit |
+| Integration | Vitest + `mongodb-memory-server` (`MongoMemoryReplSet`) + Supertest | Service và endpoint NestJS với MongoDB thật chạy trong bộ nhớ; AI, Cloudinary, OAuth và `MailService` được mock. Mock mail giữ email đã gửi trong bộ nhớ, để test lấy token từ link | Mỗi PR |
 | E2E | Playwright (viewport điện thoại) | Luồng chính trên trình duyệt: đăng ký → lấy link xác minh từ Mailpit API → đăng nhập bằng mật khẩu → xem bói. Google/Facebook dùng provider giả ở môi trường test | Trước khi merge vào `main` |
-| AI eval | Script thủ công + bộ ảnh mẫu | Chất lượng và an toàn nội dung bói | Khi đổi prompt, model hoặc thêm trường phái |
+| AI eval | Script thủ công + bộ ảnh mẫu | Chất lượng và an toàn nội dung bói + độ chính xác vẽ chỉ tay ONNX | Khi đổi prompt, model hoặc thêm trường phái |
 
 Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `MongoMemoryServer` đơn lẻ. Lý do: transaction chỉ chạy trên replica set. Ngoài ra unique index phải được tạo trước khi chạy test (`syncIndexes()`).
 
@@ -30,7 +30,7 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
   Không trường hợp nào trừ thêm credit; body khác lần đầu vẫn bị bỏ qua.
 - [ ] Sau `503 AI_UNAVAILABLE`, gửi key mới → tạo reading mới, trừ 1 credit mới.
 - [ ] AI timeout / 5xx / sai schema 2 lần → `FAILED`, hoàn 1 credit, đúng 1 document `READING_REFUND`.
-- [ ] `isPalm = false` → `REJECTED`, hoàn 1 credit.
+- [ ] `isPalm = false` → `REJECTED`, hoàn 1 credit, không upload ảnh lên Cloudinary.
 - [ ] Dọn reading kẹt `PROCESSING` hoàn credit đúng 1 lần, kể cả khi hai lần dọn chạy chồng nhau.
 - [ ] Sau mọi ca trên: tổng `amount` = `creditBalance`.
 - [ ] `CreditLedgerService` cộng credits cho `userId` không tồn tại, hoặc user có `deletedAt` → ném lỗi, transaction rollback, **không** có document `credit_transactions` nào được ghi.
@@ -66,11 +66,11 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] `result.school` khác `school` trong request → sai schema.
 - [ ] Thiếu `hand`, hoặc `hand` không phải `LEFT`/`RIGHT` → `400`. AI trả `hand` khác → `result.hand` vẫn là giá trị người dùng chọn.
 - [ ] Thiếu `aiConsent` hoặc khác `true` → `400`, không trừ credit.
-- [ ] Multipart có part lạ hoặc 2 file → `400`, không trừ credit.
+- [ ] Multipart có part lạ hoặc vượt số file quy định → `400`, không trừ credit.
 
 ### Xoá reading
 
-- [ ] `DELETE /readings/{id}` → `204`; `result` về `null`; reading biến mất khỏi `GET /readings`; `GET`/`DELETE` lần sau trả `404`.
+- [ ] `DELETE /readings/{id}` → `204`; gọi xoá ảnh trên Cloudinary (`imagePublicId`), đặt `result = null`, `imageUrl = null`, `annotatedImageUrl = null`, `palmLines = null`; reading biến mất khỏi `GET /readings`; `GET`/`DELETE` lần sau trả `404`.
 - [ ] Xoá reading đang `PROCESSING` → `409 READING_IN_PROGRESS`.
 - [ ] Xoá reading không hoàn credit; giao dịch `READING_SPEND` vẫn còn trong lịch sử credits.
 
@@ -110,7 +110,7 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 
 ### Xoá tài khoản theo yêu cầu (`users:delete`)
 
-- [ ] Script xoá kết quả, mật khẩu, identity, session; ẩn danh hoá user; sổ cái credits còn nguyên; tổng `amount` vẫn bằng `creditBalance`.
+- [ ] Script xoá ảnh trên Cloudinary, xoá kết quả, mật khẩu, identity, session; ẩn danh hoá user; sổ cái credits còn nguyên; tổng `amount` vẫn bằng `creditBalance`.
 - [ ] Script ghi HMAC của email và mọi ID Google/Facebook vào `deleted_identities`; không lưu giá trị gốc.
 - [ ] Đăng ký lại cùng email → xác minh → user mới, `isNewUser = true`, **0 credits**, `referralBlocked = true`, không có `SIGNUP_BONUS`.
 - [ ] Đăng nhập lại cùng Google/Facebook → như trên.
@@ -118,15 +118,15 @@ Test integration phải dùng `MongoMemoryReplSet` (replica set), không dùng `
 - [ ] Mã giới thiệu của tài khoản đã xoá → `404 REFERRAL_CODE_NOT_FOUND`.
 - [ ] User A không đọc/xoá được reading của user B: trả `404` chứ không phải `403`, để không lộ là reading đó có tồn tại.
 
-### Ảnh
+### Ảnh & Lưu trữ Cloudinary
 
 - [ ] File > 8 MB → `413`; file `.jpg` nhưng nội dung không phải ảnh → `415`.
-- [ ] Ảnh gửi cho AI (bắt qua `FakeAiProvider`) không còn EXIF.
-- [ ] Sau `POST /readings`, không có file nào được ghi ra đĩa hay thư mục tạm; document reading và response không có trường ảnh nào ([ADR-0010](adr/0010-no-image-storage.md)).
+- [ ] Ảnh gửi cho AI và upload lên Cloudinary không còn EXIF.
+- [ ] Sau `POST /readings` thành công (`DONE`), không có file tạm nào được ghi ra ổ đĩa local của server; ảnh được upload lên Cloudinary và trả về `imageUrl` / `annotatedImageUrl` cùng `palmLines` ([ADR-0011](adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)).
 
 ## Mock AI
 
-`AiProvider` có bản `FakeAiProvider` cho test. Kết quả trả về được chọn bằng cấu hình: `ok` (đúng schema của trường phái được yêu cầu), `not_palm`, `timeout`, `http_429`, `http_500`, `invalid_json`. Không gọi Groq thật trong CI.
+`AiProvider` có bản `FakeAiProvider` cho test. Kết quả trả về được chọn bằng cấu hình: `ok` (đúng schema của trường phái được yêu cầu), `not_palm`, `timeout`, `http_429`, `http_500`, `invalid_json`. Không gọi Gemini/Groq hay Cloudinary thật trong CI.
 
 ## Đánh giá AI
 

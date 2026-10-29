@@ -79,6 +79,11 @@ erDiagram
         array topics
         string hand
         string status "GUEST_PREVIEW | PROCESSING | DONE | FAILED | REJECTED"
+        string imageUrl "null"
+        string annotatedImageUrl "null"
+        string imagePublicId "null"
+        string annotatedImagePublicId "null"
+        array palmLines "null"
         object result
         Date previewExpiresAt "TTL"
         Date claimedAt "null"
@@ -242,6 +247,11 @@ Index:
 | `topics` | string[] | bắt buộc, ≥ 1 phần tử | Các mục được bói (đã điền đủ khi chọn "Bói toàn bộ"), theo thứ tự chuẩn của trường phái |
 | `hand` | `LEFT` \| `RIGHT` | bắt buộc | Người dùng chọn; AI không được đổi |
 | `status` | `GUEST_PREVIEW` \| `PROCESSING` \| `DONE` \| `FAILED` \| `REJECTED` | bắt buộc | `GUEST_PREVIEW` = bài bói thử chờ claim; `REJECTED` = ảnh không phải lòng bàn tay |
+| `imageUrl` | string \| null | | URL HTTPS trên Cloudinary của ảnh lòng bàn tay (đã xoá EXIF). Chỉ có khi `status` là `DONE` hoặc `GUEST_PREVIEW` ([ADR-0011](adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)) |
+| `annotatedImageUrl` | string \| null | | URL HTTPS trên Cloudinary của ảnh lòng bàn tay đã vẽ đè các đường chỉ tay bởi model ONNX |
+| `imagePublicId` | string \| null | | `public_id` trên Cloudinary của ảnh gốc; dùng để xoá ảnh khỏi Cloudinary khi xoá reading hoặc xoá tài khoản (không trả ra API) |
+| `annotatedImagePublicId` | string \| null | | `public_id` trên Cloudinary của ảnh đã vẽ chỉ tay (không trả ra API) |
+| `palmLines` | array \| null | | Danh sách các đường chỉ tay (`life`, `head`, `heart`, `other`) kèm tọa độ `points` và đặc trưng hình học do model `palm_lines.onnx` trích xuất |
 | `result` | object \| null | | `PalmResult`, theo schema ở [ai-integration.md](ai-integration.md) |
 | `rejectReason` | string \| null | | |
 | `aiProvider`, `aiModel` | string \| null | | Phục vụ debug, đổi model |
@@ -251,9 +261,7 @@ Index:
 | `claimedAt` | Date \| null | | Thời điểm người dùng kích hoạt tài khoản và nhận lại bài bói |
 | `claimedByUserId` | ObjectId \| null | ref `users` | Tài khoản đã mở khóa bài bói |
 | `createdAt`, `completedAt` | Date | | |
-| `deletedAt` | Date \| null | | Người dùng xoá reading: ẩn khỏi API. Document được giữ vì sổ cái tham chiếu tới nó; `result` về `null` |
-
-Reading không có field ảnh: server không lưu ảnh lòng bàn tay ([ADR-0010](adr/0010-no-image-storage.md)).
+| `deletedAt` | Date \| null | | Người dùng xoá reading: xoá ảnh trên Cloudinary, đặt `result = null`, `imageUrl = null`, `annotatedImageUrl = null`, `palmLines = null`, ẩn khỏi API. Document được giữ vì sổ cái tham chiếu tới nó |
 
 Index:
 - `{ userId: 1, idempotencyKey: 1 }` unique, `partialFilterExpression: { userId: { $type: "objectId" } }`.

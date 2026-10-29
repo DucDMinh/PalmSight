@@ -13,6 +13,7 @@ import { AuthModule } from "../auth/auth.module";
 import { CreditsModule } from "../credits/credits.module";
 import { AiModule } from "../ai/ai.module";
 import { ImageProcessorService } from "./image-processor.service";
+import { CloudinaryService } from "./cloudinary.service";
 import { ReadingsService } from "./readings.service";
 import { ReadingsController } from "./readings.controller";
 import { ReadingsGuestController } from "./readings.guest.controller";
@@ -22,7 +23,10 @@ import { GuestTrialRateLimitGuard } from "./guards/guest-trial-rate-limit.guard"
 const guestUploadMiddleware = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
-}).single("image");
+}).fields([
+  { name: "image", maxCount: 1 },
+  { name: "annotatedImage", maxCount: 1 },
+]);
 
 @Module({
   imports: [
@@ -38,11 +42,12 @@ const guestUploadMiddleware = multer({
   controllers: [ReadingsController, ReadingsGuestController],
   providers: [
     ImageProcessorService,
+    CloudinaryService,
     ReadingsService,
     GuestTrialGuard,
     GuestTrialRateLimitGuard,
   ],
-  exports: [ReadingsService, ImageProcessorService],
+  exports: [ReadingsService, ImageProcessorService, CloudinaryService],
 })
 export class ReadingsModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

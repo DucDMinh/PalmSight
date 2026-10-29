@@ -1,19 +1,35 @@
 import {
-  Injectable, HttpException, HttpStatus, BadRequestException, ConflictException, NotFoundException,
+  Injectable,
+  Optional,
+  HttpException,
+  HttpStatus,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
 } from "@nestjs/common";
 import { InjectModel, InjectConnection } from "@nestjs/mongoose";
 import { Model, Connection, Types, FilterQuery } from "mongoose";
 import * as crypto from "crypto";
 import {
-  ReadingSchool, HandOrientation, ReadingStatus, normalizeReadingTopics,
-  createReadingRequestSchema, guestReadingRequestSchema, GuestReadingPreviewDto,
-  ReadingListResponseDto, ReadingDto, PaginationQueryDto,
+  ReadingSchool,
+  HandOrientation,
+  ReadingStatus,
+  normalizeReadingTopics,
+  createReadingRequestSchema,
+  guestReadingRequestSchema,
+  parsePalmLinesInput,
+  PalmLineDto,
+  GuestReadingPreviewDto,
+  ReadingListResponseDto,
+  ReadingDto,
+  PaginationQueryDto,
 } from "@palmsight/shared";
 import { Reading, ReadingDocument } from "../schemas/reading.schema";
 import { User, UserDocument } from "../schemas/user.schema";
 import { GuestTrial, GuestTrialDocument } from "../schemas/guest-trial.schema";
 import { CreditLedgerService } from "../credits/credit-ledger.service";
 import { ImageProcessorService } from "./image-processor.service";
+import { CloudinaryService } from "./cloudinary.service";
 import { AiService } from "../ai/ai.service";
 import { truncatePalmResultForGuest } from "./utils/truncate-palm-result.util";
 import {
@@ -27,6 +43,8 @@ import {
 
 @Injectable()
 export class ReadingsService {
+  private readonly cloudinary: CloudinaryService;
+
   constructor(
     @InjectModel(Reading.name)
     private readonly readingModel: Model<ReadingDocument>,
@@ -38,25 +56,65 @@ export class ReadingsService {
     private readonly connection: Connection,
     private readonly creditLedgerService: CreditLedgerService,
     private readonly imageProcessorService: ImageProcessorService,
-    private readonly aiService: AiService
-  ) {}
+    private readonly aiService: AiService,
+    @Optional() cloudinaryService?: CloudinaryService
+  ) {
+    this.cloudinary = cloudinaryService ?? new CloudinaryService();
+  }
+
+  private async uploadReadingAssets(
+    readingId: Types.ObjectId,
+    mainBuffer: Buffer,
+    annotatedFile?: Express.Multer.File
+  ): Promise<{
+    imageUrl: string | null;
+    imagePublicId: string | null;
+    annotatedImageUrl: string | null;
+    annotatedImagePublicId: string | null;
+  }> {
+    const mainUploaded = await this.cloudinary.uploadImage(mainBuffer, {
+      publicId: `reading_${readingId.toString()}`,
+    });
+
+    let annotatedUploaded: { url: string; publicId: string } | null = null;
+    if (annotatedFile) {
+      try {
+        const processedAnnotated =
+          await this.imageProcessorService.validateAndProcess(annotatedFile);
+        annotatedUploaded = await this.cloudinary.uploadImage(
+          processedAnnotated.buffer,
+          {
+            publicId: `reading_${readingId.toString()}_lines`,
+          }
+        );
+      } catch {
+        annotatedUploaded = null;
+      }
+    }
+
+    return {
+      imageUrl: mainUploaded?.url ?? null,
+      imagePublicId: mainUploaded?.publicId ?? null,
+      annotatedImageUrl: annotatedUploaded?.url ?? null,
+      annotatedImagePublicId: annotatedUploaded?.publicId ?? null,
+    };
+  }
 
   async createReading(
     userId: any,
     idempotencyKey: string | undefined,
     body: any,
-    file?: Express.Multer.File
+    file?: Express.Multer.File,
+    annotatedFile?: Express.Multer.File
   ): Promise<{
     reading: Record<string, unknown>;
     creditBalance: number;
     idempotentReplayed: boolean;
   }> {
-    // 1. Validate Idempotency-Key header
     assertValidIdempotencyKey(idempotencyKey);
 
     const userObjId = resolveObjectId(userId);
 
-    // 2. Check for existing reading with same (userId, idempotencyKey)
     const existing = await this.readingModel.findOne({
       userId: userObjId,
       idempotencyKey,
@@ -103,7 +161,6 @@ export class ReadingsService {
       };
     }
 
-    // 3. Validate body fields
     let validatedInput: any;
     try {
       validatedInput = await createReadingRequestSchema.validate(body, {
@@ -127,18 +184,22 @@ export class ReadingsService {
       });
     }
 
-    // 4. Validate and preprocess image in-memory (RAM only, ADR-0010)
+    let palmLines: PalmLineDto[] | null = null;
+    try {
+      palmLines = parsePalmLinesInput(validatedInput.palmLines);
+    } catch {
+      palmLines = null;
+    }
+
     const processedImage = await this.imageProcessorService.validateAndProcess(
       file
     );
 
-    // 5. Normalize topics
     const normalizedTopics = normalizeReadingTopics(
       validatedInput.school,
       validatedInput.topics
     );
 
-    // 6. Deduct 1 credit & create reading in PROCESSING status in 1 transaction
     const readingId = new Types.ObjectId();
     const session = await this.connection.startSession();
     session.startTransaction();
@@ -174,7 +235,6 @@ export class ReadingsService {
       await session.endSession();
     }
 
-    // 7. Call AI Vision service
     const start = Date.now();
     try {
       const { result, provider, model } = await this.aiService.readPalm(
@@ -187,7 +247,6 @@ export class ReadingsService {
       );
       const latencyMs = Date.now() - start;
 
-      // Handle REJECTED case (image is not a palm or too blurry)
       if (result.isPalm === false) {
         const refundSession = await this.connection.startSession();
         refundSession.startTransaction();
@@ -228,12 +287,22 @@ export class ReadingsService {
         };
       }
 
-      // Handle DONE case
+      const uploadedAssets = await this.uploadReadingAssets(
+        readingId,
+        processedImage.buffer,
+        annotatedFile
+      );
+
       await this.readingModel.updateOne(
         { _id: readingId },
         {
           status: ReadingStatus.DONE,
           result,
+          imageUrl: uploadedAssets.imageUrl,
+          imagePublicId: uploadedAssets.imagePublicId,
+          annotatedImageUrl: uploadedAssets.annotatedImageUrl,
+          annotatedImagePublicId: uploadedAssets.annotatedImagePublicId,
+          palmLines,
           aiProvider: provider,
           aiModel: model,
           latencyMs,
@@ -248,8 +317,7 @@ export class ReadingsService {
         creditBalance: user?.creditBalance ?? 0,
         idempotentReplayed: false,
       };
-    } catch (aiErr: any) {
-      // Handle FAILED case: refund credit and throw 503 AI_UNAVAILABLE
+    } catch {
       const latencyMs = Date.now() - start;
       const refundSession = await this.connection.startSession();
       refundSession.startTransaction();
@@ -345,6 +413,8 @@ export class ReadingsService {
           doc.status === ReadingStatus.DONE
             ? doc.result?.summary ?? null
             : null,
+        imageUrl: doc.imageUrl ?? null,
+        annotatedImageUrl: doc.annotatedImageUrl ?? null,
         createdAt: doc.createdAt.toISOString(),
       })),
       nextCursor,
@@ -384,6 +454,9 @@ export class ReadingsService {
       topics: doc.topics,
       hand: doc.hand,
       result: (doc.result as any) ?? null,
+      imageUrl: doc.imageUrl ?? null,
+      annotatedImageUrl: doc.annotatedImageUrl ?? null,
+      palmLines: (doc.palmLines as PalmLineDto[]) ?? null,
       rejectReason: doc.rejectReason ?? null,
       createdAt: doc.createdAt.toISOString(),
       completedAt: doc.completedAt?.toISOString() ?? null,
@@ -421,10 +494,20 @@ export class ReadingsService {
       });
     }
 
+    await Promise.all([
+      this.cloudinary.deleteImage(doc.imagePublicId),
+      this.cloudinary.deleteImage(doc.annotatedImagePublicId),
+    ]);
+
     await this.readingModel.updateOne(
       { _id: readingObjId },
       {
         result: null,
+        imageUrl: null,
+        annotatedImageUrl: null,
+        imagePublicId: null,
+        annotatedImagePublicId: null,
+        palmLines: null,
         deletedAt: new Date(),
       }
     );
@@ -471,7 +554,7 @@ export class ReadingsService {
   private async validateGuestInput(
     body: any,
     file?: Express.Multer.File,
-    idempotencyKey?: string,
+    idempotencyKey?: string
   ) {
     assertValidIdempotencyKey(idempotencyKey);
 
@@ -490,7 +573,13 @@ export class ReadingsService {
         abortEarly: false,
       });
       const topics = normalizeReadingTopics(validated.school, validated.topics);
-      return { validated, topics };
+      let palmLines: PalmLineDto[] | null = null;
+      try {
+        palmLines = parsePalmLinesInput(validated.palmLines);
+      } catch {
+        palmLines = null;
+      }
+      return { validated, topics, palmLines };
     } catch (err: any) {
       throw new BadRequestException({
         code: "VALIDATION_ERROR",
@@ -548,7 +637,7 @@ export class ReadingsService {
           code: "AI_SERVICE_UNAVAILABLE",
           message: "Hệ thống AI đang bận. Vui lòng thử lại sau ít phút!",
         },
-        HttpStatus.BAD_GATEWAY,
+        HttpStatus.BAD_GATEWAY
       );
     }
 
@@ -561,6 +650,7 @@ export class ReadingsService {
     file: Express.Multer.File | undefined,
     clientIp: string,
     fingerprintHash: string,
+    annotatedFile?: Express.Multer.File
   ): Promise<{
     reading:
       | GuestReadingPreviewDto
@@ -569,16 +659,18 @@ export class ReadingsService {
     isRejected: boolean;
     idempotentReplayed?: boolean;
   }> {
-    const { validated, topics } = await this.validateGuestInput(
+    const { validated, topics, palmLines } = await this.validateGuestInput(
       body,
       file,
-      idempotencyKey,
+      idempotencyKey
     );
 
     const replayed = await this.checkGuestIdempotency(idempotencyKey!);
     if (replayed) return replayed;
 
-    const processedImage = await this.imageProcessorService.validateAndProcess(file!);
+    const processedImage = await this.imageProcessorService.validateAndProcess(
+      file!
+    );
 
     const [reading] = await this.readingModel.create([
       {
@@ -599,12 +691,24 @@ export class ReadingsService {
         school: validated.school as ReadingSchool,
         topics,
         hand: validated.hand as HandOrientation,
-      },
+      }
     );
 
     if (!result.isPalm) {
-      return this.handleGuestRejection(reading._id, result, latencyMs, provider, model);
+      return this.handleGuestRejection(
+        reading._id,
+        result,
+        latencyMs,
+        provider,
+        model
+      );
     }
+
+    const uploadedAssets = await this.uploadReadingAssets(
+      reading._id,
+      processedImage.buffer,
+      annotatedFile
+    );
 
     return this.persistGuestTrialSuccess(
       reading,
@@ -614,15 +718,17 @@ export class ReadingsService {
       latencyMs,
       clientIp,
       fingerprintHash,
+      uploadedAssets,
+      palmLines,
       provider,
-      model,
+      model
     );
   }
 
   private async executeGuestAi(
     readingId: Types.ObjectId,
     base64: string,
-    options: { school: ReadingSchool; topics: string[]; hand: HandOrientation },
+    options: { school: ReadingSchool; topics: string[]; hand: HandOrientation }
   ) {
     const startTime = Date.now();
     try {
@@ -637,14 +743,14 @@ export class ReadingsService {
           errorCode: "AI_SERVICE_UNAVAILABLE",
           latencyMs,
           completedAt: new Date(),
-        },
+        }
       );
       throw new HttpException(
         {
           code: "AI_SERVICE_UNAVAILABLE",
           message: "Hệ thống AI đang bận. Vui lòng thử lại sau ít phút!",
         },
-        HttpStatus.BAD_GATEWAY,
+        HttpStatus.BAD_GATEWAY
       );
     }
   }
@@ -654,7 +760,7 @@ export class ReadingsService {
     aiResult: any,
     latencyMs: number,
     provider?: string,
-    model?: string,
+    model?: string
   ) {
     const rejectReason =
       aiResult.rejectReason ||
@@ -669,7 +775,7 @@ export class ReadingsService {
         aiModel: model || aiResult.aiModel,
         latencyMs,
         completedAt: new Date(),
-      },
+      }
     );
 
     return {
@@ -692,11 +798,21 @@ export class ReadingsService {
     latencyMs: number,
     clientIp: string,
     fingerprintHash: string,
+    uploadedAssets: {
+      imageUrl: string | null;
+      imagePublicId: string | null;
+      annotatedImageUrl: string | null;
+      annotatedImagePublicId: string | null;
+    },
+    palmLines: PalmLineDto[] | null,
     provider?: string,
-    model?: string,
+    model?: string
   ) {
     const claimToken = crypto.randomUUID();
-    const guestTokenHash = crypto.createHash("sha256").update(claimToken).digest("hex");
+    const guestTokenHash = crypto
+      .createHash("sha256")
+      .update(claimToken)
+      .digest("hex");
     const ipHash = crypto.createHash("sha256").update(clientIp).digest("hex");
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -709,13 +825,18 @@ export class ReadingsService {
           guestTokenHash,
           status: ReadingStatus.GUEST_PREVIEW,
           result: aiResult,
+          imageUrl: uploadedAssets.imageUrl,
+          imagePublicId: uploadedAssets.imagePublicId,
+          annotatedImageUrl: uploadedAssets.annotatedImageUrl,
+          annotatedImagePublicId: uploadedAssets.annotatedImagePublicId,
+          palmLines,
           aiProvider: provider || aiResult.aiProvider,
           aiModel: model || aiResult.aiModel,
           latencyMs,
           previewExpiresAt: expiresAt,
           completedAt: new Date(),
         },
-        { session },
+        { session }
       );
 
       await this.guestTrialModel.create(
@@ -729,7 +850,7 @@ export class ReadingsService {
             expiresAt,
           },
         ],
-        { session },
+        { session }
       );
 
       await session.commitTransaction();
@@ -748,11 +869,14 @@ export class ReadingsService {
         hand: validated.hand,
         topics,
         status: ReadingStatus.GUEST_PREVIEW,
+        imageUrl: uploadedAssets.imageUrl,
+        annotatedImageUrl: uploadedAssets.annotatedImageUrl,
+        palmLines,
         previewExpiresAt: expiresAt,
         createdAt: reading.createdAt,
       },
       truncated,
-      claimToken,
+      claimToken
     );
 
     return {
@@ -763,7 +887,9 @@ export class ReadingsService {
     };
   }
 
-  async getGuestReadingPreview(claimToken: string): Promise<GuestReadingPreviewDto> {
+  async getGuestReadingPreview(
+    claimToken: string
+  ): Promise<GuestReadingPreviewDto> {
     if (!claimToken || !UUID_V4_REGEX.test(claimToken)) {
       throw new NotFoundException({
         code: "NOT_FOUND",
@@ -771,7 +897,10 @@ export class ReadingsService {
       });
     }
 
-    const guestTokenHash = crypto.createHash("sha256").update(claimToken).digest("hex");
+    const guestTokenHash = crypto
+      .createHash("sha256")
+      .update(claimToken)
+      .digest("hex");
     const reading = await this.readingModel.findOne({
       guestTokenHash,
       previewExpiresAt: { $gt: new Date() },

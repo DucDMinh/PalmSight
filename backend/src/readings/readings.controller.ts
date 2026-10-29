@@ -5,7 +5,7 @@ import {
   Delete,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
+  UploadedFiles,
   Body,
   Headers,
   Res,
@@ -14,12 +14,36 @@ import {
   HttpCode,
   HttpStatus,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { Response } from "express";
 import { PaginationQueryDto } from "@palmsight/shared";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { ReadingsService } from "./readings.service";
+
+type UploadedReadingFiles =
+  | Express.Multer.File
+  | {
+      image?: Express.Multer.File[];
+      annotatedImage?: Express.Multer.File[];
+    }
+  | undefined;
+
+function extractUploadedFiles(files: UploadedReadingFiles): {
+  image?: Express.Multer.File;
+  annotatedImage?: Express.Multer.File;
+} {
+  if (!files) {
+    return {};
+  }
+  if ("buffer" in files) {
+    return { image: files };
+  }
+  return {
+    image: files.image?.[0],
+    annotatedImage: files.annotatedImage?.[0],
+  };
+}
 
 @Controller("readings")
 @UseGuards(JwtAuthGuard)
@@ -28,22 +52,30 @@ export class ReadingsController {
 
   @Post()
   @UseInterceptors(
-    FileInterceptor("image", {
-      limits: { fileSize: 8 * 1024 * 1024 },
-    })
+    FileFieldsInterceptor(
+      [
+        { name: "image", maxCount: 1 },
+        { name: "annotatedImage", maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: 8 * 1024 * 1024 },
+      }
+    )
   )
   async createReading(
     @CurrentUser("sub") userId: string,
     @Headers("idempotency-key") idempotencyKey: string | undefined,
     @Body() body: any,
-    @UploadedFile() file: Express.Multer.File | undefined,
+    @UploadedFiles() files: UploadedReadingFiles,
     @Res({ passthrough: true }) res: Response
   ) {
+    const { image, annotatedImage } = extractUploadedFiles(files);
     const outcome = await this.readingsService.createReading(
       userId,
       idempotencyKey,
       body,
-      file
+      image,
+      annotatedImage
     );
 
     if (outcome.idempotentReplayed) {

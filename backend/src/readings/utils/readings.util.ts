@@ -4,7 +4,7 @@ import { GuestReadingPreviewDto } from '@palmsight/shared';
 
 export const UUID_V4_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-export const STUCK_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+export const STUCK_TIMEOUT_MS = 2 * 60 * 1000;
 
 export const resolveObjectId = (val: any): Types.ObjectId => {
   if (val instanceof Types.ObjectId) return val;
@@ -41,6 +41,9 @@ export const formatReading = (doc: any): Record<string, unknown> => ({
   topics: doc.topics,
   hand: doc.hand,
   result: doc.result ?? null,
+  imageUrl: doc.imageUrl ?? null,
+  annotatedImageUrl: doc.annotatedImageUrl ?? null,
+  palmLines: doc.palmLines ?? null,
   rejectReason: doc.rejectReason ?? undefined,
   createdAt: doc.createdAt?.toISOString?.() ?? doc.createdAt,
   completedAt: doc.completedAt?.toISOString?.() ?? doc.completedAt,
@@ -61,6 +64,9 @@ export const buildGuestPreviewResponse = (
   aspects: truncated.aspects,
   advice: truncated.advice,
   disclaimer: truncated.disclaimer,
+  imageUrl: reading.imageUrl ?? null,
+  annotatedImageUrl: reading.annotatedImageUrl ?? null,
+  palmLines: reading.palmLines ?? null,
   previewExpiresAt: reading.previewExpiresAt
     ? typeof reading.previewExpiresAt === 'string'
       ? reading.previewExpiresAt

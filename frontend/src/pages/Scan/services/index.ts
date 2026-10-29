@@ -5,6 +5,7 @@ import type {
   ReadingDto,
   ReadingSchool,
   HandOrientation,
+  PalmLineDto,
 } from "@palmsight/shared";
 
 export interface CreateReadingParams {
@@ -13,6 +14,8 @@ export interface CreateReadingParams {
   topics?: string[];
   aiConsent: boolean;
   image: File | Blob;
+  annotatedImage?: File | Blob | null;
+  palmLines?: PalmLineDto[] | null;
   idempotencyKey: string;
 }
 
@@ -26,6 +29,12 @@ export class ScanService {
     formData.append("hand", params.hand);
     formData.append("aiConsent", String(params.aiConsent));
     formData.append("image", params.image);
+    if (params.annotatedImage) {
+      formData.append("annotatedImage", params.annotatedImage);
+    }
+    if (params.palmLines && params.palmLines.length > 0) {
+      formData.append("palmLines", JSON.stringify(params.palmLines));
+    }
 
     const response = await httpService.post(READINGS_URL, formData, {
       headers: {

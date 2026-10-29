@@ -13,12 +13,14 @@ export const PreviewSections: React.FC<PreviewSectionsProps> = ({ sections }) =>
     <div className="mt-6 space-y-5" data-testid="preview-sections-block">
       {sections.map((section, idx) => {
         const isLocked = section.isLocked;
+        const sectionId = section.key ? `section-${section.key}` : `section-${idx}`;
 
         if (isLocked) {
           return (
             <section
               key={section.key || `locked-${idx}`}
-              className="relative p-5 sm:p-6 rounded bg-[#0b0716]/60 border border-hairline/70 text-left overflow-hidden"
+              id={sectionId}
+              className="relative p-5 sm:p-6 rounded bg-[#0b0716]/60 border border-hairline/70 text-left overflow-hidden transition-all duration-300"
               data-testid={`preview-section-locked-${section.key || idx}`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2 pb-2 mb-4 border-b border-hairline">
@@ -61,7 +63,8 @@ export const PreviewSections: React.FC<PreviewSectionsProps> = ({ sections }) =>
         return (
           <section
             key={section.key || `open-${idx}`}
-            className="p-5 sm:p-6 rounded bg-[#0b0716]/65 border border-hairline text-left transition-colors hover:border-[#d4af37]/45"
+            id={sectionId}
+            className="p-5 sm:p-6 rounded bg-[#0b0716]/65 border border-hairline text-left transition-all duration-300 hover:border-[#d4af37]/45"
             data-testid={`preview-section-open-${section.key || idx}`}
           >
             <h3 className="font-display text-xl sm:text-2xl text-[#f7e7b4] pb-2 mb-4 border-b border-hairline font-bold flex items-center gap-2 m-0">

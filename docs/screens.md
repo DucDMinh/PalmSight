@@ -42,9 +42,9 @@ flowchart LR
 | `/forgot-password` | Ô email, nút Gửi link | Không | `POST /auth/forgot-password` |
 | `/reset-password` | Mật khẩu mới + nhập lại | Không | `POST /auth/reset-password` |
 | `/referral/enter` | Nhập mã giới thiệu (điền sẵn nếu có), dòng "Nhập mã của bạn bè: bạn nhận 1 credit, bạn bè nhận 2 credits", nút Bỏ qua | Có | `GET /me`, `POST /me/referral` |
-| `/scan` | Chọn trường phái → chọn mục muốn bói → chọn tay → chụp ảnh → gửi | Có | `POST /readings` |
-| `/readings/:id` | Kết quả bói | Có | `GET /readings/{id}` |
-| `/readings` | Lịch sử các lần xem | Có | `GET /readings` |
+| `/scan` | Chọn trường phái → chọn mục muốn bói → chọn tay → chụp ảnh & AI ONNX vẽ đường chỉ tay → gửi | Có (hoặc khách bói thử 1 lần) | `POST /readings`, `POST /readings/guest` |
+| `/readings/:id` | Kết quả bói kèm ảnh lòng bàn tay đã vẽ đường chỉ tay | Có | `GET /readings/{id}` |
+| `/readings` | Lịch sử các lần xem (kèm ảnh thu nhỏ từ Cloudinary) | Có | `GET /readings` |
 | `/wallet` | Số dư và lịch sử cộng/trừ credits | Có | `GET /me`, `GET /me/credit-transactions` |
 | `/referral` | Mã của tôi, nút copy/chia sẻ, danh sách người đã mời. Câu chia sẻ mẫu: "Nhập mã {CODE} trên PalmSight: bạn được thêm 1 credit xem bói miễn phí" | Có | `GET /me`, `GET /me/referrals` |
 | `/account` | Hồ sơ (tên, username, email, các cách đăng nhập đã liên kết, **ID tài khoản** có nút copy), nhập mã giới thiệu (nếu `canEnterCode`), "Đổi mật khẩu" hoặc "Đặt mật khẩu", đăng xuất, link nhỏ "Yêu cầu xoá dữ liệu" tới `/data-deletion`. **Không có nút xoá tài khoản** | Có | `GET /me`, `POST /auth/logout` |
@@ -91,15 +91,18 @@ App nhớ lựa chọn lần trước cho từng trường phái.
 
 Bước 3 — **Chọn tay** trái/phải. Với trường phái phương Đông, hiện gợi ý "Nam xem tay trái, nữ xem tay phải".
 
-Bước 4 — **Chụp ảnh**:
+Bước 4 — **Chụp ảnh & Vẽ đường chỉ tay bằng AI (`.onnx`)**:
+
+Quy trình xử lý ảnh trực tiếp trên trình duyệt:
+`[Camera Frame / Ảnh tải lên]` → `[MediaPipe Hands tìm 21 tọa độ bàn tay]` → `[OpenCV/Canvas cắt & xoay thẳng vùng lòng bàn tay 512×512]` → `[Model palm_lines.onnx vẽ đè các đường chỉ tay]`.
 
 | Trạng thái | Hiển thị |
 | --- | --- |
 | Chưa cấp quyền camera | Giải thích vì sao cần camera + nút cấp quyền + nút "Chọn ảnh có sẵn" |
 | Camera bị từ chối / không hỗ trợ | Chỉ còn nút chọn ảnh (`<input capture="environment">`) |
-| Sẵn sàng | Khung viền hình bàn tay, gợi ý "Đủ sáng, xoè tay, lòng bàn tay hướng vào camera" |
-| Đã chụp | Xem lại ảnh, nút **Chụp lại** / **Xem bói (−1 credit)**, checkbox đồng ý gửi ảnh cho AI. Chưa tích checkbox thì nút gửi bị khoá; tích rồi thì gửi `aiConsent=true` |
-| Đang phân tích | Hoạt ảnh chờ, câu "Đang đọc đường chỉ tay…", khoá nút gửi; có thể mất tới ~40 giây |
+| Sẵn sàng | Khung viền hình bàn tay, MediaPipe Hands kiểm tra thời gian thực (tay trái/phải, mặt lòng bàn tay, khoảng cách, giữ yên để tự chụp) |
+| Đã chụp / Đã chọn ảnh | Cắt vùng lòng bàn tay `512×512`, chạy model `palm_lines.onnx` để vẽ đè các đường chỉ tay (Sinh đạo xanh lá, Trí đạo xanh dương, Tâm đạo đỏ, đường phụ xám), nút **Chụp lại** / **Xem bói (−1 credit)**, checkbox đồng ý gửi ảnh cho AI |
+| Đang phân tích | Hoạt ảnh chờ kèm ảnh lòng bàn tay đang quét các đường chỉ tay, câu "Đang đọc đường chỉ tay…", khoá nút gửi; có thể mất tới ~40 giây |
 | Hết credits (0) | Nút gửi bị khoá; banner "Mời bạn bè nhập mã của bạn để nhận 2 credits" dẫn tới `/referral`. Nếu `canEnterCode = true`, thêm dòng "Có mã của bạn bè? Nhập để nhận 1 credit" dẫn tới `/referral/enter` |
 | `402` từ server | Như trên, đồng bộ lại số dư |
 | `REJECTED` | "Không nhìn rõ lòng bàn tay" + `rejectReason` + "Đã hoàn 1 credit" + nút chụp lại |
@@ -111,14 +114,17 @@ Bước 4 — **Chụp ảnh**:
 
 Thứ tự khối:
 
-1. Biểu tượng và nhãn trường phái, tay đã chụp, nhãn "Toàn bộ" hoặc "N mục". Không có ảnh tay: server không lưu ảnh ([ADR-0010](adr/0010-no-image-storage.md)).
-2. `summary`.
-3. Các `sections` đã chọn, theo đúng thứ tự, mỗi mục gồm "Quan sát" và "Ý nghĩa". Ẩn khối này nếu không chọn mục riêng nào.
-4. Các khía cạnh cuộc sống đã chọn. Ẩn khối này nếu không chọn khía cạnh nào.
-5. Lời khuyên.
-6. **Câu miễn trừ.**
-7. Nút "Bói thêm mục khác / trường phái khác (−1 credit)": mở lại bước chọn, dùng lại ảnh vừa chụp nếu app còn giữ trong bộ nhớ (chưa tải lại trang); không còn thì chụp lại.
-8. Nút chia sẻ (chỉ phần chữ, không kèm ảnh tay) và nút xoá. Bấm xoá → hộp xác nhận → `DELETE /readings/{id}` → quay về `/readings`. Reading đã xoá biến mất khỏi lịch sử và không mở lại được.
+1. Biểu tượng và nhãn trường phái, tay đã chụp, nhãn "Toàn bộ" hoặc "N mục".
+2. **Khung ảnh lòng bàn tay & các đường chỉ tay đã vẽ** (`annotatedImageUrl` / `imageUrl` từ Cloudinary kèm lớp vẽ `palmLines` [ADR-0011](adr/0011-cloudinary-image-storage-and-onnx-palm-lines.md)):
+   - Hiển thị rõ các đường được model ONNX phát hiện theo màu sắc: **Sinh đạo (`life`)**, **Trí đạo (`head`)**, **Tâm đạo (`heart`)**, **Đường phụ (`other`)** kèm chú giải màu (legend).
+   - Nút bật/tắt lớp vẽ chỉ tay để người dùng đối chiếu giữa ảnh lòng bàn tay gốc và ảnh đã vẽ đường chỉ tay.
+3. `summary`.
+4. Các `sections` đã chọn, theo đúng thứ tự, mỗi mục gồm "Quan sát" và "Ý nghĩa". Ẩn khối này nếu không chọn mục riêng nào.
+5. Các khía cạnh cuộc sống đã chọn. Ẩn khối này nếu không chọn khía cạnh nào.
+6. Lời khuyên.
+7. **Câu miễn trừ.**
+8. Nút "Bói thêm mục khác / trường phái khác (−1 credit)": mở lại bước chọn, dùng lại ảnh vừa chụp.
+9. Nút chia sẻ và nút xoá. Bấm xoá → hộp xác nhận → `DELETE /readings/{id}` (xoá cả ảnh trên Cloudinary và kết quả trong DB) → quay về `/readings`. Reading đã xoá biến mất khỏi lịch sử và không mở lại được.
 
 UI vẽ `sections` theo cách chung: tiêu đề + quan sát + ý nghĩa. Vì vậy thêm trường phái mới không cần sửa màn hình này.
 

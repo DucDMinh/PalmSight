@@ -18,6 +18,18 @@ import { ReadingsService } from "./readings.service";
 import { GuestTrialGuard } from "./guards/guest-trial.guard";
 import { GuestTrialRateLimitGuard } from "./guards/guest-trial-rate-limit.guard";
 
+type GuestRequestWithFiles = Request & {
+  clientIp?: string;
+  fingerprintHash?: string;
+  file?: Express.Multer.File;
+  files?:
+    | Express.Multer.File[]
+    | {
+        image?: Express.Multer.File[];
+        annotatedImage?: Express.Multer.File[];
+      };
+};
+
 @Controller("readings/guest")
 export class ReadingsGuestController {
   constructor(
@@ -31,12 +43,7 @@ export class ReadingsGuestController {
     @Headers("idempotency-key") idempotencyKey: string | undefined,
     @Body() body: any,
     @UploadedFile() file: Express.Multer.File | undefined,
-    @Req()
-    req: Request & {
-      clientIp?: string;
-      fingerprintHash?: string;
-      file?: Express.Multer.File;
-    },
+    @Req() req: GuestRequestWithFiles,
     @Res() res: Response
   ) {
     const clientIp =
@@ -45,14 +52,19 @@ export class ReadingsGuestController {
       req.socket.remoteAddress ||
       "127.0.0.1";
     const fingerprintHash = req.fingerprintHash || "";
-    const effectiveFile = file || req.file;
+
+    const fieldFiles =
+      req.files && !Array.isArray(req.files) ? req.files : undefined;
+    const effectiveFile = file || req.file || fieldFiles?.image?.[0];
+    const annotatedFile = fieldFiles?.annotatedImage?.[0];
 
     const outcome = await this.readingsService.createGuestReading(
       idempotencyKey,
       body,
       effectiveFile,
       clientIp,
-      fingerprintHash
+      fingerprintHash,
+      annotatedFile
     );
 
     if (outcome.idempotentReplayed) {

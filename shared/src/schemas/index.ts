@@ -5,9 +5,96 @@ import {
   USERNAME_REGEX,
   normalizeReadingTopics,
 } from "../constants";
+import { PalmLineDto, PalmLineName } from "../types/reading.dto";
 
 export const UUID_V4_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const PALM_LINE_NAMES: PalmLineName[] = [
+  "life",
+  "head",
+  "heart",
+  "other",
+];
+
+export const palmLineSchema = yup.object({
+  name: yup
+    .mixed<PalmLineName>()
+    .oneOf(PALM_LINE_NAMES, "Tên đường chỉ tay không hợp lệ")
+    .required("Tên đường chỉ tay là bắt buộc"),
+  points: yup
+    .array()
+    .of(
+      yup
+        .array()
+        .of(yup.number().min(0).max(1).required())
+        .min(2)
+        .max(2)
+        .required()
+    )
+    .min(2, "Đường chỉ tay phải có ít nhất 2 điểm")
+    .max(512, "Đường chỉ tay tối đa 512 điểm")
+    .required("Tọa độ đường chỉ tay là bắt buộc"),
+  lengthRel: yup.number().min(0).max(5).required(),
+  curvature: yup.number().min(0).max(10).required(),
+  branches: yup.number().integer().min(0).max(100).required(),
+});
+
+export function parsePalmLinesInput(input: unknown): PalmLineDto[] | null {
+  if (input === undefined || input === null || input === "") {
+    return null;
+  }
+  let parsed: unknown = input;
+  if (typeof input === "string") {
+    try {
+      parsed = JSON.parse(input);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(parsed)) {
+    return null;
+  }
+  const sanitized: PalmLineDto[] = [];
+  for (const raw of parsed.slice(0, 60)) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    const rawName = String(item.name || "other") as PalmLineName;
+    const name: PalmLineName = PALM_LINE_NAMES.includes(rawName)
+      ? rawName
+      : "other";
+    if (!Array.isArray(item.points)) continue;
+    const points: [number, number][] = [];
+    for (const pt of item.points.slice(0, 512)) {
+      if (!Array.isArray(pt) || pt.length < 2) continue;
+      const x = Number(pt[0]);
+      const y = Number(pt[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      points.push([
+        Math.min(Math.max(x, 0), 1),
+        Math.min(Math.max(y, 0), 1),
+      ]);
+    }
+    if (points.length < 2) continue;
+    const rawLengthRel = Number(item.lengthRel);
+    const rawCurvature = Number(item.curvature);
+    const rawBranches = Number(item.branches);
+    sanitized.push({
+      name,
+      points,
+      lengthRel: Number.isFinite(rawLengthRel)
+        ? Math.min(Math.max(rawLengthRel, 0), 5)
+        : 0,
+      curvature: Number.isFinite(rawCurvature)
+        ? Math.min(Math.max(rawCurvature, 0), 10)
+        : 1,
+      branches: Number.isFinite(rawBranches)
+        ? Math.min(Math.max(Math.round(rawBranches), 0), 100)
+        : 0,
+    });
+  }
+  return sanitized.length > 0 ? sanitized : null;
+}
 
 export const registerSchema = yup.object({
   displayName: yup
@@ -92,7 +179,6 @@ export const loginSchema = yup.object({
     .max(128, "Mật khẩu tối đa 128 ký tự"),
 });
 
-//! Accepts either a GIS ID token or an OAuth authorization code from the custom button
 export const googleAuthSchema = yup
   .object({
     idToken: yup.string().trim().max(4096, "Mã đăng nhập Google không hợp lệ"),
@@ -326,6 +412,7 @@ export const createReadingRequestSchema = yup
           }
         }
       ),
+    palmLines: yup.mixed().optional(),
   })
   .noUnknown();
 
@@ -376,6 +463,7 @@ export const guestReadingRequestSchema = yup
         (val) => val === true || val === "true"
       )
       .required("Bạn phải đồng ý với điều khoản phân tích AI."),
+    palmLines: yup.mixed().optional(),
   })
   .noUnknown();
 
